@@ -3,7 +3,7 @@ import Navbar from "../Navbar/Navbar";
 function SiteNavbar() {
   return (
     <Navbar
-      logo="HackX"
+      logo="CurePulse"
       variant="glass"
       position="sticky"
       links={[
