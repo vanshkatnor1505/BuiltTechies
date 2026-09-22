@@ -10,6 +10,8 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./HospitalFinder.css";
+import SiteNavbar from "../components/composed/SiteNavbar/SiteNavbar";
+import Footer from "../components/composed/Footer/Footer";
 
 /* =========================================================
    LEAFLET ICONS
@@ -959,6 +961,7 @@ export default function HospitalFinder() {
 
   return (
     <div className="hospital-finder-page">
+      <SiteNavbar />
 
       {/* ===================================================
           HEADER
@@ -2145,6 +2148,12 @@ export default function HospitalFinder() {
 
         </div>
       )}
+
+      <Footer
+        logo="HackX"
+        description="Discover, compare, and access healthcare options that fit your needs."
+        copyright="HackX. All rights reserved."
+      />
 
     </div>
   );
