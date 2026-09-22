@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
+<<<<<<< HEAD
     "leaflet": "^1.9.4",
+=======
+>>>>>>> ba4cce4388b8355860700bec4f692437fd6fc72c
     "lucide-react": "^1.47.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

@@ -5,7 +5,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import Navbar from "../../components/composed/Navbar/Navbar";
+import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 
 import Container from "../../components/layout/Container/Container";
@@ -26,6 +26,7 @@ function SamplePage({
 }) {
   return (
     <div className={styles.page}>
+<<<<<<< HEAD
       <Navbar
         logo="CureCompanion"
         variant="glass"
@@ -56,6 +57,9 @@ function SamplePage({
           },
         }}
       />
+=======
+      <SiteNavbar />
+>>>>>>> ba4cce4388b8355860700bec4f692437fd6fc72c
 
       <main>
         {/* =================================
