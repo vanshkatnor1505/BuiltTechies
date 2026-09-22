@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { createElement, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -201,7 +201,6 @@ function Home() {
       {/* =====================================================
           NAVBAR
       ===================================================== */}
-
       <SiteNavbar />
 
       <main>
@@ -860,11 +859,11 @@ function Home() {
   );
 }
 
-function Requirement({ icon: Icon, title, value }) {
+function Requirement({ icon, title, value }) {
   return (
     <div className={styles.requirement}>
       <div className={styles.requirementIcon}>
-        <Icon size={18} />
+        {createElement(icon, { size: 18 })}
       </div>
 
       <div>

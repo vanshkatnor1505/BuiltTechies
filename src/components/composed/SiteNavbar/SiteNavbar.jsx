@@ -3,7 +3,7 @@ import Navbar from "../Navbar/Navbar";
 function SiteNavbar() {
   return (
     <Navbar
-      logo="HackX"
+      logo="CurePulse"
       variant="glass"
       position="sticky"
       links={[
@@ -12,12 +12,12 @@ function SiteNavbar() {
           href: "/",
         },
         {
-          label: "Features",
-          href: "/#features",
+          label: "Find Hospitals",
+          href: "/find-hospitals",
         },
         {
-          label: "How It Works",
-          href: "/#how-it-works",
+          label: "Assistant",
+          href: "/chatbot",
         },
         {
           label: "Team",
@@ -25,10 +25,10 @@ function SiteNavbar() {
         },
       ]}
       cta={{
-        label: "Back Home",
-        variant: "outline",
+        label: "Open Assistant",
+        variant: "primary",
         onClick: () => {
-          window.location.href = "/";
+          window.location.href = "/chatbot";
         },
       }}
     />

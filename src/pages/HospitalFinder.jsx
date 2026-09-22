@@ -11,6 +11,8 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./HospitalFinder.css";
+import SiteNavbar from "../components/composed/SiteNavbar/SiteNavbar";
+import Footer from "../components/composed/Footer/Footer";
 
 const DEFAULT_CENTER = [30.7333, 76.7794];
 
@@ -843,6 +845,7 @@ export default function HospitalFinder() {
 
   return (
     <div className="hospital-finder-page" data-theme="vital">
+      <SiteNavbar />
       <div className="hospital-finder-shell">
 
         {/* HEADER */}
@@ -1456,6 +1459,12 @@ export default function HospitalFinder() {
           </div>
         </footer>
       </div>
+
+      <Footer
+        logo="HackX"
+        description="Discover, compare, and access healthcare options that fit your needs."
+        copyright="HackX. All rights reserved."
+      />
     </div>
   );
 }

@@ -1,19 +1,22 @@
+import { createElement } from "react";
 import styles from "./Section.module.css";
 
 function Section({
   children,
   className = "",
   id,
-  as: Component = "section",
+  as: component = "section",
   spacing = "default",
 }) {
   return (
-    <Component
-      id={id}
-      className={`${styles.section} ${styles[spacing]} ${className}`}
-    >
-      {children}
-    </Component>
+    createElement(
+      component,
+      {
+        id,
+        className: `${styles.section} ${styles[spacing]} ${className}`,
+      },
+      children
+    )
   );
 }
 

@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import styles from "./Card.module.css";
 
 function Card({
@@ -6,7 +7,7 @@ function Card({
   size = "medium",
   hoverable = false,
   padding = "medium",
-  as: Component = "div",
+  as: component = "div",
   className = "",
   ...props
 }) {
@@ -22,12 +23,14 @@ function Card({
     .join(" ");
 
   return (
-    <Component
-      className={cardClasses}
-      {...props}
-    >
-      {children}
-    </Component>
+    createElement(
+      component,
+      {
+        className: cardClasses,
+        ...props,
+      },
+      children
+    )
   );
 }
 

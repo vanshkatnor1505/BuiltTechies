@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import styles from "./Heading.module.css";
 
 function Heading({
@@ -6,7 +7,7 @@ function Heading({
   description,
   align = "left",
   size = "large",
-  as: Component = "h2",
+  as: component = "h2",
   className = "",
 }) {
   const headingClasses = [
@@ -27,9 +28,7 @@ function Heading({
       )}
 
       {title && (
-        <Component className={styles.title}>
-          {title}
-        </Component>
+        createElement(component, { className: styles.title }, title)
       )}
 
       {description && (
