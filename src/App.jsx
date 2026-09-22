@@ -4,6 +4,10 @@ import Home from "./pages/Home/Home";
 import Team from "./pages/Team/Team";
 import SamplePage from "./pages/SamplePage/SamplePage";
 import ThemeLab from "./pages/ThemeLab/ThemeLab";
+import 'leaflet/dist/leaflet.css';
+import HospitalFinder from "./pages/HospitalFinder";
+import Chatbot from "./pages/Chatbot/Chatbot";
+
 
 function App() {
   return (
@@ -36,16 +40,16 @@ function App() {
         ================================= */}
 
         <Route path="/team" element={<Team />} />
+        <Route
+          path="/find-hospitals"
+          element={<HospitalFinder />}
+        />
 
-        {/* =================================
-            SAMPLE PAGE 2
-        ================================= */}
+        
 
-        <Route path="/theme-lab" element={< ThemeLab/>}/>
-
-        {/* =================================
-            FALLBACK
-        ================================= */}
+        <Route path="/theme-lab" element={< ThemeLab />} />
+        <Route path="/chatbot" element={< Chatbot />} />
+        
 
         <Route path="*" element={<Home />} />
       </Routes>

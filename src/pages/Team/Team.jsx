@@ -55,7 +55,7 @@ function Team() {
       ================================= */}
 
       <Navbar
-        logo="HackX"
+        logo="CureCompanion"
         variant="glass"
         position="sticky"
         links={[

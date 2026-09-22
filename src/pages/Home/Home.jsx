@@ -90,7 +90,7 @@ function Home() {
   return (
     <div>
       <Navbar
-        logo="HackX"
+        logo="CureCompanion"
         variant="glass"
         position="sticky"
         links={[
