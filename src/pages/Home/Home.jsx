@@ -1,4 +1,5 @@
-import React, { createElement, useState } from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -24,24 +25,28 @@ import styles from "./Home.module.css";
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 
+/* =========================================================
+   FEATURES
+========================================================= */
+
 const FEATURES = [
   {
     icon: Sparkles,
     title: "Personalized Matching",
     description:
-      "Find hospitals based on your healthcare needs, location, budget, insurance, facilities, and preferences.",
+      "Find healthcare options based on your treatment needs, location, budget, insurance, facilities, and preferences.",
   },
   {
     icon: Hospital,
     title: "Compare Hospitals",
     description:
-      "Compare relevant hospitals side by side using treatment availability, cost, distance, facilities, and more.",
+      "Compare relevant hospitals using treatment availability, cost, distance, facilities, specialists, and coverage.",
   },
   {
     icon: MapPin,
     title: "Location-Aware",
     description:
-      "Discover suitable hospitals around you and understand distance, travel time, and navigation options.",
+      "Understand nearby healthcare options, distance, travel time, and available navigation support.",
   },
   {
     icon: ShieldCheck,
@@ -53,15 +58,19 @@ const FEATURES = [
     icon: FileText,
     title: "Understand Reports",
     description:
-      "Upload a medical report and get a simpler explanation of relevant information and possible care pathways.",
+      "Get simpler explanations of medical reports and understand information that may help you discuss care with professionals.",
   },
   {
     icon: Languages,
     title: "Built for Everyone",
     description:
-      "Healthcare discovery designed to be accessible across languages, locations, and different user needs.",
+      "Healthcare discovery designed to support different languages, locations, accessibility needs, and preferences.",
   },
 ];
+
+/* =========================================================
+   HOW IT WORKS
+========================================================= */
 
 const STEPS = [
   {
@@ -75,80 +84,59 @@ const STEPS = [
     number: "02",
     title: "Set your requirements",
     description:
-      "Add your location, budget, insurance, facilities, distance, and other preferences.",
+      "Add location, budget, insurance, facilities, distance, and other preferences.",
     icon: SlidersIcon,
   },
   {
     number: "03",
     title: "Discover suitable hospitals",
     description:
-      "Vital filters and matches hospitals according to the requirements you provide.",
+      "Vital filters available options according to the requirements you provide.",
     icon: Hospital,
   },
   {
     number: "04",
     title: "Compare & take action",
     description:
-      "Compare your options and move forward with contact, directions, or emergency assistance.",
+      "Compare your options and move forward with contact, directions, or further assistance.",
     icon: ArrowRight,
   },
 ];
 
-const QUICK_SEARCHES = [
-  "Find a hospital",
-  "Compare hospitals",
-  "Understand my report",
-  "Emergency help",
+/* =========================================================
+   COMPARISON DATA
+========================================================= */
+
+/* =========================================================
+   TEAM
+========================================================= */
+
+const TEAM = [
+  {
+    name: "Vansh",
+    role: "Product & Development",
+    initial: "V",
+  },
+  {
+    name: "Team Member",
+    role: "Development",
+    initial: "T",
+  },
+  {
+    name: "Team Member",
+    role: "Design & Research",
+    initial: "T",
+  },
+  {
+    name: "Team Member",
+    role: "Product & Innovation",
+    initial: "T",
+  },
 ];
 
-const STATS = [
-  {
-    value: "10K+",
-    label: "Hospitals & healthcare data",
-  },
-  {
-    value: "40+",
-    label: "Healthcare specialties",
-  },
-  {
-    value: "24/7",
-    label: "Healthcare guidance",
-  },
-  {
-    value: "1",
-    label: "Personalized search",
-  },
-];
-
-const HOSPITALS = [
-  {
-    name: "CityCare Multispeciality Hospital",
-    location: "Chandigarh",
-    specialty: "Multispeciality",
-    match: "94%",
-    distance: "4.2 km",
-    cost: "₹₹",
-    insurance: "Insurance supported",
-  },
-  {
-    name: "LifePoint Medical Centre",
-    location: "Mohali",
-    specialty: "Advanced Care",
-    match: "91%",
-    distance: "7.8 km",
-    cost: "₹₹₹",
-    insurance: "Insurance supported",
-  },
-  {
-    name: "PrimeCare Hospital",
-    location: "Chandigarh",
-    specialty: "Specialized Care",
-    match: "88%",
-    distance: "10.4 km",
-    cost: "₹₹",
-    insurance: "Scheme available",
-  },
-];
+/* =========================================================
+   SLIDER ICON
+========================================================= */
 
 function SlidersIcon({ size = 24, strokeWidth = 1.8 }) {
   return (
@@ -166,6 +154,7 @@ function SlidersIcon({ size = 24, strokeWidth = 1.8 }) {
       <line x1="4" y1="6" x2="20" y2="6" />
       <line x1="4" y1="12" x2="20" y2="12" />
       <line x1="4" y1="18" x2="20" y2="18" />
+
       <circle cx="9" cy="6" r="2" />
       <circle cx="15" cy="12" r="2" />
       <circle cx="10" cy="18" r="2" />
@@ -173,24 +162,23 @@ function SlidersIcon({ size = 24, strokeWidth = 1.8 }) {
   );
 }
 
+/* =========================================================
+   HOME
+========================================================= */
+
 function Home() {
-  const [searchValue, setSearchValue] = useState("");
-
-  const handleSearch = (event) => {
-    event.preventDefault();
-
-    // Basic implementation for now.
-    // Connect this to your chatbot / hospital search flow later.
-    console.log("Healthcare search:", searchValue);
+  const navigate = useNavigate();
+  const [requirement, setRequirement] = useState("");
+  const openFinder = (query = requirement, emergency = false) => {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("query", query.trim());
+    if (emergency) params.set("emergency", "true");
+    navigate(`/find-hospitals${params.size ? `?${params}` : ""}`);
   };
-
-  const handleQuickSearch = (value) => {
-    setSearchValue(value);
-  };
-
   const scrollTo = (id) => {
     document.querySelector(id)?.scrollIntoView({
       behavior: "smooth",
+      block: "start",
     });
   };
 
@@ -201,375 +189,415 @@ function Home() {
       {/* =====================================================
           NAVBAR
       ===================================================== */}
+
       <SiteNavbar />
 
       <main>
-        {/* =====================================================
-            HERO
-        ===================================================== */}
+        {/* ===================================================
+            01 — EMERGENCY
+        =================================================== */}
 
-        <section className={styles.hero}>
-          <div className={styles.heroGrid} />
+        <section
+          className={styles.emergencySection}
+          id="emergency"
+          aria-labelledby="emergency-title"
+        >
+          <div className={styles.emergencyGlow} />
 
-          <div className={styles.heroContent}>
-            <div className={styles.heroEyebrow}>
-              <span className={styles.eyebrowPulse} />
-              <span>SMARTER HEALTHCARE DISCOVERY</span>
-            </div>
-
-            <h1 className={styles.heroTitle}>
-              Find healthcare
-              <span> that fits you.</span>
-            </h1>
-
-            <p className={styles.heroDescription}>
-              Tell Vital what you need, where you are, and what matters to
-              you. We help you discover and compare healthcare options based
-              on your requirements.
-            </p>
-
-            <div className={styles.heroActions}>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={() => scrollTo("#find")}
-              >
-                Find a hospital
-                <ArrowRight size={18} />
-              </button>
-
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => scrollTo("#how-it-works")}
-              >
-                How it works
-                <ChevronRight size={17} />
-              </button>
-            </div>
-
-            <div className={styles.heroTrust}>
-              <div className={styles.trustPeople}>
-                <span>V</span>
-                <span>+</span>
+          <div className={styles.emergencyInner}>
+            <div className={styles.emergencyContent}>
+              <div className={styles.emergencyEyebrow}>
+                <span className={styles.emergencyPulse} />
+                <span>URGENT HEALTHCARE ASSISTANCE</span>
               </div>
 
-              <div>
-                <strong>Built around your requirements</strong>
-                <p>
-                  Location · Budget · Insurance · Treatment · Preferences
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* HERO SEARCH CARD */}
-
-          <div className={styles.heroVisual}>
-            <div className={styles.searchCard}>
-              <div className={styles.searchCardHeader}>
-                <div>
-                  <span className={styles.cardLabel}>START HERE</span>
-                  <h2>What healthcare do you need?</h2>
-                </div>
-
-                <div className={styles.cardIcon}>
-                  <HeartPulse size={21} />
-                </div>
-              </div>
-
-              <form
-                className={styles.searchBox}
-                onSubmit={handleSearch}
-              >
-                <Search size={20} />
-
-                <input
-                  type="text"
-                  value={searchValue}
-                  onChange={(event) =>
-                    setSearchValue(event.target.value)
-                  }
-                  placeholder="e.g. kidney treatment, dental care..."
-                  aria-label="Healthcare requirement"
-                />
-
-                <button type="submit">
-                  <ArrowRight size={18} />
-                </button>
-              </form>
-
-              <div className={styles.searchSuggestions}>
-                <span>Try:</span>
-
-                {QUICK_SEARCHES.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => handleQuickSearch(item)}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-
-              <div className={styles.searchDivider} />
-
-              <div className={styles.locationRow}>
-                <div className={styles.locationIcon}>
-                  <MapPin size={17} />
-                </div>
-
-                <div>
-                  <span>Your location</span>
-                  <strong>Chandigarh, India</strong>
-                </div>
-
-                <button type="button" className={styles.changeButton}>
-                  Change
-                </button>
-              </div>
-            </div>
-
-            {/* FLOATING MATCH CARD */}
-
-            <div className={styles.floatingMatch}>
-              <div className={styles.matchIcon}>
-                <CheckCircle2 size={18} />
-              </div>
-
-              <div>
-                <span>Personalized match</span>
-                <strong>94% requirement match</strong>
-              </div>
-
-              <div className={styles.matchMiniGraph}>
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-
-            <div className={styles.floatingLocation}>
-              <MapPin size={16} />
-              <span>4.2 km away</span>
-            </div>
-          </div>
-        </section>
-
-        {/* =====================================================
-            STATS
-        ===================================================== */}
-
-        <section className={styles.statsSection}>
-          <div className={styles.statsContainer}>
-            {STATS.map((stat) => (
-              <div className={styles.stat} key={stat.label}>
-                <strong>{stat.value}</strong>
-                <span>{stat.label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* =====================================================
-            FIND SECTION
-        ===================================================== */}
-
-        <section className={styles.findSection} id="find">
-          <div className={styles.sectionHeader}>
-            <div>
-              <span className={styles.sectionEyebrow}>
-                HEALTHCARE MATCHING
-              </span>
-
-              <h2>
-                Don't search for the
-                <span> “best” hospital.</span>
-              </h2>
-            </div>
-
-            <p>
-              Find the hospital that makes sense for your particular
-              situation, requirements, and priorities.
-            </p>
-          </div>
-
-          <div className={styles.matchingPanel}>
-            <div className={styles.matchingIntro}>
-              <div className={styles.aiBadge}>
-                <Sparkles size={15} />
-                AI-assisted matching
-              </div>
-
-              <h3>
-                Your requirements.
-                <br />
-                Your healthcare options.
-              </h3>
+              <h1 id="emergency-title">
+                Need urgent care?
+                <span> Start here.</span>
+              </h1>
 
               <p>
-                Vital considers multiple factors instead of relying on a
-                single ranking.
+                Quickly find nearby emergency healthcare options and get
+                guidance on what to do next.
               </p>
+
+              <div className={styles.emergencyActions}>
+                <button
+                  type="button"
+                  className={styles.emergencyPrimary}
+                  onClick={() => openFinder("Emergency", true)}
+                >
+                  <MapPin size={18} />
+                  Use my location
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.emergencySecondary}
+                  onClick={() => openFinder("Emergency", true)}
+                >
+                  <Hospital size={18} />
+                  Find emergency hospital
+                </button>
+              </div>
+
+              <div className={styles.emergencyNotice}>
+                <Siren size={16} />
+
+                <span>
+                  In a life-threatening emergency, contact your local
+                  emergency services immediately.
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.emergencyPanel}>
+              <div className={styles.emergencyPanelIcon}>
+                <Siren size={25} />
+              </div>
+
+              <div>
+                <span>EMERGENCY SUPPORT</span>
+
+                <h2>What do you need right now?</h2>
+              </div>
+
+              <div className={styles.emergencyOptions}>
+                <button
+                  type="button"
+                  onClick={() => console.log("Nearest emergency hospital")}
+                >
+                  <div>
+                    <Hospital size={18} />
+                  </div>
+
+                  <span>
+                    <strong>Nearest emergency hospital</strong>
+                    <small>Find nearby emergency care</small>
+                  </span>
+
+                  <ArrowUpRight size={17} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => console.log("Ambulance assistance")}
+                >
+                  <div>
+                    <Siren size={18} />
+                  </div>
+
+                  <span>
+                    <strong>Ambulance assistance</strong>
+                    <small>Access available emergency resources</small>
+                  </span>
+
+                  <ArrowUpRight size={17} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => console.log("Emergency guidance")}
+                >
+                  <div>
+                    <HeartPulse size={18} />
+                  </div>
+
+                  <span>
+                    <strong>Emergency guidance</strong>
+                    <small>Understand the next available step</small>
+                  </span>
+
+                  <ArrowUpRight size={17} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===================================================
+            02 — FIND A HOSPITAL
+        =================================================== */}
+
+        <section
+          className={styles.findSection}
+          id="find"
+          aria-labelledby="find-title"
+        >
+          <div className={styles.findGrid} />
+
+          <div className={styles.findContent}>
+            <div className={styles.sectionEyebrow}>
+              HEALTHCARE DISCOVERY
+            </div>
+
+            <h2 id="find-title">
+              Find the right
+              <span> care for your situation.</span>
+            </h2>
+
+            <p>
+              Tell Vital what you need. We bring together the factors that
+              actually matter when choosing healthcare — not just a generic
+              hospital ranking.
+            </p>
+
+            <div className={styles.findTrust}>
+              <CheckCircle2 size={17} />
+
+              <span>
+                Treatment · Location · Cost · Insurance · Facilities ·
+                Preferences
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.findCard}>
+            <div className={styles.findCardHeader}>
+              <div>
+                <span>START YOUR SEARCH</span>
+
+                <h3>What healthcare do you need?</h3>
+              </div>
+
+              <div className={styles.findCardIcon}>
+                <HeartPulse size={21} />
+              </div>
+            </div>
+
+            <div className={styles.findSearch}>
+              <Search size={19} />
+
+              <input
+                type="text"
+                value={requirement}
+                onChange={(event) => setRequirement(event.target.value)}
+                onKeyDown={(event) => event.key === "Enter" && openFinder()}
+                placeholder="e.g. kidney treatment, dental care..."
+                aria-label="Healthcare requirement"
+              />
 
               <button
                 type="button"
-                className={styles.textButton}
-                onClick={() => scrollTo("#assistant")}
+                onClick={() => openFinder()}
+                aria-label="Search healthcare"
               >
-                Start with Vital Assistant
-                <ArrowRight size={17} />
+                <ArrowRight size={18} />
               </button>
             </div>
 
-            <div className={styles.requirementGrid}>
-              <Requirement
-                icon={HeartPulse}
-                title="Health need"
-                value="Kidney treatment"
-              />
+            <div className={styles.searchExamples}>
+              <span>Popular searches</span>
 
+              <button type="button">Kidney treatment</button>
+              <button type="button">Dental care</button>
+              <button type="button">Cardiology</button>
+              <button type="button">Emergency care</button>
+            </div>
+
+            <div className={styles.findDivider} />
+
+            <div className={styles.requirementRow}>
               <Requirement
                 icon={MapPin}
                 title="Location"
-                value="Within 15 km"
+                value="Choose your area"
               />
 
               <Requirement
                 icon={ShieldCheck}
-                title="Insurance"
-                value="Government scheme"
+                title="Coverage"
+                value="Insurance / scheme"
               />
 
               <Requirement
-                icon={Users}
-                title="Preference"
-                value="Specialist available"
+                icon={SlidersIcon}
+                title="Preferences"
+                value="Add requirements"
               />
-
-              <Requirement
-                icon={Clock3}
-                title="Travel"
-                value="Shorter ETA"
-              />
-
-              <Requirement
-                icon={Hospital}
-                title="Facilities"
-                value="Required facilities"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* =====================================================
-            HOSPITAL PREVIEW
-        ===================================================== */}
-
-        <section className={styles.hospitalsSection}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <span className={styles.sectionEyebrow}>
-                EXAMPLE RESULTS
-              </span>
-
-              <h2>
-                Healthcare options,
-                <span> clearly compared.</span>
-              </h2>
             </div>
 
             <button
               type="button"
-              className={styles.outlineButton}
-              onClick={() => scrollTo("#find")}
+              className={styles.findAdvanced}
+              onClick={() => openFinder()}
             >
-              Explore hospitals
-              <ArrowUpRight size={17} />
+              Set detailed requirements
+              <ChevronRight size={17} />
             </button>
-          </div>
-
-          <div className={styles.hospitalGrid}>
-            {HOSPITALS.map((hospital, index) => (
-              <article
-                className={`${styles.hospitalCard} ${
-                  index === 0 ? styles.featuredHospital : ""
-                }`}
-                key={hospital.name}
-              >
-                {index === 0 && (
-                  <div className={styles.recommendedBadge}>
-                    <Sparkles size={13} />
-                    High requirement match
-                  </div>
-                )}
-
-                <div className={styles.hospitalTop}>
-                  <div className={styles.hospitalLogo}>
-                    <Hospital size={21} />
-                  </div>
-
-                  <button
-                    type="button"
-                    className={styles.cardArrow}
-                    aria-label={`View ${hospital.name}`}
-                  >
-                    <ArrowUpRight size={17} />
-                  </button>
-                </div>
-
-                <div className={styles.hospitalInfo}>
-                  <h3>{hospital.name}</h3>
-
-                  <p>
-                    <MapPin size={14} />
-                    {hospital.location}
-                  </p>
-                </div>
-
-                <div className={styles.hospitalTags}>
-                  <span>{hospital.specialty}</span>
-                  <span>{hospital.distance}</span>
-                </div>
-
-                <div className={styles.hospitalDetails}>
-                  <div>
-                    <span>Match</span>
-                    <strong>{hospital.match}</strong>
-                  </div>
-
-                  <div>
-                    <span>Cost</span>
-                    <strong>{hospital.cost}</strong>
-                  </div>
-
-                  <div>
-                    <span>Coverage</span>
-                    <strong>{hospital.insurance}</strong>
-                  </div>
-                </div>
-
-                <button type="button" className={styles.viewHospital}>
-                  View details
-                  <ArrowRight size={16} />
-                </button>
-              </article>
-            ))}
           </div>
         </section>
 
-        {/* =====================================================
-            HOW IT WORKS
-        ===================================================== */}
+        {/* ===================================================
+            03 — PRIMARY CTA
+        =================================================== */}
 
-        <section className={styles.howSection} id="how-it-works">
+        <section className={styles.homeCta}>
+          <div className={styles.homeCtaIcon}>
+            <Stethoscope size={22} />
+          </div>
+
+          <div className={styles.homeCtaContent}>
+            <span>NOT SURE WHAT TO SEARCH FOR?</span>
+
+            <h2>Let Vital help you figure out where to start.</h2>
+
+            <p>
+              Describe your situation naturally and the Vital Assistant can
+              guide you through the healthcare discovery process.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className={styles.primaryButton}
+            onClick={() => scrollTo("#assistant")}
+          >
+            Talk to Vital
+            <ArrowRight size={18} />
+          </button>
+        </section>
+
+        {/* ===================================================
+            04 — HOSPITAL COMPARISON
+        =================================================== */}
+
+        <section
+          className={styles.comparisonSection}
+          id="comparison"
+          aria-labelledby="comparison-title"
+        >
+          <div className={styles.sectionHeader}>
+            <div>
+              <span className={styles.sectionEyebrow}>
+                HOSPITAL COMPARISON
+              </span>
+
+              <h2 id="comparison-title">
+                Compare options
+                <span> side by side.</span>
+              </h2>
+            </div>
+
+            <p>
+              Look beyond a single rating. Understand how different options
+              compare against the requirements that matter to you.
+            </p>
+          </div>
+
+          <div className={styles.comparisonTable}>
+            <div className={styles.comparisonHeader}>
+              <div>Hospital</div>
+              <div>Specialty</div>
+              <div>Distance</div>
+              <div>Cost</div>
+              <div>Coverage</div>
+              <div />
+            </div>
+
+            {[] /* Hospital rows are intentionally populated only from a live search. */.map((hospital, index) => (
+              <article
+                className={`${styles.comparisonRow} ${
+                  index === 0 ? styles.comparisonHighlighted : ""
+                }`}
+                key={hospital.name}
+              >
+                <div className={styles.comparisonHospital}>
+                  <div className={styles.hospitalLogo}>
+                    <Hospital size={19} />
+                  </div>
+
+                  <div>
+                    <strong>{hospital.name}</strong>
+
+                    <span>
+                      <MapPin size={13} />
+                      {hospital.location}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className={styles.mobileComparisonLabel}>
+                    Specialty
+                  </span>
+
+                  <strong>{hospital.specialty}</strong>
+                </div>
+
+                <div>
+                  <span className={styles.mobileComparisonLabel}>
+                    Distance
+                  </span>
+
+                  <strong>{hospital.distance}</strong>
+                </div>
+
+                <div>
+                  <span className={styles.mobileComparisonLabel}>Cost</span>
+
+                  <strong>{hospital.cost}</strong>
+                </div>
+
+                <div>
+                  <span className={styles.mobileComparisonLabel}>
+                    Coverage
+                  </span>
+
+                  <strong>{hospital.coverage}</strong>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.comparisonAction}
+                  onClick={() => console.log(`View ${hospital.name}`)}
+                >
+                  <ArrowUpRight size={17} />
+                </button>
+              </article>
+            ))}
+            <article className={styles.comparisonRow}>
+              <div className={styles.comparisonHospital}>
+                <div className={styles.hospitalLogo}><Hospital size={19} /></div>
+                <div><strong>Start a nearby hospital search</strong><span><MapPin size={13} />No hospital information is pre-filled</span></div>
+              </div>
+              <div><strong>Live data</strong></div>
+              <div><strong>Live distance</strong></div>
+              <div><strong>Data not available</strong></div>
+              <div><strong>Verify after search</strong></div>
+              <button type="button" className={styles.comparisonAction} onClick={() => openFinder()}><ArrowUpRight size={17} /></button>
+            </article>
+          </div>
+
+          <div className={styles.comparisonFooter}>
+            <span>
+              <CheckCircle2 size={16} />
+              Compare based on your own requirements
+            </span>
+
+            <button
+              type="button"
+              onClick={() => openFinder()}
+            >
+              Start a personalized search
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </section>
+
+        {/* ===================================================
+            05 — HOW IT WORKS
+        =================================================== */}
+
+        <section
+          className={styles.howSection}
+          id="how-it-works"
+          aria-labelledby="how-title"
+        >
           <div className={styles.sectionHeaderCentered}>
             <span className={styles.sectionEyebrow}>HOW VITAL WORKS</span>
 
-            <h2>
+            <h2 id="how-title">
               From confusion to
               <span> a clear next step.</span>
             </h2>
@@ -605,11 +633,15 @@ function Home() {
           </div>
         </section>
 
-        {/* =====================================================
-            AI ASSISTANT
-        ===================================================== */}
+        {/* ===================================================
+            06 — VIRTUAL ASSISTANT
+        =================================================== */}
 
-        <section className={styles.assistantSection} id="assistant">
+        <section
+          className={styles.assistantSection}
+          id="assistant"
+          aria-labelledby="assistant-title"
+        >
           <div className={styles.assistantGlow} />
 
           <div className={styles.assistantContent}>
@@ -618,15 +650,15 @@ function Home() {
               VITAL ASSISTANT
             </div>
 
-            <h2>
-              Not sure where
-              <span> to start?</span>
+            <h2 id="assistant-title">
+              Healthcare guidance,
+              <span> in plain language.</span>
             </h2>
 
             <p>
-              Talk to Vital. Describe your healthcare requirement in your
-              own words and let the assistant guide you through the next
-              steps.
+              Describe your healthcare requirement in your own words. Vital
+              can help organize the information, identify relevant options,
+              and guide you through the next step.
             </p>
 
             <div className={styles.assistantCapabilities}>
@@ -637,12 +669,12 @@ function Home() {
 
               <span>
                 <CheckCircle2 size={15} />
-                Find relevant specialties
+                Identify relevant specialties
               </span>
 
               <span>
                 <CheckCircle2 size={15} />
-                Compare hospitals
+                Find suitable hospitals
               </span>
 
               <span>
@@ -669,6 +701,7 @@ function Home() {
 
               <div>
                 <strong>Vital Assistant</strong>
+
                 <span>
                   <i />
                   Ready to help
@@ -686,7 +719,7 @@ function Home() {
                   <Sparkles size={14} />
                 </div>
 
-                I can help you find suitable options. I’ll consider your
+                I can help you explore suitable options. I’ll consider your
                 location, treatment needs, budget, insurance, and other
                 preferences.
               </div>
@@ -704,22 +737,26 @@ function Home() {
           </div>
         </section>
 
-        {/* =====================================================
-            FEATURES
-        ===================================================== */}
+        {/* ===================================================
+            07 — FEATURES
+        =================================================== */}
 
-        <section className={styles.featuresSection} id="about">
+        <section
+          className={styles.featuresSection}
+          id="features"
+          aria-labelledby="features-title"
+        >
           <div className={styles.sectionHeaderCentered}>
-            <span className={styles.sectionEyebrow}>BUILT AROUND YOU</span>
+            <span className={styles.sectionEyebrow}>THE VITAL EXPERIENCE</span>
 
-            <h2>
-              More than a hospital
-              <span> search.</span>
+            <h2 id="features-title">
+              Built around
+              <span> your healthcare needs.</span>
             </h2>
 
             <p>
               A healthcare discovery experience designed to reduce the
-              complexity of finding and choosing care.
+              complexity of finding, understanding, and comparing care.
             </p>
           </div>
 
@@ -746,45 +783,66 @@ function Home() {
           </div>
         </section>
 
-        {/* =====================================================
-            EMERGENCY CTA
-        ===================================================== */}
+        {/* ===================================================
+            08 — TEAM
+        =================================================== */}
 
-        <section className={styles.emergencySection}>
-          <div className={styles.emergencyIcon}>
-            <Siren size={25} />
+        <section
+          className={styles.teamSection}
+          id="team"
+          aria-labelledby="team-title"
+        >
+          <div className={styles.sectionHeader}>
+            <div>
+              <span className={styles.sectionEyebrow}>THE TEAM</span>
+
+              <h2 id="team-title">
+                The people behind
+                <span> Vital.</span>
+              </h2>
+            </div>
+
+            <div className={styles.teamHeaderSide}>
+              <p>
+                Four people, one idea, and a lot of building — focused on
+                making healthcare discovery simpler.
+              </p>
+
+              <button
+                type="button"
+                className={styles.outlineButton}
+                onClick={() => console.log("Open team page")}
+              >
+                Meet the team
+                <ArrowUpRight size={17} />
+              </button>
+            </div>
           </div>
 
-          <div className={styles.emergencyContent}>
-            <span>NEED URGENT HELP?</span>
+          <div className={styles.teamGrid}>
+            {TEAM.map((member) => (
+              <article className={styles.teamCard} key={member.name + member.role}>
+                <div className={styles.teamAvatar}>{member.initial}</div>
 
-            <h2>
-              Get emergency information
-              <br />
-              when every second matters.
-            </h2>
+                <div className={styles.teamInfo}>
+                  <h3>{member.name}</h3>
+                  <span>{member.role}</span>
+                </div>
 
-            <p>
-              Quickly access emergency guidance, nearby emergency facilities,
-              ambulance information, and location-based options.
-            </p>
+                <ArrowUpRight
+                  size={17}
+                  className={styles.teamArrow}
+                />
+              </article>
+            ))}
           </div>
-
-          <button
-            type="button"
-            className={styles.emergencyButton}
-            onClick={() => console.log("Emergency help")}
-          >
-            Emergency help
-            <ArrowRight size={18} />
-          </button>
         </section>
 
-        {/* =====================================================
-            FINAL CTA
-        ===================================================== */}
+        {/* ===================================================
+            09 — FINAL CTA
+        =================================================== */}
 
-        <section className={styles.finalCta}>
+        <section className={styles.finalCta} id="start">
           <div className={styles.finalCtaGrid} />
 
           <div className={styles.finalCtaContent}>
@@ -824,30 +882,30 @@ function Home() {
       <Footer
         logo="Vital"
         description="A healthcare discovery platform designed to help people find, understand, compare, and access suitable healthcare options."
-        email="hello@vitalhealthcare.dev"
+        email="hello@curepulse.health"
         columns={[
           {
             title: "Explore",
             links: [
               { label: "Home", href: "/" },
               { label: "Find Hospitals", href: "#find" },
+              { label: "Compare & Research", href: "/compare" },
               { label: "How It Works", href: "#how-it-works" },
-              { label: "Assistant", href: "#assistant" },
             ],
           },
           {
             title: "Healthcare",
             links: [
               { label: "Hospital Search", href: "#find" },
-              { label: "Compare Hospitals", href: "#find" },
+              { label: "Virtual Assistant", href: "#assistant" },
               { label: "Emergency Help", href: "#emergency" },
-              { label: "Report Understanding", href: "#assistant" },
+              { label: "Features", href: "#features" },
             ],
           },
           {
             title: "Vital",
             links: [
-              { label: "About", href: "#about" },
+              { label: "Team", href: "#team" },
               { label: "Contact", href: "#contact" },
               { label: "Privacy", href: "#" },
               { label: "Terms", href: "#" },
@@ -859,11 +917,17 @@ function Home() {
   );
 }
 
+/* =========================================================
+   REQUIREMENT
+========================================================= */
+
 function Requirement({ icon, title, value }) {
+  const Icon = icon;
+
   return (
     <div className={styles.requirement}>
       <div className={styles.requirementIcon}>
-        {createElement(icon, { size: 18 })}
+        <Icon size={18} />
       </div>
 
       <div>
@@ -871,7 +935,10 @@ function Requirement({ icon, title, value }) {
         <strong>{value}</strong>
       </div>
 
-      <CheckCircle2 size={17} className={styles.requirementCheck} />
+      <CheckCircle2
+        size={16}
+        className={styles.requirementCheck}
+      />
     </div>
   );
 }

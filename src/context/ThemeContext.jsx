@@ -15,8 +15,10 @@ const ThemeContext = createContext(null);
    DEFAULTS
 ================================= */
 
-const DEFAULT_THEME = "cyber";
+const DEFAULT_THEME = "vital";
 const DEFAULT_MODE = "dark";
+const THEME_STORAGE_KEY = "curepulse-theme";
+const MODE_STORAGE_KEY = "curepulse-mode";
 
 /* =================================
    DEVELOPMENT THEME
@@ -34,7 +36,7 @@ const DEV_MODE = "light";
   true  → always use DEV_THEME / DEV_MODE
   false → use saved/profile preferences
 */
-const USE_DEV_THEME = true;
+const USE_DEV_THEME = false;
 
 /* =================================
    VALID VALUES
@@ -77,7 +79,7 @@ function getInitialTheme() {
 
   /* Saved browser preference */
 
-  const savedTheme = localStorage.getItem("hackathon-theme");
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
 
   return VALID_THEMES.includes(savedTheme) ? savedTheme : DEFAULT_THEME;
 }
@@ -101,7 +103,7 @@ function getInitialMode() {
 
   /* Saved browser preference */
 
-  const savedMode = localStorage.getItem("hackathon-mode");
+  const savedMode = localStorage.getItem(MODE_STORAGE_KEY);
 
   return VALID_MODES.includes(savedMode) ? savedMode : DEFAULT_MODE;
 }
@@ -134,9 +136,9 @@ function ThemeProvider({ children }) {
     */
 
     if (!USE_DEV_THEME) {
-      localStorage.setItem("hackathon-theme", theme);
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
 
-      localStorage.setItem("hackathon-mode", mode);
+      localStorage.setItem(MODE_STORAGE_KEY, mode);
     }
   }, [theme, mode]);
 

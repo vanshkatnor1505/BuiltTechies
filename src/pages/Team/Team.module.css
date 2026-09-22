@@ -1,28 +1,65 @@
+/* =========================================================
+   TEAM PAGE — PREMIUM HEALTHCARE UI
+========================================================= */
+
 .page {
   min-height: 100vh;
 
   background:
+    radial-gradient(
+      circle at 50% -10%,
+      color-mix(in srgb, var(--accent-primary) 8%, transparent),
+      transparent 38%
+    ),
     var(--bg-primary);
 
-  color:
-    var(--text-primary);
-}
-
-
-/* =================================
-   HERO
-================================= */
-
-.heroSection {
-  position: relative;
+  color: var(--text-primary);
 
   overflow: hidden;
 }
 
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.heroSection {
+  position: relative;
+  overflow: hidden;
+}
+
+.heroSection::before {
+  content: "";
+
+  position: absolute;
+  top: -220px;
+  left: 50%;
+
+  width: 700px;
+  height: 500px;
+
+  transform: translateX(-50%);
+
+  background:
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent-primary) 12%, transparent),
+      transparent 68%
+    );
+
+  pointer-events: none;
+}
+
 .hero {
+  position: relative;
+
   display: flex;
   flex-direction: column;
   align-items: center;
+
+  max-width: 900px;
+
+  margin-inline: auto;
 
   text-align: center;
 }
@@ -31,21 +68,26 @@
   display: inline-flex;
   align-items: center;
 
-  gap: 6px;
+  gap: 8px;
 
   margin-bottom: var(--space-10);
 
-  color: var(--text-secondary);
+  color: var(--text-muted);
 
   font-size: 12px;
   font-weight: 600;
 
+  text-decoration: none;
+
   transition:
-    color var(--transition-fast);
+    color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .backLink:hover {
   color: var(--accent-primary);
+
+  transform: translateX(-3px);
 }
 
 .heroMeta {
@@ -61,12 +103,38 @@
   font-size: 12px;
 }
 
+.heroMeta::before {
+  content: "";
 
-/* =================================
-   MEMBERS
-================================= */
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background: var(--accent-primary);
+
+  box-shadow:
+    0 0 0 4px
+      color-mix(
+        in srgb,
+        var(--accent-primary) 10%,
+        transparent
+      ),
+    0 0 18px
+      color-mix(
+        in srgb,
+        var(--accent-primary) 30%,
+        transparent
+      );
+}
+
+
+/* =========================================================
+   MEMBERS SECTION
+========================================================= */
 
 .membersSection {
+  position: relative;
   overflow: hidden;
 }
 
@@ -74,60 +142,135 @@
   display: flex;
   flex-direction: column;
 
-  gap: var(--space-16);
+  gap: var(--space-10);
 }
 
 
-/* =================================
-   MEMBER
-================================= */
+/* =========================================================
+   MEMBER CARD
+========================================================= */
 
 .member {
+  position: relative;
+
   display: grid;
 
   grid-template-columns:
-    180px minmax(0, 1fr);
+    190px minmax(0, 1fr);
 
-  gap: var(--space-10);
+  gap: var(--space-12);
 
-  padding-bottom: var(--space-16);
+  padding: 36px;
 
-  border-bottom:
-    1px solid var(--border-subtle);
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--border-default) 75%,
+      transparent
+    );
+
+  border-radius: 24px;
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--surface-1) 96%,
+        var(--accent-primary)
+      ),
+      var(--surface-1)
+    );
+
+  box-shadow:
+    0 20px 70px rgba(0, 0, 0, 0.08);
+
+  transition:
+    transform 300ms ease,
+    border-color 300ms ease,
+    box-shadow 300ms ease;
+}
+
+.member::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(
+        in srgb,
+        var(--accent-primary) 5%,
+        transparent
+      ),
+      transparent 35%
+    );
+
+  pointer-events: none;
+}
+
+.member:hover {
+  transform: translateY(-4px);
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--accent-primary) 35%,
+      var(--border-default)
+    );
+
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.12),
+    0 0 50px
+      color-mix(
+        in srgb,
+        var(--accent-primary) 6%,
+        transparent
+      );
 }
 
 .member:last-child {
-  padding-bottom: 0;
-
-  border-bottom: 0;
+  margin-bottom: 0;
 }
 
 
-/* =================================
-   AVATAR COLUMN
-================================= */
+/* =========================================================
+   AVATAR
+========================================================= */
 
 .avatarColumn {
+  position: relative;
+
   display: flex;
   flex-direction: column;
 
   align-items: center;
 
-  gap: var(--space-4);
+  gap: 14px;
+
+  z-index: 1;
 }
 
 .avatar {
-  width: 140px;
-  height: 140px;
+  position: relative;
+
+  width: 150px;
+  height: 150px;
 
   display: grid;
   place-items: center;
 
-  border-radius: var(--radius-full);
+  border-radius: 50%;
 
   background:
     linear-gradient(
-      135deg,
+      145deg,
       var(--accent-primary),
       var(--accent-secondary)
     );
@@ -135,16 +278,68 @@
   color: var(--bg-primary);
 
   box-shadow:
-    0 20px 60px var(--glow-primary);
+    0 18px 50px
+      color-mix(
+        in srgb,
+        var(--accent-primary) 18%,
+        transparent
+      );
+
+  isolation: isolate;
+}
+
+.avatar::before {
+  content: "";
+
+  position: absolute;
+
+  inset: -7px;
+
+  border-radius: inherit;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--accent-primary) 25%,
+      transparent
+    );
+
+  opacity: 0.8;
+
+  z-index: -1;
+}
+
+.avatar::after {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.28),
+      transparent 45%
+    );
+
+  pointer-events: none;
 }
 
 .avatar span {
+  position: relative;
+
   font-family: var(--font-display);
 
-  font-size: 52px;
+  font-size: 54px;
   font-weight: 800;
 
   line-height: 1;
+
+  letter-spacing: -0.06em;
 }
 
 .memberNumber {
@@ -153,27 +348,40 @@
   font-family: var(--font-mono);
 
   font-size: 9px;
-  letter-spacing: 0.15em;
+  font-weight: 600;
+
+  letter-spacing: 0.16em;
+
+  text-transform: uppercase;
 }
 
 
-/* =================================
-   CONTENT
-================================= */
+/* =========================================================
+   MEMBER CONTENT
+========================================================= */
 
 .memberContent {
+  position: relative;
+
   min-width: 0;
+
+  z-index: 1;
 }
 
 .memberHeader {
   display: flex;
-  justify-content: space-between;
 
-  gap: var(--space-6);
+  justify-content: space-between;
+  align-items: flex-start;
+
+  gap: var(--space-8);
 }
 
 .eyebrow {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+
+  gap: 7px;
 
   color: var(--accent-primary);
 
@@ -182,52 +390,63 @@
   font-size: 10px;
   font-weight: 700;
 
-  letter-spacing: 0.14em;
+  letter-spacing: 0.15em;
 
   text-transform: uppercase;
 }
 
+.eyebrow::before {
+  content: "";
+
+  width: 18px;
+  height: 1px;
+
+  background: var(--accent-primary);
+}
+
 .memberHeader h2 {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
 
   font-size:
-    clamp(32px, 5vw, 58px);
+    clamp(34px, 5vw, 60px);
+
+  font-weight: 800;
 
   line-height: 0.95;
 
-  letter-spacing:
-    -0.05em;
+  letter-spacing: -0.055em;
 }
 
 .role {
-  margin: 10px 0 0;
+  margin: 12px 0 0;
 
   color: var(--text-secondary);
 
   font-family: var(--font-mono);
 
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
 
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 
   text-transform: uppercase;
 }
 
 
-/* =================================
+/* =========================================================
    SOCIAL LINKS
-================================= */
+========================================================= */
 
 .memberLinks {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
 
-  gap: 7px;
+  gap: 8px;
 }
 
 .memberLinks a {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
 
   display: grid;
   place-items: center;
@@ -235,35 +454,57 @@
   border:
     1px solid var(--border-default);
 
-  border-radius:
-    var(--radius-sm);
+  border-radius: 11px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--surface-2) 55%,
+      transparent
+    );
 
   color: var(--text-secondary);
 
   transition:
-    color var(--transition-fast),
-    border-color var(--transition-fast),
-    background-color var(--transition-fast),
-    transform var(--transition-fast);
+    color 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease;
 }
 
 .memberLinks a:hover {
   color: var(--accent-primary);
 
   background:
-    var(--surface-2);
+    color-mix(
+      in srgb,
+      var(--accent-primary) 8%,
+      var(--surface-2)
+    );
 
   border-color:
-    var(--accent-primary);
+    color-mix(
+      in srgb,
+      var(--accent-primary) 45%,
+      var(--border-default)
+    );
 
-  transform:
-    translateY(-2px);
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 8px 24px
+      color-mix(
+        in srgb,
+        var(--accent-primary) 12%,
+        transparent
+      );
 }
 
 
-/* =================================
+/* =========================================================
    BIO
-================================= */
+========================================================= */
 
 .bio {
   max-width: 760px;
@@ -275,37 +516,46 @@
 
   color: var(--text-secondary);
 
-  font-size: 16px;
-  line-height: 1.8;
+  font-size: 15px;
+
+  line-height: 1.85;
 }
 
 
-/* =================================
+/* =========================================================
    SKILLS
-================================= */
+========================================================= */
 
 .skills {
   display: flex;
   flex-wrap: wrap;
 
-  gap: 7px;
+  gap: 8px;
 
-  margin-top: var(--space-6);
+  margin-top: var(--space-7);
 }
 
 
-/* =================================
+/* =========================================================
    CONTRIBUTION
-================================= */
+========================================================= */
 
 .contribution {
   max-width: 760px;
 
   margin-top: var(--space-8);
+
+  padding-top: var(--space-6);
+
+  border-top:
+    1px solid var(--border-subtle);
 }
 
 .contribution span {
-  display: block;
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
 
   color: var(--accent-primary);
 
@@ -314,7 +564,28 @@
   font-size: 9px;
   font-weight: 700;
 
-  letter-spacing: 0.14em;
+  letter-spacing: 0.15em;
+
+  text-transform: uppercase;
+}
+
+.contribution span::before {
+  content: "";
+
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: var(--accent-primary);
+
+  box-shadow:
+    0 0 10px
+      color-mix(
+        in srgb,
+        var(--accent-primary) 40%,
+        transparent
+      );
 }
 
 .contribution p {
@@ -325,20 +596,54 @@
   color: var(--text-secondary);
 
   font-size: 13px;
-  line-height: 1.7;
+
+  line-height: 1.75;
 }
 
 
-/* =================================
+/* =========================================================
    BOTTOM CTA
-================================= */
+========================================================= */
 
 .bottomSection {
+  position: relative;
+
   border-top:
     1px solid var(--border-subtle);
+
+  overflow: hidden;
+}
+
+.bottomSection::before {
+  content: "";
+
+  position: absolute;
+
+  top: -180px;
+  left: 50%;
+
+  width: 500px;
+  height: 300px;
+
+  transform: translateX(-50%);
+
+  background:
+    radial-gradient(
+      circle,
+      color-mix(
+        in srgb,
+        var(--accent-primary) 9%,
+        transparent
+      ),
+      transparent 70%
+    );
+
+  pointer-events: none;
 }
 
 .bottomCta {
+  position: relative;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -351,93 +656,210 @@
 }
 
 
-/* =================================
-   TABLET
-================================= */
+/* =========================================================
+   LARGE TABLET
+========================================================= */
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .member {
     grid-template-columns:
-      120px minmax(0, 1fr);
+      140px minmax(0, 1fr);
 
-    gap: var(--space-6);
+    gap: var(--space-8);
+
+    padding: 28px;
   }
 
   .avatar {
-    width: 100px;
-    height: 100px;
+    width: 115px;
+    height: 115px;
   }
 
   .avatar span {
-    font-size: 38px;
+    font-size: 42px;
+  }
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 760px) {
+  .member {
+    grid-template-columns:
+      105px minmax(0, 1fr);
+
+    gap: var(--space-6);
+
+    padding: 24px;
+  }
+
+  .avatar {
+    width: 90px;
+    height: 90px;
+  }
+
+  .avatar span {
+    font-size: 34px;
   }
 
   .memberHeader {
     flex-direction: column;
+
+    gap: var(--space-5);
   }
 
   .memberLinks {
     align-items: center;
   }
+
+  .memberHeader h2 {
+    font-size: 42px;
+  }
 }
 
 
-/* =================================
+/* =========================================================
    MOBILE
-================================= */
+========================================================= */
 
 @media (max-width: 640px) {
   .heroMeta {
     flex-direction: column;
+
+    gap: 8px;
+  }
+
+  .heroMeta::before {
+    margin-bottom: 2px;
+  }
+
+  .members {
+    gap: var(--space-6);
   }
 
   .member {
     display: flex;
     flex-direction: column;
 
-    gap: var(--space-6);
+    gap: var(--space-7);
 
-    padding-bottom:
-      var(--space-12);
+    padding: 22px;
+
+    border-radius: 20px;
   }
 
   .avatarColumn {
-    align-items: flex-start;
+    flex-direction: row;
+
+    align-items: center;
   }
 
   .avatar {
-    width: 84px;
-    height: 84px;
+    width: 76px;
+    height: 76px;
   }
 
   .avatar span {
-    font-size: 32px;
+    font-size: 29px;
+  }
+
+  .memberNumber {
+    align-self: center;
   }
 
   .memberHeader h2 {
     font-size: 38px;
+
+    line-height: 0.98;
+  }
+
+  .role {
+    font-size: 10px;
+
+    line-height: 1.5;
   }
 
   .bio {
     margin-top: var(--space-6);
 
     font-size: 14px;
-    line-height: 1.7;
+
+    line-height: 1.75;
+  }
+
+  .skills {
+    gap: 6px;
+
+    margin-top: var(--space-6);
   }
 
   .contribution {
     margin-top: var(--space-6);
+
+    padding-top: var(--space-5);
   }
 }
 
 
-/* =================================
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 420px) {
+  .member {
+    padding: 18px;
+
+    border-radius: 18px;
+  }
+
+  .avatar {
+    width: 68px;
+    height: 68px;
+  }
+
+  .avatar span {
+    font-size: 26px;
+  }
+
+  .memberHeader h2 {
+    font-size: 34px;
+  }
+
+  .memberLinks a {
+    width: 35px;
+    height: 35px;
+
+    border-radius: 10px;
+  }
+
+  .bio {
+    font-size: 13px;
+  }
+}
+
+
+/* =========================================================
    REDUCED MOTION
-================================= */
+========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
   .backLink,
+  .member,
   .memberLinks a {
     transition: none;
+  }
+
+  .member:hover {
+    transform: none;
+  }
+
+  .backLink:hover {
+    transform: none;
+  }
+
+  .memberLinks a:hover {
+    transform: none;
   }
 }

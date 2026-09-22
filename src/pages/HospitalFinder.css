@@ -41,7 +41,7 @@
 }
 
 .hospital-finder-shell {
-  width: min(1200px, calc(100% - 32px));
+  width: min(1280px, calc(100% - 48px));
   margin: 0 auto;
   padding: 32px 0 60px;
 }
@@ -407,6 +407,38 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+  min-height: 0;
+}
+
+.results-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 2px 0;
+  color: var(--hf-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.results-pagination button {
+  border: 1px solid var(--hf-border);
+  border-radius: 9px;
+  padding: 9px 13px;
+  background: var(--hf-surface);
+  color: var(--hf-text);
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.results-pagination button:hover:not(:disabled) {
+  border-color: var(--hf-primary);
+  color: var(--hf-primary);
+}
+
+.results-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .facility-card {
@@ -844,6 +876,17 @@
   font-weight: 750;
   cursor: pointer;
 }
+.comparison-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.comparison-page-link {
+  color: var(--hf-primary);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
 
 .comparison-grid {
   display: grid;
@@ -1019,4 +1062,56 @@
   .map-legend {
     max-width: calc(100% - 30px);
   }
+}
+
+.comparison-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--hf-border);
+  border-radius: 13px;
+}
+
+.comparison-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--hf-border);
+  vertical-align: top;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.comparison-table thead th {
+  background: var(--hf-surface-2);
+  color: var(--hf-text);
+  font-size: 13px;
+}
+
+.comparison-table tbody th {
+  width: 180px;
+  color: var(--hf-text-2);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--hf-surface-2) 55%, transparent);
+}
+
+.comparison-table td button {
+  border: 1px solid var(--hf-border);
+  background: var(--hf-surface);
+  color: var(--hf-text);
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.comparison-note {
+  margin: 12px 0 0;
+  color: var(--hf-muted);
+  font-size: 12px;
+  line-height: 1.5;
 }

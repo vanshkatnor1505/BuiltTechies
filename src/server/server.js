@@ -3,8 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import multer from "multer";
 import Groq from "groq-sdk";
-import pdfParse from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 
+dotenv.config({ path: ".env.local" });
 dotenv.config();
 
 const app = express();
@@ -102,6 +103,9 @@ Instead use language such as:
 
 Selected language:
 {{LANGUAGE}}
+
+Always reply in the selected language. If the user writes in another language,
+follow that language unless they explicitly ask for a translation.
 `;
 
 /* =========================================================
@@ -113,6 +117,10 @@ const LANGUAGE_NAMES = {
   hi: "Hindi",
   pa: "Punjabi",
 };
+
+// These Groq-hosted models are available on the Groq free tier.
+const FREE_TIER_CHAT_MODEL = "openai/gpt-oss-20b";
+const FREE_TIER_STT_MODEL = "whisper-large-v3-turbo";
 
 /* =========================================================
    HEALTH CHECK
@@ -174,9 +182,7 @@ app.post("/api/chat", async (req, res) => {
 
     const completion =
       await groq.chat.completions.create({
-        model:
-          process.env.GROQ_CHAT_MODEL ||
-          "llama-3.3-70b-versatile",
+        model: FREE_TIER_CHAT_MODEL,
 
         messages: conversation,
 
@@ -244,9 +250,7 @@ app.post(
         await groq.audio.transcriptions.create({
           file: audioFile,
 
-          model:
-            process.env.GROQ_STT_MODEL ||
-            "whisper-large-v3-turbo",
+          model: FREE_TIER_STT_MODEL,
 
           language:
             language === "en"
@@ -320,11 +324,11 @@ app.post(
          Extract PDF text
       ------------------------------------------------ */
 
-      const parsedPdf =
-        await pdfParse(req.file.buffer);
+      const pdfParser = new PDFParse({ data: req.file.buffer });
+      const parsedPdf = await pdfParser.getText();
+      await pdfParser.destroy();
 
-      const extractedText =
-        parsedPdf.text?.trim();
+      const extractedText = parsedPdf.text?.trim();
 
       if (!extractedText) {
         return res.status(422).json({
@@ -400,9 +404,7 @@ ${limitedText}
 
       const completion =
         await groq.chat.completions.create({
-          model:
-            process.env.GROQ_CHAT_MODEL ||
-            "llama-3.3-70b-versatile",
+          model: FREE_TIER_CHAT_MODEL,
 
           messages: [
             {
@@ -455,6 +457,17 @@ ${limitedText}
 ========================================================= */
 
 app.use((error, req, res, next) => {
+  if (error instanceof SyntaxError && error.status === 400 && "body" in error) {
+    return res.status(400).json({
+      success: false,
+      message: "The request body was not valid JSON.",
+    });
+  }
+
+  if (!error) {
+    return next();
+  }
+
   if (
     error instanceof multer.MulterError &&
     error.code === "LIMIT_FILE_SIZE"
@@ -483,6 +496,62 @@ app.use((error, req, res, next) => {
     success: false,
     message: "Something went wrong.",
   });
+});
+
+/* =========================================================
+   HOSPITAL RESEARCH
+   Uses Tavily when configured. Results remain source-backed;
+   missing clinical metrics are never inferred by the AI.
+========================================================= */
+
+app.post("/api/hospital-research", async (req, res) => {
+  try {
+    const { name, address = "", website = "" } = req.body;
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ success: false, message: "Hospital name is required." });
+    }
+
+    if (!process.env.TAVILY_API_KEY) {
+      return res.json({
+        success: true,
+        searched: false,
+        message: "Internet verification is not configured. Add TAVILY_API_KEY to enable source-backed web research.",
+        metrics: {},
+        sources: website ? [{ title: "Hospital website listed in map data", url: website }] : [],
+      });
+    }
+
+    const query = `${name} ${address} hospital patients treated success rate treatment cost insurance`;
+    const searchResponse = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: process.env.TAVILY_API_KEY, query, search_depth: "advanced", max_results: 8, include_answer: false }),
+    });
+    if (!searchResponse.ok) throw new Error("The web research provider could not be reached.");
+    const searchData = await searchResponse.json();
+    const sources = (searchData.results || []).map((result) => ({ title: result.title, url: result.url, content: result.content })).filter((result) => result.url);
+
+    const evidence = sources.map((source, index) => `[${index + 1}] ${source.title}\n${source.content}`).join("\n\n").slice(0, 24000);
+    let extracted = { metrics: {}, summary: "No verified hospital-specific metrics were found." };
+    if (evidence) {
+      try {
+        const completion = await groq.chat.completions.create({
+          model: FREE_TIER_CHAT_MODEL,
+          temperature: 0,
+          max_completion_tokens: 900,
+          messages: [{ role: "system", content: "Extract only explicit hospital facts from supplied web-search excerpts. Never estimate, generalize, or invent clinical statistics. Return valid JSON only: {metrics:{patientsTreated:string|null,successRate:string|null,treatmentCost:string|null,insurance:string|null}, summary:string}. Each metric must be null unless an excerpt explicitly states it for this exact hospital. Include source numbers such as [2] in every non-null value and summary claim." }, { role: "user", content: `Hospital: ${name}\nLocation: ${address}\n\nSearch evidence:\n${evidence}` }],
+        });
+        extracted = JSON.parse(completion.choices?.[0]?.message?.content || "{}");
+      } catch (extractionError) {
+        console.error("HOSPITAL RESEARCH EXTRACTION ERROR:", extractionError);
+        extracted.summary = "Search sources were found, but verified clinical metrics could not be extracted.";
+      }
+    }
+    res.json({ success: true, searched: true, metrics: extracted.metrics || {}, summary: extracted.summary || "No verified hospital-specific metrics were found.", sources: sources.map(({ title, url }) => ({ title, url })) });
+  } catch (error) {
+    console.error("HOSPITAL RESEARCH ERROR:", error);
+    res.status(502).json({ success: false, message: "Unable to verify hospital information right now." });
+  }
 });
 
 /* =========================================================

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   MapContainer,
   TileLayer,
@@ -13,8 +14,23 @@ import "leaflet/dist/leaflet.css";
 import "./HospitalFinder.css";
 import SiteNavbar from "../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../components/composed/Footer/Footer";
+import { useHospitalSearch } from "../context/HospitalSearchContext";
 
 const DEFAULT_CENTER = [30.7333, 76.7794];
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+async function readApiResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const body = await response.text();
+    throw new Error(
+      body.includes("<!DOCTYPE")
+        ? "The research API was not reached. Restart the Vite app and backend, then try again."
+        : `Research API returned an unexpected response (${response.status}).`,
+    );
+  }
+  return response.json();
+}
 
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
@@ -488,7 +504,7 @@ function MapController({ center, selectedFacility, route }) {
 
   useEffect(() => {
     if (!selectedFacility && !route) {
-      map.setView(center, 13);
+      map.flyTo(center, 13, { duration: 0.6 });
     }
   }, [center, selectedFacility, route, map]);
 
@@ -496,12 +512,26 @@ function MapController({ center, selectedFacility, route }) {
 }
 
 export default function HospitalFinder() {
-  const [searchQuery, setSearchQuery] = useState("Kidney treatment");
+  const [searchParams] = useSearchParams();
+  const { searchState, setSearchState } = useHospitalSearch();
+  const locationFromRequest = useMemo(() => {
+    const lat = Number(searchParams.get("lat"));
+    const lon = Number(searchParams.get("lon"));
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    return {
+      lat,
+      lon,
+      accuracy: Number(searchParams.get("accuracy")) || 0,
+    };
+  }, [searchParams]);
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("query") || searchState.query || "",
+  );
 
-  const [userLocation, setUserLocation] = useState(null);
+  const [userLocation, setUserLocation] = useState(locationFromRequest);
   const [locationStatus, setLocationStatus] = useState("idle");
 
-  const [facilities, setFacilities] = useState([]);
+  const [facilities, setFacilities] = useState(searchState.facilities || []);
   const [selectedFacility, setSelectedFacility] = useState(null);
 
   const [radius, setRadius] = useState(5);
@@ -519,9 +549,14 @@ export default function HospitalFinder() {
   const [route, setRoute] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
 
-  const [compareIds, setCompareIds] = useState([]);
-
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [researchLoadingId, setResearchLoadingId] = useState("");
+  const autoSearchRequested = useRef(false);
+  const [resultsPage, setResultsPage] = useState(0);
+  const RESULTS_PER_PAGE = 3;
+
+  const compareIds = useMemo(() => searchState.compareIds || [], [searchState.compareIds]);
+  const researchById = useMemo(() => searchState.researchById || {}, [searchState.researchById]);
 
   const getLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -535,11 +570,21 @@ export default function HospitalFinder() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setUserLocation({
+        const nextLocation = {
           lat: position.coords.latitude,
           lon: position.coords.longitude,
           accuracy: position.coords.accuracy,
-        });
+        };
+        setUserLocation(nextLocation);
+        autoSearchRequested.current = false;
+        setFacilities([]);
+        setSelectedFacility(null);
+        setSearchState((current) => ({
+          ...current,
+          facilities: [],
+          compareIds: [],
+          researchById: {},
+        }));
 
         setLocationStatus("success");
         setError("");
@@ -561,11 +606,11 @@ export default function HospitalFinder() {
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 30000,
+        timeout: 20000,
+        maximumAge: 0,
       },
     );
-  }, []);
+  }, [setSearchState]);
 
   const fetchNearbyFacilities = useCallback(async () => {
     if (!userLocation) {
@@ -646,6 +691,12 @@ export default function HospitalFinder() {
       .filter((facility) => facility.distanceKm <= radius);
 
     setFacilities(transformed);
+    setSearchState((current) => ({
+      ...current,
+      query: searchQuery,
+      facilities: transformed,
+      updatedAt: new Date().toISOString(),
+    }));
     setLastUpdated(new Date());
 
     if (transformed.length === 0) {
@@ -655,13 +706,50 @@ export default function HospitalFinder() {
     }
 
     setLoading(false);
-  }, [radius, searchQuery, userLocation]);
+  }, [radius, searchQuery, setSearchState, userLocation]);
+
+  const researchFacility = async (facility) => {
+    if (researchById[facility.id] || researchLoadingId) return;
+    setResearchLoadingId(facility.id);
+    try {
+      const response = await fetch(`${API_URL}/api/hospital-research`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: facility.name, address: facility.address, website: facility.website }),
+      });
+      const data = await readApiResponse(response);
+      if (!response.ok) throw new Error(data.message || "Research failed");
+      setSearchState((current) => ({
+        ...current,
+        researchById: { ...(current.researchById || {}), [facility.id]: data },
+      }));
+    } catch (researchError) {
+      setSearchState((current) => ({
+        ...current,
+        researchById: {
+          ...(current.researchById || {}),
+          [facility.id]: { error: researchError.message },
+        },
+      }));
+    } finally {
+      setResearchLoadingId("");
+    }
+  };
 
   useEffect(() => {
-    if (!userLocation) {
+    if (!userLocation && !locationFromRequest) {
       getLocation();
     }
-  }, [getLocation, userLocation]);
+  }, [getLocation, locationFromRequest, userLocation]);
+
+  useEffect(() => {
+    if (!userLocation || autoSearchRequested.current) {
+      return;
+    }
+
+    autoSearchRequested.current = true;
+    fetchNearbyFacilities();
+  }, [facilities.length, fetchNearbyFacilities, userLocation]);
 
   const filteredFacilities = useMemo(() => {
     let result = [...facilities];
@@ -697,6 +785,25 @@ export default function HospitalFinder() {
     return result;
   }, [facilities, facilityType, emergencyOnly, sortBy]);
 
+  const totalResultsPages = Math.max(
+    1,
+    Math.ceil(filteredFacilities.length / RESULTS_PER_PAGE),
+  );
+  const visibleFacilities = filteredFacilities.slice(
+    resultsPage * RESULTS_PER_PAGE,
+    (resultsPage + 1) * RESULTS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setResultsPage(0);
+  }, [facilityType, emergencyOnly, sortBy, radius, searchQuery]);
+
+  useEffect(() => {
+    setResultsPage((currentPage) =>
+      Math.min(currentPage, totalResultsPages - 1),
+    );
+  }, [totalResultsPages]);
+
   const facilityTypes = useMemo(() => {
     return Array.from(new Set(facilities.map((facility) => facility.type)));
   }, [facilities]);
@@ -711,16 +818,17 @@ export default function HospitalFinder() {
   };
 
   const toggleCompare = (facility) => {
-    setCompareIds((current) => {
-      if (current.includes(facility.id)) {
-        return current.filter((id) => id !== facility.id);
+    setSearchState((current) => {
+      const currentIds = current.compareIds || [];
+      let nextIds;
+      if (currentIds.includes(facility.id)) {
+        nextIds = currentIds.filter((id) => id !== facility.id);
+      } else if (currentIds.length >= 3) {
+        nextIds = currentIds;
+      } else {
+        nextIds = [...currentIds, facility.id];
       }
-
-      if (current.length >= 3) {
-        return current;
-      }
-
-      return [...current, facility.id];
+      return { ...current, compareIds: nextIds };
     });
   };
 
@@ -787,9 +895,9 @@ export default function HospitalFinder() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  const compareFacilities = useMemo(() => {
-    return facilities.filter((facility) => compareIds.includes(facility.id));
-  }, [facilities, compareIds]);
+  const compareFacilities = useMemo(() => facilities
+    .filter((facility) => compareIds.includes(facility.id))
+    .map((facility) => ({ ...facility, research: researchById[facility.id] })), [facilities, compareIds, researchById]);
 
   const mapCenter = userLocation
     ? [userLocation.lat, userLocation.lon]
@@ -1045,7 +1153,7 @@ export default function HospitalFinder() {
                   </button>
                 </div>
               ) : (
-                filteredFacilities.map((facility) => {
+                visibleFacilities.map((facility) => {
                   const isSelected = selectedFacility?.id === facility.id;
 
                   const isCompared = compareIds.includes(facility.id);
@@ -1141,10 +1249,33 @@ export default function HospitalFinder() {
                         >
                           {isCompared ? "Compared" : "Compare"}
                         </button>
+
+                        <button onClick={() => researchFacility(facility)}>
+                          {researchLoadingId === facility.id ? "Researching..." : "Verify data"}
+                        </button>
                       </div>
                     </article>
                   );
                 })
+              )}
+              {!loading && filteredFacilities.length > RESULTS_PER_PAGE && (
+                <div className="results-pagination" aria-label="Hospital results pages">
+                  <button
+                    onClick={() => setResultsPage((page) => Math.max(0, page - 1))}
+                    disabled={resultsPage === 0}
+                  >
+                    Previous
+                  </button>
+                  <span>
+                    Page {resultsPage + 1} of {totalResultsPages}
+                  </span>
+                  <button
+                    onClick={() => setResultsPage((page) => Math.min(totalResultsPages - 1, page + 1))}
+                    disabled={resultsPage === totalResultsPages - 1}
+                  >
+                    Next
+                  </button>
+                </div>
               )}
             </section>
           )}
@@ -1173,7 +1304,7 @@ export default function HospitalFinder() {
                   <>
                     <Circle
                       center={[userLocation.lat, userLocation.lon]}
-                      radius={40}
+                      radius={Math.max(20, userLocation.accuracy || 40)}
                       pathOptions={{
                         className: "user-location-circle",
                       }}
@@ -1264,32 +1395,36 @@ export default function HospitalFinder() {
                 <h2>Compare selected facilities</h2>
               </div>
 
-              <button onClick={() => setCompareIds([])}>
-                Clear comparison
-              </button>
+              <div className="comparison-header-actions">
+                <Link className="comparison-page-link" to="/compare">Open full comparison</Link>
+                <button onClick={() => setSearchState((current) => ({ ...current, compareIds: [] }))}>
+                  Clear comparison
+                </button>
+              </div>
             </div>
 
-            <div className="comparison-grid">
-              {compareFacilities.map((facility) => (
-                <div className="comparison-card" key={facility.id}>
-                  <div className="comparison-score">{facility.match}%</div>
-
-                  <h3>{facility.name}</h3>
-
-                  <span>{facility.type}</span>
-
-                  <p>{facility.distanceKm.toFixed(1)} km away</p>
-
-                  <p>
-                    {facility.specialties || "Specialty data not available"}
-                  </p>
-
-                  <button onClick={() => selectFacility(facility)}>
-                    View on map
-                  </button>
-                </div>
-              ))}
+            <div className="comparison-table-wrap">
+              <table className="comparison-table">
+                <thead><tr><th>Requirement</th>{compareFacilities.map((facility) => <th key={facility.id}>{facility.name}</th>)}</tr></thead>
+                <tbody>
+                  {[
+                    ["Requirement match", (f) => `${f.match}%`],
+                    ["Distance", (f) => `${f.distanceKm.toFixed(1)} km`],
+                    ["Estimated drive", (f) => f.travelMinutes ? `~${f.travelMinutes} min` : "Data not available"],
+                    ["Specialty", (f) => f.specialties || "Data not available"],
+                    ["Emergency", (f) => f.emergency ? "Listed in map data" : "Not verified"],
+                    ["Phone", (f) => f.phone || "Data not available"],
+                    ["Patients / outcomes", (f) => f.research?.metrics?.patientsTreated || "Data not available"],
+                    ["Success / outcome rate", (f) => f.research?.metrics?.successRate || "Data not available"],
+                    ["Average treatment cost", (f) => f.research?.metrics?.treatmentCost || "Data not available"],
+                    ["Insurance / scheme", (f) => f.research?.metrics?.insurance || "Data not available"],
+                    ["Research sources", (f) => f.research?.sources?.length ? f.research.sources.map((source, index) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">Source {index + 1}</a>) : "Data not available"],
+                  ].map(([label, value]) => <tr key={label}><th>{label}</th>{compareFacilities.map((facility) => <td key={facility.id}>{value(facility)}</td>)}</tr>)}
+                  <tr><th>Actions</th>{compareFacilities.map((facility) => <td key={facility.id}><button onClick={() => researchFacility(facility)}>{facility.research ? "Data checked" : "Verify data"}</button> <button onClick={() => selectFacility(facility)}>Map</button></td>)}</tr>
+                </tbody>
+              </table>
             </div>
+            <p className="comparison-note">Only source-backed information is displayed. “Data not available” means it could not be verified from the available sources.</p>
           </section>
         )}
 
@@ -1317,9 +1452,9 @@ export default function HospitalFinder() {
       </div>
 
       <Footer
-        logo="HackX"
+        logo="CurePulse"
         description="Discover, compare, and access healthcare options that fit your needs."
-        copyright="HackX. All rights reserved."
+        copyright="CurePulse. All rights reserved."
       />
     </div>
   );

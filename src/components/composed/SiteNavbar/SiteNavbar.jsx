@@ -16,6 +16,10 @@ function SiteNavbar() {
           href: "/find-hospitals",
         },
         {
+          label: "Compare & Research",
+          href: "/compare",
+        },
+        {
           label: "Assistant",
           href: "/chatbot",
         },

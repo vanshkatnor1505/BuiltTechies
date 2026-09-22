@@ -230,9 +230,9 @@ function Team() {
       </main>
 
       <Footer
-        logo="HackX"
+        logo="CurePulse"
         description="A reusable foundation for building polished hackathon products faster."
-        email="hello@hackx.dev"
+        email="hello@curepulse.health"
         columns={[
           {
             title: "Explore",

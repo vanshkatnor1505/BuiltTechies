@@ -25,7 +25,7 @@ const defaultLinks = [
 ];
 
 function Navbar({
-  logo = "ProjectX",
+  logo = "CurePulse",
   links = defaultLinks,
   cta,
   variant = "default",

@@ -115,7 +115,7 @@ const defaultSocials = [
 ];
 
 function Footer({
-  logo = "ProjectX",
+  logo = "CurePulse",
   description = "Build something extraordinary with a reusable foundation designed for rapid product development.",
   columns = defaultColumns,
   socials = defaultSocials,

@@ -6,12 +6,15 @@ import "./styles/globals.css";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { HospitalSearchProvider } from "./context/HospitalSearchContext";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
       <ThemeProvider>
-        <App />
+        <HospitalSearchProvider>
+          <App />
+        </HospitalSearchProvider>
       </ThemeProvider>
     </AuthProvider>
   </StrictMode>

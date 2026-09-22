@@ -6,6 +6,7 @@
   position: relative;
   min-height: 100vh;
   overflow: clip;
+
   background: var(--bg-primary);
   color: var(--text-primary);
 }
@@ -13,148 +14,33 @@
 .ambient {
   position: absolute;
   inset: 0;
+
   pointer-events: none;
+
   background:
     radial-gradient(
-      circle at 15% 8%,
-      rgba(50, 200, 192, 0.1),
-      transparent 28%
+      circle at 12% 8%,
+      rgba(50, 200, 192, 0.09),
+      transparent 27%
     ),
     radial-gradient(
-      circle at 85% 18%,
-      rgba(92, 143, 247, 0.08),
+      circle at 88% 16%,
+      rgba(92, 143, 247, 0.075),
       transparent 25%
+    ),
+    radial-gradient(
+      circle at 50% 70%,
+      rgba(50, 200, 192, 0.035),
+      transparent 32%
     );
 }
 
 /* =========================================================
-   HERO
+   SHARED BUTTONS
 ========================================================= */
 
-.hero {
-  position: relative;
-  min-height: 760px;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 100px 48px 90px;
-
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(460px, 0.95fr);
-  align-items: center;
-  gap: 70px;
-}
-
-.heroGrid {
-  position: absolute;
-  inset: 0;
-
-  pointer-events: none;
-
-  background-image:
-    linear-gradient(
-      rgba(143, 224, 221, 0.035) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(143, 224, 221, 0.035) 1px,
-      transparent 1px
-    );
-
-  background-size: 48px 48px;
-
-  mask-image: linear-gradient(
-    to bottom,
-    black,
-    transparent 85%
-  );
-}
-
-.heroContent {
-  position: relative;
-  z-index: 2;
-  max-width: 680px;
-}
-
-.heroEyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-
-  margin-bottom: 24px;
-  padding: 8px 13px;
-
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-full);
-
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-
-  color: var(--text-secondary);
-
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
-.eyebrowPulse {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-
-  background: var(--accent-primary);
-
-  box-shadow:
-    0 0 0 4px rgba(50, 200, 192, 0.12),
-    0 0 18px rgba(50, 200, 192, 0.4);
-}
-
-.heroTitle {
-  max-width: 680px;
-  margin: 0;
-
-  font-size: clamp(52px, 6vw, 86px);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-  font-weight: 750;
-}
-
-.heroTitle span {
-  display: block;
-
-  background: linear-gradient(
-    110deg,
-    var(--accent-primary),
-    var(--accent-secondary)
-  );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.heroDescription {
-  max-width: 590px;
-  margin: 30px 0 0;
-
-  color: var(--text-secondary);
-
-  font-size: 17px;
-  line-height: 1.75;
-}
-
-.heroActions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-
-  margin-top: 36px;
-}
-
 .primaryButton,
-.secondaryButton,
-.outlineButton,
-.emergencyButton {
+.outlineButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -165,551 +51,65 @@
 
   border-radius: var(--radius-md);
 
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
 
   cursor: pointer;
 
   transition:
     transform 180ms ease,
-    box-shadow 180ms ease,
     border-color 180ms ease,
-    background 180ms ease;
+    background 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .primaryButton {
   border: 1px solid rgba(50, 200, 192, 0.45);
 
-  background: linear-gradient(
-    135deg,
-    var(--accent-primary),
-    #28aaa5
-  );
+  background: linear-gradient(135deg, var(--accent-primary), #28aaa5);
 
   color: #061315;
 
-  box-shadow:
-    0 12px 30px rgba(50, 200, 192, 0.14);
+  box-shadow: 0 12px 30px rgba(50, 200, 192, 0.13);
 }
 
 .primaryButton:hover {
   transform: translateY(-2px);
 
-  box-shadow:
-    0 16px 35px rgba(50, 200, 192, 0.2);
+  box-shadow: 0 16px 36px rgba(50, 200, 192, 0.2);
 }
 
-.secondaryButton {
+.outlineButton {
   border: 1px solid var(--border-default);
+
   background: var(--surface-1);
 
   color: var(--text-primary);
 }
 
-.secondaryButton:hover {
+.outlineButton:hover {
   transform: translateY(-2px);
+
   border-color: var(--border-strong);
-}
-
-.heroTrust {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  margin-top: 45px;
-}
-
-.trustPeople {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 42px;
-  height: 42px;
-
-  border: 1px solid var(--border-default);
-  border-radius: 50%;
 
   background: var(--surface-2);
-
-  color: var(--accent-primary);
-
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.heroTrust strong {
-  display: block;
-
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.heroTrust p {
-  margin: 3px 0 0;
-
-  color: var(--text-muted);
-
-  font-size: 11px;
 }
 
 /* =========================================================
-   HERO SEARCH
-========================================================= */
-
-.heroVisual {
-  position: relative;
-  z-index: 2;
-
-  min-height: 510px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.searchCard {
-  width: min(100%, 520px);
-
-  padding: 28px;
-
-  border: 1px solid var(--border-default);
-  border-radius: 26px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.045),
-      rgba(255, 255, 255, 0.012)
-    ),
-    var(--surface-1);
-
-  box-shadow:
-    0 35px 90px rgba(0, 0, 0, 0.18),
-    0 0 0 1px rgba(255, 255, 255, 0.015);
-
-  backdrop-filter: blur(20px);
-}
-
-.searchCardHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-
-  margin-bottom: 24px;
-}
-
-.cardLabel {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--accent-primary);
-
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-}
-
-.searchCardHeader h2 {
-  margin: 0;
-
-  font-size: 23px;
-  line-height: 1.25;
-  letter-spacing: -0.025em;
-}
-
-.cardIcon {
-  flex: 0 0 auto;
-
-  width: 46px;
-  height: 46px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid rgba(50, 200, 192, 0.2);
-  border-radius: 14px;
-
-  background: rgba(50, 200, 192, 0.08);
-
-  color: var(--accent-primary);
-}
-
-.searchBox {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-
-  min-height: 58px;
-  padding: 6px 7px 6px 16px;
-
-  border: 1px solid var(--border-default);
-  border-radius: 16px;
-
-  background: var(--bg-secondary);
-
-  color: var(--text-muted);
-
-  transition:
-    border-color 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.searchBox:focus-within {
-  border-color: rgba(50, 200, 192, 0.45);
-
-  box-shadow:
-    0 0 0 4px rgba(50, 200, 192, 0.06);
-}
-
-.searchBox input {
-  min-width: 0;
-  flex: 1;
-
-  border: 0;
-  outline: 0;
-
-  background: transparent;
-
-  color: var(--text-primary);
-
-  font: inherit;
-  font-size: 13px;
-}
-
-.searchBox input::placeholder {
-  color: var(--text-muted);
-}
-
-.searchBox button {
-  width: 44px;
-  height: 44px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 0;
-  border-radius: 12px;
-
-  background: var(--accent-primary);
-
-  color: #071117;
-
-  cursor: pointer;
-
-  transition: transform 180ms ease;
-}
-
-.searchBox button:hover {
-  transform: translateX(2px);
-}
-
-.searchSuggestions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px;
-
-  margin-top: 17px;
-}
-
-.searchSuggestions > span {
-  margin-right: 3px;
-
-  color: var(--text-muted);
-
-  font-size: 11px;
-}
-
-.searchSuggestions button {
-  padding: 6px 9px;
-
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-
-  background: var(--surface-2);
-
-  color: var(--text-secondary);
-
-  font-size: 10px;
-  cursor: pointer;
-
-  transition:
-    border-color 160ms ease,
-    color 160ms ease;
-}
-
-.searchSuggestions button:hover {
-  border-color: var(--border-default);
-  color: var(--text-primary);
-}
-
-.searchDivider {
-  height: 1px;
-
-  margin: 24px 0 18px;
-
-  background: var(--border-subtle);
-}
-
-.locationRow {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-}
-
-.locationIcon {
-  width: 36px;
-  height: 36px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 10px;
-
-  background: rgba(92, 143, 247, 0.1);
-
-  color: var(--accent-secondary);
-}
-
-.locationRow > div:nth-child(2) {
-  flex: 1;
-}
-
-.locationRow span {
-  display: block;
-
-  color: var(--text-muted);
-
-  font-size: 10px;
-}
-
-.locationRow strong {
-  display: block;
-
-  margin-top: 2px;
-
-  color: var(--text-primary);
-
-  font-size: 12px;
-}
-
-.changeButton {
-  border: 0;
-  background: transparent;
-
-  color: var(--accent-primary);
-
-  font-size: 11px;
-  font-weight: 700;
-
-  cursor: pointer;
-}
-
-.floatingMatch {
-  position: absolute;
-  right: -25px;
-  bottom: 52px;
-
-  display: flex;
-  align-items: center;
-  gap: 11px;
-
-  width: 250px;
-  padding: 13px 14px;
-
-  border: 1px solid var(--border-default);
-  border-radius: 15px;
-
-  background: rgba(14, 29, 36, 0.88);
-  backdrop-filter: blur(18px);
-
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.2);
-}
-
-.matchIcon {
-  width: 32px;
-  height: 32px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 9px;
-
-  background: rgba(50, 200, 192, 0.12);
-  color: var(--accent-primary);
-}
-
-.floatingMatch span {
-  display: block;
-
-  color: var(--text-muted);
-
-  font-size: 9px;
-}
-
-.floatingMatch strong {
-  display: block;
-
-  margin-top: 2px;
-
-  font-size: 11px;
-}
-
-.matchMiniGraph {
-  margin-left: auto;
-
-  display: flex;
-  align-items: end;
-  gap: 3px;
-
-  height: 25px;
-}
-
-.matchMiniGraph span {
-  width: 3px;
-
-  border-radius: 10px;
-
-  background: var(--accent-primary);
-}
-
-.matchMiniGraph span:nth-child(1) {
-  height: 9px;
-}
-
-.matchMiniGraph span:nth-child(2) {
-  height: 14px;
-}
-
-.matchMiniGraph span:nth-child(3) {
-  height: 11px;
-}
-
-.matchMiniGraph span:nth-child(4) {
-  height: 19px;
-}
-
-.matchMiniGraph span:nth-child(5) {
-  height: 24px;
-}
-
-.floatingLocation {
-  position: absolute;
-  top: 35px;
-  right: 0;
-
-  display: flex;
-  align-items: center;
-  gap: 7px;
-
-  padding: 9px 12px;
-
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
-
-  background: var(--surface-2);
-
-  color: var(--text-secondary);
-
-  font-size: 10px;
-}
-
-/* =========================================================
-   STATS
-========================================================= */
-
-.statsSection {
-  position: relative;
-
-  border-top: 1px solid var(--border-subtle);
-  border-bottom: 1px solid var(--border-subtle);
-
-  background: rgba(255, 255, 255, 0.012);
-}
-
-.statsContainer {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 28px 30px;
-
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.stat {
-  padding: 8px 30px;
-
-  border-right: 1px solid var(--border-subtle);
-}
-
-.stat:first-child {
-  padding-left: 0;
-}
-
-.stat:last-child {
-  border-right: 0;
-}
-
-.stat strong {
-  display: block;
-
-  font-size: 25px;
-  letter-spacing: -0.03em;
-
-  background: linear-gradient(
-    110deg,
-    var(--text-primary),
-    var(--accent-primary)
-  );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.stat span {
-  display: block;
-
-  margin-top: 4px;
-
-  color: var(--text-muted);
-
-  font-size: 11px;
-}
-
-/* =========================================================
-   GENERAL SECTIONS
+   SHARED SECTION
 ========================================================= */
 
 .findSection,
-.hospitalsSection,
+.comparisonSection,
 .howSection,
-.featuresSection {
+.featuresSection,
+.teamSection {
   position: relative;
 
   max-width: 1180px;
   margin: 0 auto;
 
   padding: 120px 30px;
-}
-
-.sectionHeader {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 50px;
-
-  margin-bottom: 48px;
-}
-
-.sectionHeader > div {
-  max-width: 650px;
 }
 
 .sectionEyebrow {
@@ -724,12 +124,26 @@
   letter-spacing: 0.16em;
 }
 
+.sectionHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 50px;
+
+  margin-bottom: 48px;
+}
+
+.sectionHeader > div:first-child {
+  max-width: 650px;
+}
+
 .sectionHeader h2,
 .sectionHeaderCentered h2 {
   margin: 0;
 
   font-size: clamp(35px, 4vw, 53px);
   line-height: 1.04;
+
   letter-spacing: -0.045em;
 }
 
@@ -739,155 +153,515 @@
 }
 
 .sectionHeader > p {
-  max-width: 400px;
+  max-width: 410px;
   margin: 0;
 
   color: var(--text-secondary);
 
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.75;
 }
 
 .sectionHeaderCentered {
-  max-width: 720px;
+  max-width: 730px;
+
   margin: 0 auto 55px;
 
   text-align: center;
 }
 
 .sectionHeaderCentered > p {
-  max-width: 580px;
+  max-width: 590px;
+
   margin: 20px auto 0;
 
   color: var(--text-secondary);
 
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.75;
 }
 
 /* =========================================================
-   MATCHING PANEL
+   01 — EMERGENCY
 ========================================================= */
 
-.matchingPanel {
-  display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
+.emergencySection {
+  position: relative;
+
+  max-width: 1180px;
+  min-height: 580px;
+
+  margin: 0 auto;
+
+  padding: 90px 30px;
 
   overflow: hidden;
 
-  border: 1px solid var(--border-default);
-  border-radius: 25px;
-
-  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.matchingIntro {
-  padding: 45px;
+.emergencyGlow {
+  position: absolute;
 
-  background:
-    radial-gradient(
-      circle at 20% 15%,
-      rgba(50, 200, 192, 0.13),
-      transparent 50%
-    ),
-    var(--surface-1);
+  width: 520px;
+  height: 520px;
 
-  border-right: 1px solid var(--border-subtle);
-}
+  top: -230px;
+  left: -180px;
 
-.aiBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-
-  padding: 7px 10px;
-
-  border: 1px solid rgba(50, 200, 192, 0.2);
-  border-radius: 8px;
+  border-radius: 50%;
 
   background: rgba(50, 200, 192, 0.07);
 
-  color: var(--accent-primary);
+  filter: blur(90px);
+
+  pointer-events: none;
+}
+
+.emergencyInner {
+  position: relative;
+  z-index: 2;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 0.78fr);
+
+  align-items: center;
+
+  gap: 75px;
+}
+
+.emergencyContent {
+  max-width: 640px;
+}
+
+.emergencyEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+
+  margin-bottom: 24px;
+  padding: 8px 12px;
+
+  border: 1px solid rgba(255, 112, 112, 0.18);
+  border-radius: var(--radius-full);
+
+  background: rgba(255, 90, 90, 0.045);
+
+  color: #ff9a9a;
 
   font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
 }
 
-.matchingIntro h3 {
-  margin: 25px 0 15px;
+.emergencyPulse {
+  width: 7px;
+  height: 7px;
 
-  font-size: 31px;
-  line-height: 1.08;
-  letter-spacing: -0.04em;
+  border-radius: 50%;
+
+  background: #ff7676;
+
+  box-shadow:
+    0 0 0 4px rgba(255, 90, 90, 0.1),
+    0 0 18px rgba(255, 90, 90, 0.35);
 }
 
-.matchingIntro > p {
-  max-width: 330px;
+.emergencyContent h1 {
+  max-width: 650px;
 
   margin: 0;
 
-  color: var(--text-secondary);
+  font-size: clamp(48px, 5.8vw, 78px);
+  line-height: 0.98;
 
-  font-size: 13px;
-  line-height: 1.7;
+  letter-spacing: -0.055em;
 }
 
-.textButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  margin-top: 30px;
-  padding: 0;
-
-  border: 0;
-  background: transparent;
+.emergencyContent h1 span {
+  display: block;
 
   color: var(--accent-primary);
+}
+
+.emergencyContent > p {
+  max-width: 570px;
+
+  margin: 27px 0 0;
+
+  color: var(--text-secondary);
+
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.emergencyActions {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  margin-top: 32px;
+}
+
+.emergencyPrimary,
+.emergencySecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 48px;
+
+  padding: 0 17px;
+
+  border-radius: var(--radius-md);
 
   font-size: 12px;
   font-weight: 700;
 
   cursor: pointer;
+
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
 }
 
-.requirementGrid {
-  padding: 30px;
+.emergencyPrimary {
+  border: 1px solid rgba(50, 200, 192, 0.42);
 
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  background: var(--accent-primary);
+
+  color: #061315;
 }
 
-.requirement {
+.emergencyPrimary:hover {
+  transform: translateY(-2px);
+}
+
+.emergencySecondary {
+  border: 1px solid var(--border-default);
+
+  background: var(--surface-1);
+
+  color: var(--text-primary);
+}
+
+.emergencySecondary:hover {
+  transform: translateY(-2px);
+
+  border-color: var(--border-strong);
+}
+
+.emergencyNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  max-width: 520px;
+
+  margin-top: 25px;
+
+  color: var(--text-muted);
+
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.emergencyNotice svg {
+  flex: 0 0 auto;
+
+  margin-top: 1px;
+
+  color: #ff8989;
+}
+
+/* =========================================================
+   EMERGENCY PANEL
+========================================================= */
+
+.emergencyPanel {
   position: relative;
+
+  padding: 27px;
+
+  border: 1px solid var(--border-default);
+  border-radius: 24px;
+
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(50, 200, 192, 0.08),
+      transparent 42%
+    ),
+    var(--surface-1);
+
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.14);
+}
+
+.emergencyPanelIcon {
+  width: 48px;
+  height: 48px;
 
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
 
-  min-height: 94px;
-  padding: 15px;
+  margin-bottom: 20px;
+
+  border-radius: 13px;
+
+  background: rgba(255, 90, 90, 0.08);
+
+  color: #ff8989;
+}
+
+.emergencyPanel > div:nth-child(2) > span {
+  color: var(--text-muted);
+
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.emergencyPanel h2 {
+  margin: 7px 0 22px;
+
+  font-size: 21px;
+  line-height: 1.2;
+
+  letter-spacing: -0.025em;
+}
+
+.emergencyOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emergencyOptions button {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 11px;
+
+  width: 100%;
+
+  padding: 12px;
 
   border: 1px solid var(--border-subtle);
-  border-radius: 15px;
+  border-radius: 13px;
 
   background: var(--surface-2);
 
+  color: var(--text-primary);
+
+  text-align: left;
+
+  cursor: pointer;
+
   transition:
+    transform 180ms ease,
     border-color 180ms ease,
-    transform 180ms ease;
+    background 180ms ease;
 }
 
-.requirement:hover {
-  transform: translateY(-2px);
+.emergencyOptions button:hover {
+  transform: translateX(3px);
+
   border-color: var(--border-default);
+
+  background: var(--surface-3);
 }
 
-.requirementIcon {
-  width: 37px;
-  height: 37px;
+.emergencyOptions button > div {
+  width: 35px;
+  height: 35px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  background: rgba(50, 200, 192, 0.08);
+
+  color: var(--accent-primary);
+}
+
+.emergencyOptions button:nth-child(2) > div {
+  background: rgba(92, 143, 247, 0.09);
+
+  color: var(--accent-secondary);
+}
+
+.emergencyOptions button > span {
+  min-width: 0;
+}
+
+.emergencyOptions strong {
+  display: block;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.emergencyOptions small {
+  display: block;
+
+  margin-top: 3px;
+
+  color: var(--text-muted);
+
+  font-size: 8px;
+}
+
+.emergencyOptions button > svg {
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   02 — FIND HOSPITAL
+========================================================= */
+
+.findSection {
+  max-width: 1240px;
+
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+
+  align-items: center;
+
+  gap: 70px;
+
+  padding-top: 120px;
+}
+
+.findGrid {
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  background-image:
+    linear-gradient(rgba(143, 224, 221, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 224, 221, 0.025) 1px, transparent 1px);
+
+  background-size: 48px 48px;
+
+  mask-image: linear-gradient(to bottom, black, transparent 80%);
+}
+
+.findContent {
+  position: relative;
+  z-index: 2;
+}
+
+.findContent h2 {
+  max-width: 540px;
+
+  margin: 0;
+
+  font-size: clamp(42px, 4.7vw, 62px);
+  line-height: 1;
+
+  letter-spacing: -0.055em;
+}
+
+.findContent h2 span {
+  display: block;
+
+  color: var(--accent-primary);
+}
+
+.findContent > p {
+  max-width: 490px;
+
+  margin: 25px 0 0;
+
+  color: var(--text-secondary);
+
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.findTrust {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  max-width: 500px;
+
+  margin-top: 28px;
+
+  color: var(--text-muted);
+
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.findTrust svg {
+  flex: 0 0 auto;
+
+  margin-top: 1px;
+
+  color: var(--accent-primary);
+}
+
+/* =========================================================
+   FIND CARD
+========================================================= */
+
+.findCard {
+  position: relative;
+  z-index: 2;
+
+  padding: 28px;
+
+  border: 1px solid var(--border-default);
+  border-radius: 25px;
+
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 60%),
+    var(--surface-1);
+
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15);
+}
+
+.findCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 23px;
+}
+
+.findCardHeader > div:first-child > span {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: var(--accent-primary);
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.findCardHeader h3 {
+  margin: 0;
+
+  font-size: 22px;
+  line-height: 1.25;
+
+  letter-spacing: -0.025em;
+}
+
+.findCardIcon {
+  width: 45px;
+  height: 45px;
 
   flex: 0 0 auto;
 
@@ -895,11 +669,192 @@
   align-items: center;
   justify-content: center;
 
-  border-radius: 10px;
+  border: 1px solid rgba(50, 200, 192, 0.2);
+  border-radius: 13px;
 
-  background: rgba(50, 200, 192, 0.08);
+  background: rgba(50, 200, 192, 0.07);
 
   color: var(--accent-primary);
+}
+
+/* =========================================================
+   FIND SEARCH
+========================================================= */
+
+.findSearch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-height: 58px;
+
+  padding: 6px 7px 6px 15px;
+
+  border: 1px solid var(--border-default);
+  border-radius: 15px;
+
+  background: var(--bg-secondary);
+
+  color: var(--text-muted);
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.findSearch:focus-within {
+  border-color: rgba(50, 200, 192, 0.42);
+
+  box-shadow: 0 0 0 4px rgba(50, 200, 192, 0.055);
+}
+
+.findSearch input {
+  min-width: 0;
+  flex: 1;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: var(--text-primary);
+
+  font: inherit;
+  font-size: 12px;
+}
+
+.findSearch input::placeholder {
+  color: var(--text-muted);
+}
+
+.findSearch > button {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  border: 0;
+  border-radius: 11px;
+
+  background: var(--accent-primary);
+
+  color: #061315;
+
+  cursor: pointer;
+
+  transition: transform 180ms ease;
+}
+
+.findSearch > button:hover {
+  transform: translateX(2px);
+}
+
+/* =========================================================
+   SEARCH EXAMPLES
+========================================================= */
+
+.searchExamples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+
+  margin-top: 16px;
+}
+
+.searchExamples > span {
+  margin-right: 3px;
+
+  color: var(--text-muted);
+
+  font-size: 9px;
+}
+
+.searchExamples button {
+  padding: 6px 8px;
+
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+
+  background: var(--surface-2);
+
+  color: var(--text-secondary);
+
+  font-size: 9px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.searchExamples button:hover {
+  border-color: var(--border-default);
+
+  background: var(--surface-3);
+
+  color: var(--text-primary);
+}
+
+.findDivider {
+  height: 1px;
+
+  margin: 23px 0 17px;
+
+  background: var(--border-subtle);
+}
+
+/* =========================================================
+   REQUIREMENTS
+========================================================= */
+
+.requirementRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 8px;
+}
+
+.requirement {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  min-width: 0;
+
+  padding: 11px;
+
+  border: 1px solid var(--border-subtle);
+  border-radius: 11px;
+
+  background: var(--surface-2);
+}
+
+.requirementIcon {
+  width: 32px;
+  height: 32px;
+
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 8px;
+
+  background: rgba(50, 200, 192, 0.07);
+
+  color: var(--accent-primary);
+}
+
+.requirement > div:nth-child(2) {
+  min-width: 0;
 }
 
 .requirement span {
@@ -907,129 +862,271 @@
 
   color: var(--text-muted);
 
-  font-size: 9px;
+  font-size: 8px;
 }
 
 .requirement strong {
   display: block;
 
-  margin-top: 4px;
+  margin-top: 3px;
 
-  font-size: 11px;
+  overflow: hidden;
+
+  color: var(--text-primary);
+
+  font-size: 9px;
+  font-weight: 700;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .requirementCheck {
   margin-left: auto;
 
+  flex: 0 0 auto;
+
   color: var(--accent-primary);
-  opacity: 0.75;
+
+  opacity: 0.65;
 }
 
-/* =========================================================
-   HOSPITAL CARDS
-========================================================= */
+.findAdvanced {
+  width: 100%;
 
-.outlineButton {
-  border: 1px solid var(--border-default);
-  background: var(--surface-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  margin-top: 12px;
+  padding: 11px;
+
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+
+  background: transparent;
+
+  color: var(--text-secondary);
+
+  font-size: 10px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.findAdvanced:hover {
+  border-color: var(--border-default);
+
+  background: var(--surface-2);
 
   color: var(--text-primary);
 }
 
-.outlineButton:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
-}
+/* =========================================================
+   03 — HOME CTA
+========================================================= */
 
-.hospitalGrid {
+.homeCta {
+  max-width: 1180px;
+
+  margin: 0 auto;
+
+  padding: 25px 30px;
+
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
+  grid-template-columns: auto 1fr auto;
 
-.hospitalCard {
-  position: relative;
-
-  padding: 23px;
-
-  border: 1px solid var(--border-default);
-  border-radius: 20px;
-
-  background: var(--surface-1);
-
-  transition:
-    transform 200ms ease,
-    border-color 200ms ease,
-    box-shadow 200ms ease;
-}
-
-.hospitalCard:hover {
-  transform: translateY(-5px);
-
-  border-color: var(--border-strong);
-
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.12);
-}
-
-.featuredHospital {
-  border-color: rgba(50, 200, 192, 0.3);
-
-  background:
-    radial-gradient(
-      circle at 100% 0%,
-      rgba(50, 200, 192, 0.08),
-      transparent 45%
-    ),
-    var(--surface-1);
-}
-
-.recommendedBadge {
-  position: absolute;
-  top: 16px;
-  left: 18px;
-
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-
-  padding: 5px 8px;
-
-  border-radius: 7px;
-
-  background: rgba(50, 200, 192, 0.1);
-
-  color: var(--accent-primary);
-
-  font-size: 8px;
-  font-weight: 800;
-}
-
-.hospitalTop {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
 
-  margin-bottom: 20px;
+  gap: 18px;
+
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+
+  background: linear-gradient(
+    90deg,
+    rgba(50, 200, 192, 0.035),
+    transparent 60%
+  );
 }
 
-.hospitalLogo {
-  width: 43px;
-  height: 43px;
+.homeCtaIcon {
+  width: 46px;
+  height: 46px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border: 1px solid var(--border-default);
-  border-radius: 12px;
+  border-radius: 13px;
 
-  background: var(--surface-2);
+  background: rgba(50, 200, 192, 0.08);
 
   color: var(--accent-primary);
 }
 
-.cardArrow {
+.homeCtaContent > span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--accent-primary);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 0.13em;
+}
+
+.homeCtaContent h2 {
+  margin: 0;
+
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.homeCtaContent p {
+  margin: 4px 0 0;
+
+  color: var(--text-muted);
+
+  font-size: 10px;
+}
+
+/* =========================================================
+   04 — COMPARISON
+========================================================= */
+
+.comparisonSection {
+  max-width: 1240px;
+}
+
+.comparisonTable {
+  overflow: hidden;
+
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+
+  background: var(--surface-1);
+}
+
+.comparisonHeader,
+.comparisonRow {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1.6fr)
+    minmax(120px, 0.8fr)
+    minmax(90px, 0.55fr)
+    minmax(70px, 0.45fr)
+    minmax(150px, 0.9fr)
+    50px;
+
+  align-items: center;
+
+  column-gap: 18px;
+}
+
+.comparisonHeader {
+  min-height: 46px;
+
+  padding: 0 20px;
+
+  border-bottom: 1px solid var(--border-subtle);
+
+  background: var(--surface-2);
+
+  color: var(--text-muted);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.comparisonRow {
+  position: relative;
+
+  min-height: 94px;
+
+  padding: 15px 20px;
+
+  border-bottom: 1px solid var(--border-subtle);
+
+  background: var(--surface-1);
+
+  transition: background 160ms ease;
+}
+
+.comparisonRow:last-child {
+  border-bottom: 0;
+}
+
+.comparisonRow:hover {
+  background: var(--surface-2);
+}
+
+.comparisonHighlighted {
+  background:
+    linear-gradient(90deg, rgba(50, 200, 192, 0.055), transparent 70%),
+    var(--surface-1);
+}
+
+.comparisonHospital {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  min-width: 0;
+}
+
+.comparisonHospital > div:last-child {
+  min-width: 0;
+}
+
+.comparisonHospital strong {
+  display: block;
+
+  overflow: hidden;
+
+  font-size: 11px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comparisonHospital span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  margin-top: 4px;
+
+  color: var(--text-muted);
+
+  font-size: 8px;
+}
+
+.comparisonRow > div:not(.comparisonHospital) strong {
+  display: block;
+
+  color: var(--text-secondary);
+
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.mobileComparisonLabel {
+  display: none;
+}
+
+.comparisonAction {
   width: 33px;
   height: 33px;
 
@@ -1045,130 +1142,63 @@
   color: var(--text-muted);
 
   cursor: pointer;
+
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
 }
 
-.cardArrow:hover {
-  color: var(--text-primary);
+.comparisonAction:hover {
   border-color: var(--border-default);
+
+  background: var(--surface-3);
+
+  color: var(--accent-primary);
 }
 
-.hospitalInfo h3 {
-  margin: 0;
-
-  font-size: 16px;
-  line-height: 1.3;
-}
-
-.hospitalInfo p {
+.comparisonFooter {
   display: flex;
   align-items: center;
-  gap: 5px;
-
-  margin: 8px 0 0;
-
-  color: var(--text-muted);
-
-  font-size: 10px;
-}
-
-.hospitalTags {
-  display: flex;
-  gap: 6px;
+  justify-content: space-between;
 
   margin-top: 17px;
 }
 
-.hospitalTags span {
-  padding: 5px 7px;
+.comparisonFooter > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-
-  color: var(--text-secondary);
+  color: var(--text-muted);
 
   font-size: 9px;
 }
 
-.hospitalDetails {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-
-  margin-top: 20px;
-  padding-top: 17px;
-
-  border-top: 1px solid var(--border-subtle);
+.comparisonFooter > span svg {
+  color: var(--accent-primary);
 }
 
-.hospitalDetails div {
-  padding-right: 8px;
-
-  border-right: 1px solid var(--border-subtle);
-}
-
-.hospitalDetails div:last-child {
-  padding-left: 8px;
-  padding-right: 0;
-
-  border-right: 0;
-}
-
-.hospitalDetails div:nth-child(2) {
-  padding-left: 8px;
-}
-
-.hospitalDetails span {
-  display: block;
-
-  color: var(--text-muted);
-
-  font-size: 8px;
-}
-
-.hospitalDetails strong {
-  display: block;
-
-  margin-top: 4px;
-
-  color: var(--text-primary);
-
-  font-size: 10px;
-}
-
-.viewHospital {
-  width: 100%;
-
-  display: flex;
+.comparisonFooter > button {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 7px;
 
-  margin-top: 20px;
-  padding: 11px;
+  padding: 0;
 
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border: 0;
+  background: transparent;
 
-  background: var(--surface-2);
-
-  color: var(--text-secondary);
+  color: var(--accent-primary);
 
   font-size: 10px;
   font-weight: 700;
 
   cursor: pointer;
-
-  transition:
-    background 160ms ease,
-    color 160ms ease;
-}
-
-.viewHospital:hover {
-  background: var(--surface-3);
-  color: var(--text-primary);
 }
 
 /* =========================================================
-   HOW IT WORKS
+   05 — HOW IT WORKS
 ========================================================= */
 
 .howSection {
@@ -1179,21 +1209,22 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
 
+  overflow: hidden;
+
   border: 1px solid var(--border-default);
   border-radius: 22px;
-
-  overflow: hidden;
 }
 
 .stepCard {
   position: relative;
 
-  min-height: 280px;
+  min-height: 275px;
+
   padding: 28px;
 
-  background: var(--surface-1);
-
   border-right: 1px solid var(--border-subtle);
+
+  background: var(--surface-1);
 
   transition: background 180ms ease;
 }
@@ -1217,6 +1248,7 @@
 
   font-size: 10px;
   font-weight: 800;
+
   letter-spacing: 0.08em;
 }
 
@@ -1236,39 +1268,39 @@
 }
 
 .stepCard h3 {
-  margin: 65px 0 12px;
+  margin: 65px 0 11px;
 
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.3;
 }
 
 .stepCard p {
+  max-width: 240px;
+
   margin: 0;
 
   color: var(--text-secondary);
 
-  font-size: 11px;
-  line-height: 1.7;
+  font-size: 10px;
+  line-height: 1.75;
 }
 
 .stepLine {
   position: absolute;
+
   left: 28px;
   right: 28px;
   bottom: 20px;
 
-  height: 2px;
+  height: 1px;
 
-  background: linear-gradient(
-    90deg,
-    var(--accent-primary),
-    transparent
-  );
+  background: linear-gradient(90deg, var(--accent-primary), transparent);
 
   opacity: 0.25;
 }
 
 /* =========================================================
-   ASSISTANT
+   06 — VIRTUAL ASSISTANT
 ========================================================= */
 
 .assistantSection {
@@ -1282,7 +1314,9 @@
 
   display: grid;
   grid-template-columns: 1fr 0.85fr;
+
   align-items: center;
+
   gap: 70px;
 
   overflow: hidden;
@@ -1291,28 +1325,24 @@
   border-radius: 30px;
 
   background:
-    radial-gradient(
-      circle at 0% 50%,
-      rgba(50, 200, 192, 0.12),
-      transparent 40%
-    ),
+    radial-gradient(circle at 0% 50%, rgba(50, 200, 192, 0.1), transparent 40%),
     var(--surface-1);
 }
 
 .assistantGlow {
   position: absolute;
 
-  width: 350px;
-  height: 350px;
+  width: 360px;
+  height: 360px;
 
-  right: -120px;
   top: -150px;
+  right: -120px;
 
   border-radius: 50%;
 
   background: rgba(92, 143, 247, 0.08);
 
-  filter: blur(70px);
+  filter: blur(75px);
 
   pointer-events: none;
 }
@@ -1322,17 +1352,40 @@
   z-index: 2;
 }
 
-.assistantContent h2 {
-  max-width: 500px;
+.aiBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 
-  margin: 25px 0 17px;
+  padding: 7px 10px;
+
+  border: 1px solid rgba(50, 200, 192, 0.2);
+  border-radius: 8px;
+
+  background: rgba(50, 200, 192, 0.07);
+
+  color: var(--accent-primary);
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 0.1em;
+}
+
+.assistantContent h2 {
+  max-width: 520px;
+
+  margin: 24px 0 17px;
 
   font-size: clamp(38px, 4vw, 55px);
   line-height: 1.03;
+
   letter-spacing: -0.045em;
 }
 
 .assistantContent h2 span {
+  display: block;
+
   color: var(--accent-primary);
 }
 
@@ -1343,13 +1396,14 @@
 
   color: var(--text-secondary);
 
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.75;
 }
 
 .assistantCapabilities {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+
   gap: 10px;
 
   margin: 25px 0 30px;
@@ -1362,17 +1416,24 @@
 
   color: var(--text-secondary);
 
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .assistantCapabilities svg {
   flex: 0 0 auto;
+
   color: var(--accent-primary);
 }
+
+/* =========================================================
+   CHAT PREVIEW
+========================================================= */
 
 .assistantPreview {
   position: relative;
   z-index: 2;
+
+  overflow: hidden;
 
   border: 1px solid var(--border-default);
   border-radius: 19px;
@@ -1380,8 +1441,6 @@
   background: var(--bg-secondary);
 
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.16);
-
-  overflow: hidden;
 }
 
 .chatHeader {
@@ -1437,33 +1496,33 @@
 }
 
 .chatMessages {
-  padding: 18px;
-
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  padding: 18px;
 }
 
 .userBubble,
 .aiBubble {
-  max-width: 85%;
+  max-width: 86%;
 
   padding: 11px 12px;
 
   border-radius: 12px;
 
-  font-size: 10px;
-  line-height: 1.6;
+  font-size: 9px;
+  line-height: 1.65;
 }
 
 .userBubble {
   align-self: flex-end;
 
+  border-bottom-right-radius: 4px;
+
   background: rgba(50, 200, 192, 0.1);
 
   color: var(--text-primary);
-
-  border-bottom-right-radius: 4px;
 }
 
 .aiBubble {
@@ -1472,18 +1531,18 @@
 
   align-self: flex-start;
 
+  border-bottom-left-radius: 4px;
+
   background: var(--surface-2);
 
   color: var(--text-secondary);
-
-  border-bottom-left-radius: 4px;
 }
 
 .aiBubbleIcon {
-  flex: 0 0 auto;
-
   width: 21px;
   height: 21px;
+
+  flex: 0 0 auto;
 
   display: flex;
   align-items: center;
@@ -1517,6 +1576,7 @@
 
 .aiQuestion > div {
   display: flex;
+  flex-wrap: wrap;
   gap: 5px;
 }
 
@@ -1531,10 +1591,12 @@
   color: var(--text-secondary);
 
   font-size: 8px;
+
+  cursor: pointer;
 }
 
 /* =========================================================
-   FEATURES
+   07 — FEATURES
 ========================================================= */
 
 .featuresSection {
@@ -1544,6 +1606,7 @@
 .featuresGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+
   gap: 14px;
 }
 
@@ -1551,6 +1614,7 @@
   position: relative;
 
   min-height: 220px;
+
   padding: 27px;
 
   border: 1px solid var(--border-default);
@@ -1568,6 +1632,7 @@
   transform: translateY(-4px);
 
   border-color: var(--border-strong);
+
   background: var(--surface-2);
 }
 
@@ -1601,12 +1666,13 @@
 
   color: var(--text-secondary);
 
-  font-size: 11px;
-  line-height: 1.7;
+  font-size: 10px;
+  line-height: 1.75;
 }
 
 .featureArrow {
   position: absolute;
+
   top: 25px;
   right: 25px;
 
@@ -1619,91 +1685,153 @@
 
 .featureCard:hover .featureArrow {
   color: var(--accent-primary);
+
   transform: translate(2px, -2px);
 }
 
 /* =========================================================
-   EMERGENCY
+   08 — TEAM
 ========================================================= */
 
-.emergencySection {
+.teamSection {
   max-width: 1180px;
-  margin: 0 auto 120px;
-  padding: 30px;
-
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 25px;
-
-  border: 1px solid rgba(255, 130, 130, 0.18);
-  border-radius: 20px;
-
-  background:
-    linear-gradient(
-      100deg,
-      rgba(255, 80, 80, 0.06),
-      transparent 60%
-    ),
-    var(--surface-1);
 }
 
-.emergencyIcon {
-  width: 52px;
-  height: 52px;
+.teamHeaderSide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  gap: 18px;
+}
+
+.teamHeaderSide p {
+  max-width: 390px;
+
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 13px;
+  line-height: 1.7;
+
+  text-align: right;
+}
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 12px;
+}
+
+.teamCard {
+  display: flex;
+  align-items: center;
+
+  min-width: 0;
+
+  padding: 17px;
+
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+
+  background: var(--surface-1);
+
+  cursor: pointer;
+
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.teamCard:hover {
+  transform: translateY(-3px);
+
+  border-color: var(--border-strong);
+
+  background: var(--surface-2);
+}
+
+.teamAvatar {
+  width: 44px;
+  height: 44px;
+
+  flex: 0 0 auto;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 14px;
+  border: 1px solid rgba(50, 200, 192, 0.2);
+  border-radius: 13px;
 
-  background: rgba(255, 90, 90, 0.08);
+  background: linear-gradient(
+    145deg,
+    rgba(50, 200, 192, 0.15),
+    rgba(92, 143, 247, 0.09)
+  );
 
-  color: #ff8d8d;
-}
+  color: var(--accent-primary);
 
-.emergencyContent > span {
-  color: #ff8d8d;
-
-  font-size: 9px;
+  font-size: 15px;
   font-weight: 800;
-  letter-spacing: 0.13em;
 }
 
-.emergencyContent h2 {
-  margin: 7px 0 6px;
+.teamInfo {
+  min-width: 0;
 
-  font-size: 19px;
-  line-height: 1.25;
+  margin-left: 11px;
 }
 
-.emergencyContent p {
-  max-width: 600px;
+.teamInfo h3 {
   margin: 0;
 
-  color: var(--text-secondary);
+  overflow: hidden;
 
-  font-size: 10px;
-  line-height: 1.6;
+  font-size: 11px;
+  font-weight: 700;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.emergencyButton {
-  border: 1px solid rgba(255, 120, 120, 0.25);
+.teamInfo span {
+  display: block;
 
-  background: rgba(255, 100, 100, 0.08);
+  margin-top: 4px;
 
-  color: #ff9b9b;
+  overflow: hidden;
+
+  color: var(--text-muted);
+
+  font-size: 8px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.emergencyButton:hover {
-  transform: translateY(-2px);
+.teamArrow {
+  margin-left: auto;
 
-  background: rgba(255, 100, 100, 0.13);
+  flex: 0 0 auto;
+
+  color: var(--text-muted);
+
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.teamCard:hover .teamArrow {
+  color: var(--accent-primary);
+
+  transform: translate(2px, -2px);
 }
 
 /* =========================================================
-   FINAL CTA
+   09 — FINAL CTA
 ========================================================= */
 
 .finalCta {
@@ -1729,7 +1857,7 @@
   background:
     radial-gradient(
       circle at 50% 20%,
-      rgba(50, 200, 192, 0.12),
+      rgba(50, 200, 192, 0.11),
       transparent 40%
     ),
     var(--surface-1);
@@ -1740,23 +1868,12 @@
   inset: 0;
 
   background-image:
-    linear-gradient(
-      rgba(143, 224, 221, 0.035) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(143, 224, 221, 0.035) 1px,
-      transparent 1px
-    );
+    linear-gradient(rgba(143, 224, 221, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 224, 221, 0.035) 1px, transparent 1px);
 
   background-size: 45px 45px;
 
-  mask-image: radial-gradient(
-    circle at center,
-    black,
-    transparent 75%
-  );
+  mask-image: radial-gradient(circle at center, black, transparent 75%);
 }
 
 .finalCtaContent {
@@ -1789,6 +1906,7 @@
 
   font-size: clamp(38px, 5vw, 60px);
   line-height: 1;
+
   letter-spacing: -0.05em;
 }
 
@@ -1803,48 +1921,51 @@
 
   color: var(--text-secondary);
 
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* =========================================================
-   RESPONSIVE
+   RESPONSIVE — 1100px
 ========================================================= */
 
 @media (max-width: 1100px) {
-  .hero {
+  .emergencyInner {
     grid-template-columns: 1fr;
+
     gap: 45px;
-
-    padding-top: 75px;
   }
 
-  .heroContent {
-    max-width: 800px;
+  .emergencyContent {
+    max-width: 760px;
   }
 
-  .heroVisual {
-    min-height: 480px;
+  .emergencyPanel {
+    max-width: 650px;
   }
 
-  .searchCard {
-    max-width: 600px;
-  }
-
-  .floatingMatch {
-    right: calc(50% - 330px);
-  }
-
-  .floatingLocation {
-    right: calc(50% - 310px);
-  }
-
-  .matchingPanel {
+  .findSection {
     grid-template-columns: 1fr;
+
+    gap: 45px;
   }
 
-  .matchingIntro {
-    border-right: 0;
-    border-bottom: 1px solid var(--border-subtle);
+  .findContent {
+    max-width: 760px;
+  }
+
+  .findCard {
+    max-width: 700px;
+  }
+
+  .comparisonHeader,
+  .comparisonRow {
+    grid-template-columns:
+      minmax(230px, 1.5fr)
+      minmax(110px, 0.8fr)
+      minmax(85px, 0.5fr)
+      minmax(65px, 0.45fr)
+      minmax(135px, 0.8fr)
+      45px;
   }
 
   .stepsGrid {
@@ -1862,177 +1983,178 @@
 
   .assistantSection {
     grid-template-columns: 1fr;
-    gap: 40px;
+
+    gap: 45px;
   }
 
   .assistantPreview {
-    max-width: 500px;
+    max-width: 520px;
+  }
+
+  .teamGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
+/* =========================================================
+   RESPONSIVE — 850px
+========================================================= */
+
 @media (max-width: 850px) {
-  .hero {
-    padding-left: 25px;
-    padding-right: 25px;
-  }
-
-  .statsContainer {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-
-  .stat {
-    border-right: 0;
-    padding: 8px 15px;
-  }
-
-  .stat:nth-child(odd) {
-    border-right: 1px solid var(--border-subtle);
+  .findSection,
+  .comparisonSection,
+  .howSection,
+  .featuresSection,
+  .teamSection {
+    padding-left: 24px;
+    padding-right: 24px;
   }
 
   .sectionHeader {
-    align-items: start;
+    align-items: flex-start;
+
     flex-direction: column;
+
     gap: 20px;
   }
 
-  .hospitalGrid {
-    grid-template-columns: 1fr;
+  .sectionHeader > p {
+    max-width: 600px;
+  }
+
+  .teamHeaderSide {
+    align-items: flex-start;
+  }
+
+  .teamHeaderSide p {
+    max-width: 600px;
+
+    text-align: left;
+  }
+
+  .homeCta {
+    grid-template-columns: auto 1fr;
+
+    margin: 0 24px;
+  }
+
+  .homeCta > .primaryButton {
+    grid-column: 1 / -1;
+
+    justify-self: start;
   }
 
   .featuresGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .emergencySection {
-    grid-template-columns: auto 1fr;
-  }
-
-  .emergencyButton {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
 }
 
-@media (max-width: 650px) {
-  .hero {
+/* =========================================================
+   RESPONSIVE — 700px
+========================================================= */
+
+@media (max-width: 700px) {
+  .emergencySection {
     min-height: auto;
 
-    padding:
-      55px
-      18px
-      65px;
-
-    gap: 35px;
+    padding: 65px 20px 70px;
   }
 
-  .heroTitle {
-    font-size: clamp(45px, 14vw, 68px);
+  .emergencyContent h1 {
+    font-size: clamp(44px, 12vw, 65px);
   }
 
-  .heroDescription {
-    font-size: 14px;
-  }
-
-  .heroActions {
+  .emergencyActions {
     align-items: stretch;
+
     flex-direction: column;
   }
 
-  .heroActions button {
+  .emergencyPrimary,
+  .emergencySecondary {
     width: 100%;
   }
 
-  .heroTrust {
-    margin-top: 28px;
-  }
-
-  .heroVisual {
-    min-height: 410px;
-  }
-
-  .searchCard {
-    padding: 20px;
-
-    border-radius: 20px;
-  }
-
-  .floatingMatch {
-    right: -5px;
-    bottom: 15px;
-
-    width: 220px;
-  }
-
-  .floatingLocation {
-    top: 5px;
-    right: -5px;
-  }
-
-  .statsContainer {
-    padding: 22px 15px;
-  }
-
-  .stat {
-    padding: 8px 10px;
-  }
-
-  .stat strong {
-    font-size: 21px;
-  }
-
   .findSection,
-  .hospitalsSection,
+  .comparisonSection,
   .howSection,
-  .featuresSection {
-    padding: 80px 18px;
+  .featuresSection,
+  .teamSection {
+    padding-top: 85px;
+    padding-bottom: 85px;
   }
 
-  .sectionHeader h2,
-  .sectionHeaderCentered h2 {
-    font-size: 37px;
+  .findContent h2 {
+    font-size: clamp(40px, 11vw, 58px);
   }
 
-  .matchingIntro {
-    padding: 28px;
-  }
-
-  .matchingIntro h3 {
-    font-size: 27px;
-  }
-
-  .requirementGrid {
-    padding: 18px;
-
+  .requirementRow {
     grid-template-columns: 1fr;
   }
 
-  .stepsGrid {
-    grid-template-columns: 1fr;
+  .homeCta {
+    grid-template-columns: auto 1fr;
+
+    padding: 22px;
   }
 
-  .stepCard {
-    min-height: 235px;
-
-    border-right: 0;
-    border-bottom: 1px solid var(--border-subtle);
+  .comparisonTable {
+    border-radius: 17px;
   }
 
-  .stepCard:last-child {
-    border-bottom: 0;
+  .comparisonHeader {
+    display: none;
   }
 
-  .stepCard:nth-child(2) {
-    border-right: 0;
+  .comparisonRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+
+    gap: 14px;
+
+    padding: 17px;
   }
 
-  .stepCard h3 {
-    margin-top: 48px;
+  .comparisonRow > div:not(.comparisonHospital) {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .comparisonHospital {
+    grid-column: 1 / -1;
+  }
+
+  .mobileComparisonLabel {
+    display: block;
+
+    color: var(--text-muted);
+
+    font-size: 8px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+  }
+
+  .comparisonAction {
+    grid-column: 2;
+    grid-row: 2 / 6;
+
+    align-self: center;
+  }
+
+  .comparisonFooter {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 12px;
   }
 
   .assistantSection {
     margin: 0 18px;
-    padding: 45px 25px;
+
+    padding: 50px 25px;
 
     border-radius: 23px;
   }
@@ -2045,30 +2167,15 @@
     grid-template-columns: 1fr;
   }
 
-  .featuresGrid {
+  .teamGrid {
     grid-template-columns: 1fr;
-  }
-
-  .featureCard {
-    min-height: 190px;
-  }
-
-  .emergencySection {
-    margin: 0 18px 80px;
-
-    grid-template-columns: 1fr;
-
-    padding: 25px;
-  }
-
-  .emergencyButton {
-    width: 100%;
   }
 
   .finalCta {
     min-height: 430px;
 
     margin: 0 18px 80px;
+
     padding: 50px 22px;
   }
 
@@ -2077,38 +2184,172 @@
   }
 }
 
-@media (max-width: 430px) {
-  .heroTitle {
-    font-size: 45px;
+/* =========================================================
+   RESPONSIVE — 600px
+========================================================= */
+
+@media (max-width: 600px) {
+  .emergencyPanel {
+    padding: 21px;
   }
 
-  .heroVisual {
-    min-height: 390px;
+  .findCard {
+    padding: 20px;
+
+    border-radius: 20px;
   }
 
-  .searchCardHeader h2 {
+  .findCardHeader h3 {
     font-size: 19px;
   }
 
-  .searchSuggestions {
-    gap: 5px;
+  .searchExamples {
+    align-items: flex-start;
   }
 
-  .floatingMatch {
-    transform: scale(0.9);
-    transform-origin: right bottom;
+  .searchExamples > span {
+    width: 100%;
+
+    margin-bottom: 1px;
   }
 
-  .floatingLocation {
-    transform: scale(0.9);
-    transform-origin: right top;
+  .homeCta {
+    grid-template-columns: 1fr;
+
+    margin: 0 18px;
+
+    gap: 13px;
   }
 
-  .hospitalDetails strong {
+  .homeCtaIcon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .homeCta > .primaryButton {
+    width: 100%;
+  }
+
+  .stepsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .stepCard {
+    min-height: 230px;
+
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .stepCard:nth-child(2) {
+    border-right: 0;
+  }
+
+  .stepCard:last-child {
+    border-bottom: 0;
+  }
+
+  .stepCard h3 {
+    margin-top: 48px;
+  }
+
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .featureCard {
+    min-height: 195px;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE — 430px
+========================================================= */
+
+@media (max-width: 430px) {
+  .emergencySection {
+    padding: 55px 18px 60px;
+  }
+
+  .emergencyContent h1 {
+    font-size: 44px;
+  }
+
+  .emergencyPanel {
+    padding: 18px;
+  }
+
+  .emergencyOptions button {
+    grid-template-columns: auto 1fr auto;
+
+    padding: 10px;
+  }
+
+  .findSection,
+  .comparisonSection,
+  .howSection,
+  .featuresSection,
+  .teamSection {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .sectionHeader h2,
+  .sectionHeaderCentered h2 {
+    font-size: 36px;
+  }
+
+  .findContent h2 {
+    font-size: 40px;
+  }
+
+  .findCardHeader {
+    gap: 10px;
+  }
+
+  .findCardIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .comparisonFooter > button {
     font-size: 9px;
+  }
+
+  .assistantSection {
+    padding: 42px 20px;
+  }
+
+  .assistantContent h2 {
+    font-size: 37px;
+  }
+
+  .chatMessages {
+    padding: 14px;
   }
 
   .finalCtaContent h2 {
     font-size: 36px;
+  }
+}
+
+/* =========================================================
+   ACCESSIBILITY / MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryButton,
+  .outlineButton,
+  .emergencyPrimary,
+  .emergencySecondary,
+  .emergencyOptions button,
+  .findSearch > button,
+  .searchExamples button,
+  .findAdvanced,
+  .comparisonAction,
+  .featureCard,
+  .teamCard,
+  .stepCard {
+    transition: none;
   }
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   Activity,
@@ -27,6 +28,7 @@ import {
 
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
+import { useHospitalSearch } from "../../context/HospitalSearchContext";
 
 import styles from "./Chatbot.module.css";
 
@@ -108,37 +110,12 @@ const INITIAL_MESSAGES = [
 ];
 
 /* =========================================================
-   DEMO MATCHES
-========================================================= */
-
-const SAMPLE_MATCHES = [
-  {
-    id: 1,
-    name: "CityCare Multispeciality Hospital",
-    specialty: "Multispeciality • Nephrology",
-    distance: "4.2 km",
-    time: "14 min",
-    match: 94,
-    cost: "₹1.8L – ₹2.7L",
-    insurance: "Insurance accepted",
-  },
-  {
-    id: 2,
-    name: "LifePoint Medical Centre",
-    specialty: "Nephrology • Kidney Care",
-    distance: "7.8 km",
-    time: "22 min",
-    match: 89,
-    cost: "₹1.5L – ₹2.9L",
-    insurance: "Scheme verified",
-  },
-];
-
-/* =========================================================
    CHATBOT
 ========================================================= */
 
 function Chatbot() {
+  const navigate = useNavigate();
+  const { searchState } = useHospitalSearch();
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
 
   const [input, setInput] = useState("");
@@ -189,6 +166,14 @@ function Chatbot() {
 
     utterance.lang = currentLanguage.speech;
 
+    const matchingVoice = window.speechSynthesis
+      .getVoices()
+      .find((voice) => voice.lang.toLowerCase().startsWith(language));
+
+    if (matchingVoice) {
+      utterance.voice = matchingVoice;
+    }
+
     utterance.rate = 0.95;
 
     utterance.pitch = 1;
@@ -214,6 +199,42 @@ function Chatbot() {
     }
 
     setIsSpeaking(false);
+  };
+
+  const isComparisonRequest = (value) =>
+    /\b(compare|comparison|compare hospitals|side[- ]by[- ]side|versus|vs\.?)\b/i.test(value);
+
+  const isHospitalSearchRequest = (value) =>
+    /\b(find|locate|nearby|nearest|hospital|clinic|kidney|dialysis|cardiac|cancer|doctor|treatment|emergency|healthcare|budget|₹|rs\.?)\b/i.test(value);
+
+  const openHospitalFinder = (query, location) => {
+    const params = new URLSearchParams();
+    params.set("query", query);
+    if (location) {
+      params.set("lat", String(location.lat));
+      params.set("lon", String(location.lon));
+      if (location.accuracy) params.set("accuracy", String(location.accuracy));
+    }
+    navigate(`/find-hospitals?${params.toString()}`);
+  };
+
+  const getLocationForFinder = (query) => {
+    if (!navigator.geolocation) {
+      openHospitalFinder(query);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        openHospitalFinder(query, {
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+      },
+      () => openHospitalFinder(query),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+    );
   };
 
   /* =======================================================
@@ -278,6 +299,34 @@ function Chatbot() {
 
     setInput("");
 
+    if (isComparisonRequest(trimmedInput)) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: Date.now() + 1,
+          type: "assistant",
+          time: "Now",
+          content: "Opening the comparison workspace so you can select and compare hospitals.",
+        },
+      ]);
+      navigate("/compare");
+      return;
+    }
+
+    if (isHospitalSearchRequest(trimmedInput)) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: Date.now() + 1,
+          type: "assistant",
+          time: "Now",
+          content: "I’m opening the hospital finder and using your current location to find nearby options.",
+        },
+      ]);
+      getLocationForFinder(trimmedInput);
+      return;
+    }
+
     setIsTyping(true);
 
     try {
@@ -329,9 +378,11 @@ function Chatbot() {
         audio: true,
       });
 
-      const recorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm",
-      });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+
+      const recorder = new MediaRecorder(stream, { mimeType });
 
       audioChunksRef.current = [];
 
@@ -345,7 +396,7 @@ function Chatbot() {
         stream.getTracks().forEach((track) => track.stop());
 
         const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
+          type: mimeType,
         });
 
         await transcribeAudio(audioBlob);
@@ -583,8 +634,6 @@ function Chatbot() {
     }
 
     if (action.id === "compare") {
-      setShowMatches(true);
-
       setMessages((currentMessages) => [
         ...currentMessages,
         {
@@ -598,10 +647,10 @@ function Chatbot() {
           type: "assistant",
           time: "Now",
           content:
-            "Sure. Once we identify suitable hospitals, I can compare their match score, cost, distance, facilities, insurance compatibility and other available information.",
+            "Opening the comparison workspace so you can select and compare hospitals.",
         },
       ]);
-
+      navigate("/compare");
       return;
     }
 
@@ -1012,14 +1061,21 @@ function Chatbot() {
                       <h3>Suitable hospitals</h3>
                     </div>
 
-                    <button>
+                    <button onClick={() => navigate("/find-hospitals")}>
                       View all
                       <ArrowUp size={14} />
                     </button>
                   </div>
 
                   <div className={styles.matchCards}>
-                    {SAMPLE_MATCHES.map((hospital) => (
+                    {searchState.facilities.length === 0 ? (
+                      <article className={styles.matchCard}>
+                        <div className={styles.hospitalInfo}>
+                          <h4>No live hospital search yet</h4>
+                          <p>Search near your location to see real mapped facilities. Clinical metrics stay unavailable until verified.</p>
+                        </div>
+                      </article>
+                    ) : searchState.facilities.slice(0, 3).map((hospital) => (
                       <article key={hospital.id} className={styles.matchCard}>
                         <div className={styles.matchTop}>
                           <div className={styles.hospitalIcon}>
@@ -1036,27 +1092,27 @@ function Chatbot() {
                         <div className={styles.hospitalInfo}>
                           <h4>{hospital.name}</h4>
 
-                          <p>{hospital.specialty}</p>
+                          <p>{hospital.specialties || "Specialty data not available"}</p>
                         </div>
 
                         <div className={styles.hospitalMeta}>
                           <span>
                             <MapPin size={14} />
-                            {hospital.distance}
+                            {hospital.distanceKm.toFixed(1)} km
                           </span>
 
                           <span>
                             <Activity size={14} />
-                            {hospital.time}
+                            {hospital.travelMinutes ? `~${hospital.travelMinutes} min` : "Data not available"}
                           </span>
                         </div>
 
                         <div className={styles.matchFooter}>
-                          <span>{hospital.cost}</span>
+                          <span>Cost data not available</span>
 
                           <span className={styles.insurance}>
                             <CheckCircle2 size={13} />
-                            {hospital.insurance}
+                            Insurance not verified
                           </span>
                         </div>
                       </article>
@@ -1084,6 +1140,14 @@ function Chatbot() {
                 >
                   <Paperclip size={19} />
                 </button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handlePdfSelected}
+                  hidden
+                />
 
                 <input
                   type="text"
@@ -1155,9 +1219,9 @@ function Chatbot() {
       </section>
 
       <Footer
-        logo="Vital"
+        logo="CurePulse"
         description="AI-powered healthcare discovery that helps you find and compare hospitals based on your needs."
-        email="hello@vitalhealthcare.dev"
+        email="hello@curepulse.health"
         columns={[
           {
             title: "Explore",
