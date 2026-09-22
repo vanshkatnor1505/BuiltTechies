@@ -1,0 +1,496 @@
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import multer from "multer";
+import Groq from "groq-sdk";
+import pdfParse from "pdf-parse";
+
+dotenv.config();
+
+const app = express();
+
+const PORT = process.env.PORT || 5000;
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
+
+app.use(express.json({ limit: "2mb" }));
+
+/* =========================================================
+   MULTER
+========================================================= */
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+
+  fileFilter: (req, file, callback) => {
+    const isPdf =
+      file.mimetype === "application/pdf" ||
+      file.originalname.toLowerCase().endsWith(".pdf");
+
+    if (!isPdf) {
+      return callback(
+        new Error("Only PDF files are allowed."),
+      );
+    }
+
+    callback(null, true);
+  },
+});
+
+/* =========================================================
+   HEALTHCARE SYSTEM PROMPT
+========================================================= */
+
+const HEALTHCARE_SYSTEM_PROMPT = `
+You are Vital, an AI healthcare navigation assistant.
+
+Your role is to help users navigate healthcare options.
+
+You can:
+- Understand a user's healthcare requirement.
+- Ask necessary follow-up questions.
+- Identify relevant medical specialties.
+- Help users search for suitable hospitals.
+- Explain healthcare terminology.
+- Help users understand medical reports in simple language.
+- Discuss factors such as location, budget, insurance, facilities,
+  specialist availability and treatment availability.
+- Help compare healthcare options when verified data is available.
+- Communicate in the user's selected language.
+
+IMPORTANT SAFETY RULES:
+
+1. You are NOT a doctor.
+2. Do not claim to diagnose the user.
+3. Do not present a definitive diagnosis.
+4. Do not prescribe medicines or dosages.
+5. Do not invent hospital information.
+6. Do not invent treatment costs, success rates, doctors,
+   insurance coverage or medical outcomes.
+7. If information is unavailable, explicitly say that it
+   needs to be verified.
+8. For emergency symptoms, recommend contacting local emergency
+   services or going to the nearest emergency department.
+9. Medical report explanations are informational and should not
+   replace assessment by a qualified healthcare professional.
+10. Keep responses clear and practical.
+11. Ask only the follow-up questions that are actually needed.
+
+When discussing hospitals, distinguish between:
+- user requirements
+- verified information
+- unavailable information
+
+Never describe one hospital as universally "the best".
+
+Instead use language such as:
+- "matches your requirements"
+- "may be suitable based on the available information"
+- "this option matches X of your stated requirements"
+
+Selected language:
+{{LANGUAGE}}
+`;
+
+/* =========================================================
+   LANGUAGE MAP
+========================================================= */
+
+const LANGUAGE_NAMES = {
+  en: "English",
+  hi: "Hindi",
+  pa: "Punjabi",
+};
+
+/* =========================================================
+   HEALTH CHECK
+========================================================= */
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    service: "Vital Healthcare AI",
+  });
+});
+
+/* =========================================================
+   CHAT
+========================================================= */
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const {
+      messages,
+      language = "en",
+    } = req.body;
+
+    if (!Array.isArray(messages)) {
+      return res.status(400).json({
+        success: false,
+        message: "Messages must be an array.",
+      });
+    }
+
+    const selectedLanguage =
+      LANGUAGE_NAMES[language] || "English";
+
+    const systemPrompt =
+      HEALTHCARE_SYSTEM_PROMPT.replace(
+        "{{LANGUAGE}}",
+        selectedLanguage,
+      );
+
+    const conversation = [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      ...messages
+        .filter(
+          (message) =>
+            message &&
+            ["user", "assistant"].includes(
+              message.role,
+            ),
+        )
+        .slice(-20)
+        .map((message) => ({
+          role: message.role,
+          content: String(message.content),
+        })),
+    ];
+
+    const completion =
+      await groq.chat.completions.create({
+        model:
+          process.env.GROQ_CHAT_MODEL ||
+          "llama-3.3-70b-versatile",
+
+        messages: conversation,
+
+        temperature: 0.35,
+
+        max_completion_tokens: 1200,
+      });
+
+    const content =
+      completion.choices?.[0]?.message?.content ||
+      "I couldn't generate a response right now.";
+
+    res.json({
+      success: true,
+      message: content,
+      language,
+    });
+  } catch (error) {
+    console.error("CHAT ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Unable to connect to the healthcare assistant.",
+    });
+  }
+});
+
+/* =========================================================
+   SPEECH TO TEXT
+========================================================= */
+
+app.post(
+  "/api/transcribe",
+  upload.single("audio"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "Audio file is required.",
+        });
+      }
+
+      const language = req.body.language || "en";
+
+      const extension =
+        req.file.mimetype === "audio/webm"
+          ? "webm"
+          : req.file.mimetype === "audio/mp4"
+            ? "mp4"
+            : req.file.mimetype === "audio/wav"
+              ? "wav"
+              : "webm";
+
+      const audioFile = new File(
+        [req.file.buffer],
+        `voice.${extension}`,
+        {
+          type: req.file.mimetype,
+        },
+      );
+
+      const transcription =
+        await groq.audio.transcriptions.create({
+          file: audioFile,
+
+          model:
+            process.env.GROQ_STT_MODEL ||
+            "whisper-large-v3-turbo",
+
+          language:
+            language === "en"
+              ? "en"
+              : language === "hi"
+                ? "hi"
+                : language === "pa"
+                  ? "pa"
+                  : undefined,
+
+          response_format: "json",
+        });
+
+      res.json({
+        success: true,
+        text: transcription.text || "",
+        language,
+      });
+    } catch (error) {
+      console.error(
+        "TRANSCRIPTION ERROR:",
+        error,
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Unable to transcribe the audio.",
+      });
+    }
+  },
+);
+
+/* =========================================================
+   PDF REPORT ANALYSIS
+========================================================= */
+
+app.post(
+  "/api/analyze-report",
+  upload.single("report"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "PDF report is required.",
+        });
+      }
+
+      const isPdf =
+        req.file.mimetype === "application/pdf" ||
+        req.file.originalname
+          .toLowerCase()
+          .endsWith(".pdf");
+
+      if (!isPdf) {
+        return res.status(400).json({
+          success: false,
+          message: "Only PDF files are supported.",
+        });
+      }
+
+      const language =
+        req.body.language || "en";
+
+      const selectedLanguage =
+        LANGUAGE_NAMES[language] ||
+        "English";
+
+      /* -----------------------------------------------
+         Extract PDF text
+      ------------------------------------------------ */
+
+      const parsedPdf =
+        await pdfParse(req.file.buffer);
+
+      const extractedText =
+        parsedPdf.text?.trim();
+
+      if (!extractedText) {
+        return res.status(422).json({
+          success: false,
+          message:
+            "This PDF does not contain extractable text. Scanned/image-only PDFs need OCR support.",
+        });
+      }
+
+      /*
+        Prevent unnecessarily huge requests.
+
+        Later we can implement chunking for very large
+        medical reports.
+      */
+
+      const limitedText =
+        extractedText.slice(0, 50000);
+
+      /* -----------------------------------------------
+         Analysis prompt
+      ------------------------------------------------ */
+
+      const reportPrompt = `
+You are analyzing a medical report for healthcare navigation.
+
+Selected language:
+${selectedLanguage}
+
+Analyze the following report and explain it in simple language.
+
+IMPORTANT:
+- Do not diagnose the patient.
+- Do not prescribe medicines.
+- Do not change or recommend medication dosages.
+- Do not claim certainty where the report does not provide it.
+- Do not invent missing values.
+- Clearly distinguish report findings from interpretation.
+- If something is unclear, say so.
+- Recommend discussing important findings with a qualified healthcare professional.
+- If an emergency-looking finding is explicitly present in the report, advise appropriate urgent medical attention without claiming a diagnosis.
+
+Return the response using this structure:
+
+1. SIMPLE SUMMARY
+Explain what the report is generally about.
+
+2. IMPORTANT FINDINGS
+List notable values or observations from the report.
+
+3. WHAT THEY MAY MEAN
+Explain the terminology and findings in simple language.
+Do not turn this into a definitive diagnosis.
+
+4. RELEVANT SPECIALTY
+If the report clearly indicates a medical specialty that may be relevant,
+state it and explain why.
+
+5. QUESTIONS TO ASK A DOCTOR
+Give practical questions the patient may discuss with a doctor.
+
+6. HEALTHCARE NAVIGATION
+Mention what type of healthcare professional or department may be relevant
+based only on the available report information.
+
+7. IMPORTANT NOTE
+Clearly state that this is informational and not a medical diagnosis.
+
+MEDICAL REPORT:
+
+${limitedText}
+`;
+
+      const completion =
+        await groq.chat.completions.create({
+          model:
+            process.env.GROQ_CHAT_MODEL ||
+            "llama-3.3-70b-versatile",
+
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a careful healthcare report explanation assistant.",
+            },
+            {
+              role: "user",
+              content: reportPrompt,
+            },
+          ],
+
+          temperature: 0.2,
+
+          max_completion_tokens: 2500,
+        });
+
+      const analysis =
+        completion.choices?.[0]?.message
+          ?.content ||
+        "Unable to analyze the report.";
+
+      res.json({
+        success: true,
+        filename: req.file.originalname,
+        pages: parsedPdf.numpages,
+        analysis,
+        extractedCharacters:
+          extractedText.length,
+        language,
+      });
+    } catch (error) {
+      console.error(
+        "REPORT ANALYSIS ERROR:",
+        error,
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Unable to analyze the PDF report.",
+      });
+    }
+  },
+);
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use((error, req, res, next) => {
+  if (
+    error instanceof multer.MulterError &&
+    error.code === "LIMIT_FILE_SIZE"
+  ) {
+    return res.status(413).json({
+      success: false,
+      message:
+        "PDF file is too large. Maximum size is 10 MB.",
+    });
+  }
+
+  if (
+    error?.message ===
+    "Only PDF files are allowed."
+  ) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Only PDF files are allowed.",
+    });
+  }
+
+  console.error("SERVER ERROR:", error);
+
+  res.status(500).json({
+    success: false,
+    message: "Something went wrong.",
+  });
+});
+
+/* =========================================================
+   START SERVER
+========================================================= */
+
+app.listen(PORT, () => {
+  console.log(
+    `Vital Healthcare AI server running on http://localhost:${PORT}`,
+  );
+});
