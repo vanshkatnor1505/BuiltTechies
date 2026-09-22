@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 
-import Navbar from "../../components/composed/Navbar/Navbar";
+import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 import styles from "./Chatbot.module.css";
 
@@ -288,16 +288,6 @@ function Chatbot() {
   };
 
   /* =======================================================
-     NAVBAR EMERGENCY ACTION
-  ======================================================= */
-
-  const handleEmergency = () => {
-    handleQuickAction({
-      id: "emergency",
-    });
-  };
-
-  /* =======================================================
      RENDER
   ======================================================= */
 
@@ -313,34 +303,7 @@ function Chatbot() {
           NAVBAR
       =================================================== */}
 
-      <Navbar
-        logo="Vital"
-        variant="glass"
-        position="sticky"
-        links={[
-          {
-            label: "Home",
-            href: "/",
-          },
-          {
-            label: "Find Hospitals",
-            href: "/hospitals",
-          },
-          {
-            label: "How It Works",
-            href: "/#how-it-works",
-          },
-          {
-            label: "About",
-            href: "/#about",
-          },
-        ]}
-        cta={{
-          label: "Emergency Help",
-          variant: "primary",
-          onClick: handleEmergency,
-        }}
-      />
+      <SiteNavbar />
 
       {/* ===================================================
           MOBILE SIDEBAR OVERLAY
@@ -1135,5 +1098,3 @@ function Chatbot() {
 }
 
 export default Chatbot;
-
-

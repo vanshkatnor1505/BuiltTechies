@@ -29,7 +29,7 @@ const Linkedin = ({ size = 20 }) => (
 
 import { Link } from "react-router-dom";
 
-import Navbar from "../../components/composed/Navbar/Navbar";
+import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 
 import Container from "../../components/layout/Container/Container";
@@ -54,36 +54,7 @@ function Team() {
           NAVBAR
       ================================= */}
 
-      <Navbar
-        logo="HackX"
-        variant="glass"
-        position="sticky"
-        links={[
-          {
-            label: "Home",
-            href: "/",
-          },
-          {
-            label: "Features",
-            href: "/#features",
-          },
-          {
-            label: "How It Works",
-            href: "/#how-it-works",
-          },
-          {
-            label: "Team",
-            href: "/team",
-          },
-        ]}
-        cta={{
-          label: "Back Home",
-          variant: "outline",
-          onClick: () => {
-            window.location.href = "/";
-          },
-        }}
-      />
+      <SiteNavbar />
 
       <main>
         {/* =================================
