@@ -1,421 +1,599 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
+  TileLayer,
   Marker,
   Popup,
-  TileLayer,
   Polyline,
+  Circle,
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./HospitalFinder.css";
 
-/* =========================================================
-   LEAFLET ICONS
-========================================================= */
+const DEFAULT_CENTER = [30.7333, 76.7794];
 
-const hospitalIcon = L.divIcon({
-  className: "custom-map-marker",
-  html: `
-    <div class="map-marker hospital-marker">
-      <span>🏥</span>
-    </div>
-  `,
-  iconSize: [42, 42],
-  iconAnchor: [21, 21],
-  popupAnchor: [0, -22],
-});
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+];
 
-const selectedHospitalIcon = L.divIcon({
-  className: "custom-map-marker",
-  html: `
-    <div class="map-marker selected-hospital-marker">
-      <span>🏥</span>
-    </div>
-  `,
-  iconSize: [48, 48],
-  iconAnchor: [24, 24],
-  popupAnchor: [0, -25],
-});
-
-const userIcon = L.divIcon({
-  className: "custom-map-marker",
-  html: `
-    <div class="user-location-marker">
-      <div class="user-location-pulse"></div>
-      <div class="user-location-dot"></div>
-    </div>
-  `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-});
-
-const nearbyHospitalIcon = L.divIcon({
-  className: "nearby-hospital-marker",
-  html: `
-    <div class="nearby-marker-inner">
-      🏥
-    </div>
-  `,
-  iconSize: [42, 42],
-  iconAnchor: [21, 21],
-  popupAnchor: [0, -21],
-});
-
-const nearbyClinicIcon = L.divIcon({
-  className: "nearby-clinic-marker",
-  html: `
-    <div class="nearby-marker-inner clinic-marker-inner">
-      ⚕
-    </div>
-  `,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -20],
-});
-
-/* =========================================================
-   DEMO PERSONALIZED HOSPITAL DATA
-========================================================= */
-
-const hospitals = [
+const SEARCH_GROUPS = [
   {
-    id: 1,
-    name: "CityCare Multispeciality Hospital",
-    position: [30.7333, 76.7794],
-    location: "Chandigarh",
-    match: 94,
-    rating: 4.7,
-    reviews: 1820,
-    specialties: ["Nephrology", "Cardiology", "Neurology"],
-    treatments: ["Kidney Care", "Dialysis", "Kidney Surgery"],
-    costMin: 120000,
-    costMax: 280000,
-    insurance: ["Government Scheme", "Private Insurance"],
-    facilities: [
-      "Emergency",
-      "ICU",
-      "Ambulance",
-      "24/7 Pharmacy",
+    key: "kidney",
+    aliases: [
+      "kidney",
+      "renal",
+      "nephrology",
+      "nephrologist",
+      "dialysis",
+      "urology",
+      "urologist",
+      "renal care",
+      "kidney treatment",
     ],
-    languages: ["English", "Hindi", "Punjabi"],
-    emergency: true,
-    ambulance: true,
-    verified: true,
   },
   {
-    id: 2,
-    name: "LifeLine Medical Centre",
-    position: [30.7046, 76.7179],
-    location: "Mohali",
-    match: 89,
-    rating: 4.5,
-    reviews: 1260,
-    specialties: ["Nephrology", "Urology", "Cardiology"],
-    treatments: ["Kidney Care", "Dialysis", "Urology"],
-    costMin: 100000,
-    costMax: 240000,
-    insurance: ["Government Scheme"],
-    facilities: ["Emergency", "ICU", "Ambulance"],
-    languages: ["English", "Hindi", "Punjabi"],
-    emergency: true,
-    ambulance: true,
-    verified: true,
+    key: "heart",
+    aliases: [
+      "heart",
+      "cardiac",
+      "cardiology",
+      "cardiologist",
+      "coronary",
+      "heart treatment",
+    ],
   },
   {
-    id: 3,
-    name: "NorthCare Institute",
-    position: [30.7683, 76.7794],
-    location: "Sector 16, Chandigarh",
-    match: 86,
-    rating: 4.6,
-    reviews: 980,
-    specialties: ["Nephrology", "Oncology", "Neurology"],
-    treatments: ["Kidney Care", "Dialysis"],
-    costMin: 160000,
-    costMax: 310000,
-    insurance: ["Private Insurance", "Government Scheme"],
-    facilities: ["Emergency", "ICU", "24/7 Pharmacy"],
-    languages: ["English", "Hindi"],
-    emergency: true,
-    ambulance: false,
-    verified: true,
+    key: "cancer",
+    aliases: [
+      "cancer",
+      "oncology",
+      "oncologist",
+      "tumor",
+      "chemotherapy",
+      "radiotherapy",
+      "radiation",
+    ],
   },
   {
-    id: 4,
-    name: "Hope General Hospital",
-    position: [30.7196, 76.8102],
-    location: "Sector 22, Chandigarh",
-    match: 82,
-    rating: 4.3,
-    reviews: 740,
-    specialties: ["General Medicine", "Nephrology"],
-    treatments: ["Kidney Care", "General Treatment"],
-    costMin: 90000,
-    costMax: 210000,
-    insurance: ["Government Scheme"],
-    facilities: ["Emergency", "Ambulance"],
-    languages: ["English", "Hindi", "Punjabi"],
-    emergency: true,
-    ambulance: true,
-    verified: true,
+    key: "brain",
+    aliases: [
+      "brain",
+      "neurology",
+      "neurologist",
+      "neurosurgery",
+      "neurosurgeon",
+      "stroke",
+      "epilepsy",
+    ],
   },
   {
-    id: 5,
-    name: "Prime Health Hospital",
-    position: [30.7415, 76.8185],
-    location: "Sector 43, Chandigarh",
-    match: 79,
-    rating: 4.4,
-    reviews: 610,
-    specialties: ["Cardiology", "Orthopedics", "General Medicine"],
-    treatments: ["General Treatment", "Emergency Care"],
-    costMin: 80000,
-    costMax: 190000,
-    insurance: ["Private Insurance"],
-    facilities: ["Emergency", "ICU"],
-    languages: ["English", "Hindi"],
-    emergency: true,
-    ambulance: false,
-    verified: false,
+    key: "orthopedic",
+    aliases: [
+      "orthopedic",
+      "orthopaedic",
+      "orthopedics",
+      "bone",
+      "joint",
+      "fracture",
+      "spine",
+      "spinal",
+    ],
+  },
+  {
+    key: "eye",
+    aliases: [
+      "eye",
+      "ophthalmology",
+      "ophthalmologist",
+      "optometry",
+      "vision",
+      "cataract",
+      "retina",
+    ],
+  },
+  {
+    key: "dental",
+    aliases: [
+      "dental",
+      "dentist",
+      "dentistry",
+      "tooth",
+      "teeth",
+      "oral",
+      "maxillofacial",
+    ],
+  },
+  {
+    key: "skin",
+    aliases: [
+      "skin",
+      "dermatology",
+      "dermatologist",
+      "acne",
+      "hair",
+      "cosmetic",
+    ],
+  },
+  {
+    key: "children",
+    aliases: [
+      "children",
+      "child",
+      "pediatric",
+      "paediatric",
+      "pediatrics",
+      "paediatrics",
+      "kids",
+      "baby",
+    ],
+  },
+  {
+    key: "women",
+    aliases: [
+      "women",
+      "gynecology",
+      "gynaecology",
+      "gynecologist",
+      "obstetrics",
+      "obstetrician",
+      "maternity",
+      "pregnancy",
+      "fertility",
+    ],
+  },
+  {
+    key: "general",
+    aliases: [
+      "general",
+      "general medicine",
+      "multispeciality",
+      "multispecialty",
+      "hospital",
+      "clinic",
+      "doctor",
+    ],
+  },
+  {
+    key: "emergency",
+    aliases: [
+      "emergency",
+      "urgent",
+      "trauma",
+      "accident",
+      "casualty",
+    ],
+  },
+  {
+    key: "ent",
+    aliases: [
+      "ent",
+      "ear",
+      "nose",
+      "throat",
+      "otolaryngology",
+      "otology",
+    ],
+  },
+  {
+    key: "lung",
+    aliases: [
+      "lung",
+      "pulmonary",
+      "pulmonology",
+      "respiratory",
+      "chest",
+      "asthma",
+    ],
+  },
+  {
+    key: "gastro",
+    aliases: [
+      "gastro",
+      "gastroenterology",
+      "gastroenterologist",
+      "stomach",
+      "liver",
+      "hepatology",
+      "digestive",
+      "intestine",
+    ],
+  },
+  {
+    key: "psychiatry",
+    aliases: [
+      "psychiatry",
+      "psychiatrist",
+      "mental health",
+      "psychology",
+      "psychologist",
+      "behavioral",
+    ],
+  },
+  {
+    key: "physiotherapy",
+    aliases: [
+      "physiotherapy",
+      "physiotherapist",
+      "physical therapy",
+      "rehabilitation",
+      "rehab",
+    ],
+  },
+  {
+    key: "endocrine",
+    aliases: [
+      "endocrine",
+      "endocrinology",
+      "diabetes",
+      "thyroid",
+      "hormone",
+    ],
   },
 ];
 
-/* =========================================================
-   HELPERS
-========================================================= */
+const normalize = (value = "") =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s:-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-const formatCurrency = (amount) => {
-  if (amount === null || amount === undefined) {
-    return "Not available";
-  }
+function getSearchGroups(query) {
+  const normalizedQuery = normalize(query);
 
-  return `₹${amount.toLocaleString("en-IN")}`;
-};
+  return SEARCH_GROUPS.filter((group) =>
+    group.aliases.some(
+      (alias) =>
+        normalizedQuery.includes(alias) ||
+        alias.includes(normalizedQuery)
+    )
+  );
+}
 
-const formatDistance = (distanceKm) => {
-  if (distanceKm === null || distanceKm === undefined) {
-    return "Distance unavailable";
-  }
-
-  if (distanceKm < 1) {
-    return `${Math.round(distanceKm * 1000)} m`;
-  }
-
-  return `${distanceKm.toFixed(1)} km`;
-};
-
-const formatDuration = (minutes) => {
-  if (minutes === null || minutes === undefined) {
-    return "Travel time unavailable";
-  }
-
-  if (minutes < 60) {
-    return `${Math.round(minutes)} min`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = Math.round(minutes % 60);
-
-  if (remainingMinutes === 0) {
-    return `${hours} hr`;
-  }
-
-  return `${hours} hr ${remainingMinutes} min`;
-};
-
-const calculateDistance = (
-  lat1,
-  lon1,
-  lat2,
-  lon2
-) => {
+function haversineDistance(lat1, lon1, lat2, lon2) {
   const earthRadius = 6371;
 
-  const latDifference =
-    ((lat2 - lat1) * Math.PI) / 180;
-
-  const lonDifference =
-    ((lon2 - lon1) * Math.PI) / 180;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
 
   const a =
-    Math.sin(latDifference / 2) *
-      Math.sin(latDifference / 2) +
+    Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(lonDifference / 2) *
-      Math.sin(lonDifference / 2);
+      Math.sin(dLon / 2) ** 2;
 
-  const c =
-    2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
-  return earthRadius * c;
-};
+function estimateTravelTime(distanceKm) {
+  if (!Number.isFinite(distanceKm)) return null;
 
-/* =========================================================
-   MAP CONTROLLER
-========================================================= */
+  const averageSpeed = distanceKm < 5 ? 25 : 35;
+  return Math.max(2, Math.round((distanceKm / averageSpeed) * 60));
+}
 
-function MapController({
-  selectedHospital,
-  userLocation,
-}) {
-  const map = useMap();
+function getElementCoordinates(element) {
+  if (element.type === "node") {
+    return {
+      lat: element.lat,
+      lon: element.lon,
+    };
+  }
 
-  useEffect(() => {
-    if (selectedHospital?.position) {
-      map.flyTo(selectedHospital.position, 13, {
-        duration: 0.8,
-      });
-
-      return;
-    }
-
-    if (userLocation) {
-      map.flyTo(userLocation, 12, {
-        duration: 0.8,
-      });
-    }
-  }, [selectedHospital, userLocation, map]);
+  if (element.center) {
+    return {
+      lat: element.center.lat,
+      lon: element.center.lon,
+    };
+  }
 
   return null;
 }
 
-/* =========================================================
-   MAIN COMPONENT
-========================================================= */
+function getFacilityType(tags = {}) {
+  if (tags.amenity === "hospital") return "Hospital";
+  if (tags.amenity === "clinic") return "Clinic";
+  if (tags.amenity === "doctors") return "Doctor / Clinic";
+
+  if (tags.healthcare === "hospital") return "Hospital";
+  if (tags.healthcare === "clinic") return "Clinic";
+  if (tags.healthcare === "doctor") return "Doctor / Clinic";
+
+  return "Healthcare Facility";
+}
+
+function getSpecialties(tags = {}) {
+  return [
+    tags["healthcare:speciality"],
+    tags["healthcare:specialties"],
+    tags["medical:specialty"],
+    tags["medical_specialty"],
+    tags.speciality,
+    tags.specialties,
+    tags.description,
+    tags["healthcare:speciality:en"],
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+function getFacilityText(tags = {}) {
+  return normalize(
+    [
+      tags.name,
+      tags["name:en"],
+      tags.amenity,
+      tags.healthcare,
+      tags["healthcare:speciality"],
+      tags["healthcare:specialties"],
+      tags["medical:specialty"],
+      tags["medical_specialty"],
+      tags.speciality,
+      tags.specialties,
+      tags.description,
+      tags.operator,
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+}
+
+function calculateRequirementMatch(tags, query) {
+  const normalizedQuery = normalize(query);
+
+  if (!normalizedQuery) return 50;
+
+  const facilityText = getFacilityText(tags);
+  const groups = getSearchGroups(query);
+
+  if (
+    normalizedQuery === "hospital" ||
+    normalizedQuery === "hospitals"
+  ) {
+    return tags.amenity === "hospital" ? 100 : 70;
+  }
+
+  if (
+    normalizedQuery === "clinic" ||
+    normalizedQuery === "clinics"
+  ) {
+    return tags.amenity === "clinic" ? 100 : 70;
+  }
+
+  let score = 35;
+
+  if (facilityText.includes(normalizedQuery)) {
+    score += 45;
+  }
+
+  if (groups.length > 0) {
+    const matchedGroup = groups.find((group) =>
+      group.aliases.some((alias) => facilityText.includes(alias))
+    );
+
+    if (matchedGroup) {
+      score += 45;
+    }
+
+    const specialtyText = normalize(getSpecialties(tags));
+
+    if (
+      matchedGroup &&
+      matchedGroup.aliases.some((alias) => specialtyText.includes(alias))
+    ) {
+      score += 20;
+    }
+  }
+
+  const queryWords = normalizedQuery
+    .split(" ")
+    .filter((word) => word.length > 2);
+
+  const matchedWords = queryWords.filter((word) =>
+    facilityText.includes(word)
+  );
+
+  if (queryWords.length > 0) {
+    score += Math.round((matchedWords.length / queryWords.length) * 20);
+  }
+
+  return Math.min(99, Math.max(25, score));
+}
+
+function buildAddress(tags = {}) {
+  const parts = [
+    tags["addr:housenumber"],
+    tags["addr:street"],
+    tags["addr:suburb"],
+    tags["addr:city"],
+    tags["addr:postcode"],
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(", ") : "Address not available";
+}
+
+function transformFacility(element, userLocation, searchQuery) {
+  const coordinates = getElementCoordinates(element);
+
+  if (!coordinates) return null;
+
+  const tags = element.tags || {};
+
+  const distanceKm = haversineDistance(
+    userLocation.lat,
+    userLocation.lon,
+    coordinates.lat,
+    coordinates.lon
+  );
+
+  const emergency =
+    tags.emergency === "yes" ||
+    tags["emergency:ambulance"] === "yes" ||
+    normalize(tags.description).includes("emergency");
+
+  return {
+    id: `${element.type}-${element.id}`,
+    osmId: element.id,
+    osmType: element.type,
+    name:
+      tags.name ||
+      tags["name:en"] ||
+      "Unnamed healthcare facility",
+
+    type: getFacilityType(tags),
+
+    lat: coordinates.lat,
+    lon: coordinates.lon,
+
+    tags,
+
+    address: buildAddress(tags),
+
+    phone: tags.phone || tags["contact:phone"] || "",
+
+    website:
+      tags.website ||
+      tags["contact:website"] ||
+      tags.url ||
+      "",
+
+    openingHours: tags.opening_hours || "",
+
+    operator: tags.operator || "",
+
+    emergency,
+
+    specialties: getSpecialties(tags),
+
+    healthcare: tags.healthcare || "",
+
+    amenity: tags.amenity || "",
+
+    distanceKm,
+
+    travelMinutes: estimateTravelTime(distanceKm),
+
+    match: calculateRequirementMatch(tags, searchQuery),
+  };
+}
+
+function createFacilityIcon(selected = false, emergency = false) {
+  return L.divIcon({
+    className: "hospital-marker-wrapper",
+    html: `
+      <div class="
+        hospital-marker
+        ${selected ? "is-selected" : ""}
+        ${emergency ? "is-emergency" : ""}
+      ">
+        <span>+</span>
+      </div>
+    `,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -20],
+  });
+}
+
+function MapController({ center, selectedFacility, route }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (selectedFacility) {
+      map.flyTo(
+        [selectedFacility.lat, selectedFacility.lon],
+        15,
+        {
+          duration: 0.8,
+        }
+      );
+    }
+  }, [selectedFacility, map]);
+
+  useEffect(() => {
+    if (!route || route.length === 0) return;
+
+    const bounds = L.latLngBounds(route);
+    map.fitBounds(bounds, {
+      padding: [50, 50],
+      maxZoom: 15,
+    });
+  }, [route, map]);
+
+  useEffect(() => {
+    if (!selectedFacility && !route) {
+      map.setView(center, 13);
+    }
+  }, [center, selectedFacility, route, map]);
+
+  return null;
+}
 
 export default function HospitalFinder() {
-  /* -------------------------------------------------------
-     SEARCH / FILTER STATE
-  ------------------------------------------------------- */
+  const [searchQuery, setSearchQuery] = useState("Kidney treatment");
 
-  const [search, setSearch] = useState("Kidney treatment");
-  const [specialty, setSpecialty] = useState("All");
-  const [insurance, setInsurance] = useState("All");
-  const [budget, setBudget] = useState(300000);
-  const [emergencyOnly, setEmergencyOnly] =
-    useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("idle");
 
-  /* -------------------------------------------------------
-     UI STATE
-  ------------------------------------------------------- */
+  const [facilities, setFacilities] = useState([]);
+  const [selectedFacility, setSelectedFacility] = useState(null);
 
-  const [selectedHospital, setSelectedHospital] =
-    useState(null);
+  const [radius, setRadius] = useState(5);
 
-  const [view, setView] = useState("split");
+  const [facilityType, setFacilityType] = useState("all");
+  const [emergencyOnly, setEmergencyOnly] = useState(false);
 
   const [sortBy, setSortBy] = useState("match");
 
-  const [compareList, setCompareList] = useState([]);
+  const [viewMode, setViewMode] = useState("split");
 
-  /* -------------------------------------------------------
-     USER LOCATION STATE
-  ------------------------------------------------------- */
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [userLocation, setUserLocation] =
-    useState(null);
+  const [route, setRoute] = useState(null);
+  const [routeLoading, setRouteLoading] = useState(false);
 
-  const [locationStatus, setLocationStatus] =
-    useState("idle");
+  const [compareIds, setCompareIds] = useState([]);
 
-  const [locationError, setLocationError] =
-    useState("");
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  /* -------------------------------------------------------
-     NEARBY HEALTHCARE STATE
-  ------------------------------------------------------- */
-
-  const [nearbyPlaces, setNearbyPlaces] =
-    useState([]);
-
-  const [nearbyLoading, setNearbyLoading] =
-    useState(false);
-
-  const [nearbyError, setNearbyError] =
-    useState("");
-
-  const [nearbyRadius, setNearbyRadius] =
-    useState(10000);
-
-  /* -------------------------------------------------------
-     ROUTE STATE
-  ------------------------------------------------------- */
-
-  const [route, setRoute] = useState([]);
-
-  const [routeInfo, setRouteInfo] =
-    useState(null);
-
-  const [routeLoading, setRouteLoading] =
-    useState(false);
-
-  const [routeError, setRouteError] =
-    useState("");
-
-  /* =======================================================
-     GET USER LOCATION
-  ======================================================= */
-
-  const getUserLocation = () => {
+  const getLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setLocationStatus("error");
-      setLocationError(
-        "Geolocation is not supported by your browser."
-      );
+      setError("Your browser does not support location access.");
       return;
     }
 
     setLocationStatus("loading");
-    setLocationError("");
+    setError("");
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const {
-          latitude,
-          longitude,
-        } = position.coords;
+        setUserLocation({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
 
-        const coordinates = [
-          latitude,
-          longitude,
-        ];
-
-        setUserLocation(coordinates);
         setLocationStatus("success");
-        setLocationError("");
-
-        fetchNearbyHealthcare(
-          latitude,
-          longitude
-        );
+        setError("");
       },
-      (error) => {
-        console.error(
-          "Geolocation error:",
-          error
-        );
+      (locationError) => {
+        console.error(locationError);
 
         setLocationStatus("error");
 
-        if (error.code === 1) {
-          setLocationError(
-            "Location permission was denied. Please allow location access to find nearby hospitals."
+        if (locationError.code === 1) {
+          setError(
+            "Location permission was denied. Please allow location access in your browser."
           );
-        } else if (error.code === 2) {
-          setLocationError(
-            "Your location could not be determined."
-          );
-        } else if (error.code === 3) {
-          setLocationError(
-            "Location request timed out. Please try again."
-          );
+        } else if (locationError.code === 2) {
+          setError("Your location could not be determined.");
         } else {
-          setLocationError(
-            "Unable to access your location."
-          );
+          setError("Location request timed out. Please try again.");
         }
       },
       {
@@ -424,1728 +602,860 @@ export default function HospitalFinder() {
         maximumAge: 30000,
       }
     );
-  };
+  }, []);
 
-  /* =======================================================
-     FETCH REAL NEARBY HEALTHCARE
-  ======================================================= */
+  const fetchNearbyFacilities = useCallback(async () => {
+    if (!userLocation) {
+      setError("Please allow location access before searching nearby facilities.");
+      return;
+    }
 
-  const fetchNearbyHealthcare = async (
-    latitude,
-    longitude
-  ) => {
-    setNearbyLoading(true);
-    setNearbyError("");
+    setLoading(true);
+    setError("");
+    setSelectedFacility(null);
+    setRoute(null);
 
     const query = `
       [out:json][timeout:25];
 
       (
-        nwr["amenity"="hospital"](around:${nearbyRadius},${latitude},${longitude});
-        nwr["amenity"="clinic"](around:${nearbyRadius},${latitude},${longitude});
-        nwr["amenity"="doctors"](around:${nearbyRadius},${latitude},${longitude});
+        nwr(
+          around:${radius * 1000},
+          ${userLocation.lat},
+          ${userLocation.lon}
+        )["amenity"~"hospital|clinic|doctors"];
 
-        nwr["healthcare"="hospital"](around:${nearbyRadius},${latitude},${longitude});
-        nwr["healthcare"="clinic"](around:${nearbyRadius},${latitude},${longitude});
-        nwr["healthcare"="doctor"](around:${nearbyRadius},${latitude},${longitude});
+        nwr(
+          around:${radius * 1000},
+          ${userLocation.lat},
+          ${userLocation.lon}
+        )["healthcare"];
       );
 
       out center tags;
     `;
 
-    try {
-      const response = await fetch(
-        "https://overpass-api.de/api/interpreter",
-        {
+    let responseData = null;
+    let lastError = null;
+
+    for (const endpoint of OVERPASS_ENDPOINTS) {
+      try {
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: {
-            "Content-Type":
-              "application/x-www-form-urlencoded",
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
           },
           body: `data=${encodeURIComponent(query)}`,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Overpass returned HTTP ${response.status}`);
         }
-      );
 
-      if (!response.ok) {
-        throw new Error(
-          "Unable to retrieve nearby healthcare facilities."
-        );
+        responseData = await response.json();
+        break;
+      } catch (requestError) {
+        lastError = requestError;
       }
-
-      const data = await response.json();
-
-      const places = data.elements
-        .map((element) => {
-          const latitudeValue =
-            element.lat ??
-            element.center?.lat;
-
-          const longitudeValue =
-            element.lon ??
-            element.center?.lon;
-
-          if (
-            typeof latitudeValue !== "number" ||
-            typeof longitudeValue !== "number"
-          ) {
-            return null;
-          }
-
-          const tags = element.tags || {};
-
-          let type =
-            "Healthcare Facility";
-
-          if (
-            tags.amenity === "hospital" ||
-            tags.healthcare === "hospital"
-          ) {
-            type = "Hospital";
-          } else if (
-            tags.amenity === "clinic" ||
-            tags.healthcare === "clinic"
-          ) {
-            type = "Clinic";
-          } else if (
-            tags.amenity === "doctors" ||
-            tags.healthcare === "doctor"
-          ) {
-            type = "Doctor";
-          }
-
-          const distance =
-            calculateDistance(
-              latitude,
-              longitude,
-              latitudeValue,
-              longitudeValue
-            );
-
-          return {
-            id: `${element.type}-${element.id}`,
-            name:
-              tags.name ||
-              "Unnamed Healthcare Facility",
-            type,
-            latitude: latitudeValue,
-            longitude: longitudeValue,
-            distance,
-
-            address: [
-              tags["addr:housenumber"],
-              tags["addr:street"],
-              tags["addr:suburb"],
-              tags["addr:city"],
-            ]
-              .filter(Boolean)
-              .join(", "),
-
-            phone:
-              tags.phone ||
-              tags["contact:phone"] ||
-              "",
-
-            website:
-              tags.website ||
-              tags["contact:website"] ||
-              "",
-
-            emergency:
-              tags.emergency === "yes",
-
-            openingHours:
-              tags.opening_hours || "",
-          };
-        })
-        .filter(Boolean)
-        .sort(
-          (a, b) => a.distance - b.distance
-        );
-
-      const uniquePlaces = Array.from(
-        new Map(
-          places.map((place) => [
-            place.id,
-            place,
-          ])
-        ).values()
-      );
-
-      setNearbyPlaces(uniquePlaces);
-    } catch (error) {
-      console.error(
-        "Nearby healthcare error:",
-        error
-      );
-
-      setNearbyError(
-        "We couldn't load nearby healthcare facilities right now."
-      );
-
-      setNearbyPlaces([]);
-    } finally {
-      setNearbyLoading(false);
     }
-  };
 
-  /* =======================================================
-     INITIAL LOCATION
-  ======================================================= */
+    if (!responseData) {
+      console.error(lastError);
+
+      setLoading(false);
+      setError(
+        "The healthcare map service is temporarily unavailable. Please try again in a moment."
+      );
+      return;
+    }
+
+    const uniqueElements = new Map();
+
+    (responseData.elements || []).forEach((element) => {
+      uniqueElements.set(
+        `${element.type}-${element.id}`,
+        element
+      );
+    });
+
+    const transformed = Array.from(uniqueElements.values())
+      .map((element) =>
+        transformFacility(element, userLocation, searchQuery)
+      )
+      .filter(Boolean)
+      .filter((facility) => facility.distanceKm <= radius);
+
+    setFacilities(transformed);
+    setLastUpdated(new Date());
+
+    if (transformed.length === 0) {
+      setError(
+        "No mapped healthcare facilities were found in this area. Try increasing the search radius or changing the search term."
+      );
+    }
+
+    setLoading(false);
+  }, [radius, searchQuery, userLocation]);
 
   useEffect(() => {
-    getUserLocation();
-  }, []);
+    if (!userLocation) {
+      getLocation();
+    }
+  }, [getLocation, userLocation]);
 
-  /* =======================================================
-     HOSPITALS + DISTANCE
-  ======================================================= */
+  const filteredFacilities = useMemo(() => {
+    let result = [...facilities];
 
-  const hospitalsWithDistance = useMemo(() => {
-    return hospitals.map((hospital) => {
-      if (!userLocation) {
-        return {
-          ...hospital,
-          distance: null,
-          estimatedTravelTime: null,
-        };
-      }
-
-      const distance =
-        calculateDistance(
-          userLocation[0],
-          userLocation[1],
-          hospital.position[0],
-          hospital.position[1]
-        );
-
-      const estimatedTravelTime =
-        (distance / 30) * 60;
-
-      return {
-        ...hospital,
-        distance,
-        estimatedTravelTime,
-      };
-    });
-  }, [userLocation]);
-
-  /* =======================================================
-     FILTER + SORT
-  ======================================================= */
-
-  const filteredHospitals = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
-
-    let result =
-      hospitalsWithDistance.filter(
-        (hospital) => {
-          const matchesSearch =
-            !query ||
-            hospital.name
-              .toLowerCase()
-              .includes(query) ||
-            hospital.specialties.some(
-              (item) =>
-                item
-                  .toLowerCase()
-                  .includes(query)
-            ) ||
-            hospital.treatments.some(
-              (item) =>
-                item
-                  .toLowerCase()
-                  .includes(query)
-            );
-
-          const matchesSpecialty =
-            specialty === "All" ||
-            hospital.specialties.includes(
-              specialty
-            );
-
-          const matchesInsurance =
-            insurance === "All" ||
-            hospital.insurance.includes(
-              insurance
-            );
-
-          const matchesBudget =
-            hospital.costMin <= budget;
-
-          const matchesEmergency =
-            !emergencyOnly ||
-            hospital.emergency;
-
-          return (
-            matchesSearch &&
-            matchesSpecialty &&
-            matchesInsurance &&
-            matchesBudget &&
-            matchesEmergency
-          );
-        }
+    if (facilityType !== "all") {
+      result = result.filter(
+        (facility) => facility.type === facilityType
       );
+    }
+
+    if (emergencyOnly) {
+      result = result.filter((facility) => facility.emergency);
+    }
 
     result.sort((a, b) => {
-      if (sortBy === "match") {
-        return b.match - a.match;
+      if (sortBy === "distance") {
+        return a.distanceKm - b.distanceKm;
       }
 
-      if (sortBy === "distance") {
-        if (
-          a.distance === null ||
-          b.distance === null
-        ) {
-          return 0;
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      }
+
+      if (sortBy === "match") {
+        if (b.match !== a.match) {
+          return b.match - a.match;
         }
 
-        return a.distance - b.distance;
-      }
-
-      if (sortBy === "rating") {
-        return b.rating - a.rating;
-      }
-
-      if (sortBy === "cost") {
-        return a.costMin - b.costMin;
+        return a.distanceKm - b.distanceKm;
       }
 
       return 0;
     });
 
     return result;
-  }, [
-    hospitalsWithDistance,
-    search,
-    specialty,
-    insurance,
-    budget,
-    emergencyOnly,
-    sortBy,
-  ]);
+  }, [facilities, facilityType, emergencyOnly, sortBy]);
 
-  /* =======================================================
-     SELECT HOSPITAL
-  ======================================================= */
+  const facilityTypes = useMemo(() => {
+    return Array.from(
+      new Set(facilities.map((facility) => facility.type))
+    );
+  }, [facilities]);
 
-  const handleSelectHospital = (
-    hospital
-  ) => {
-    setSelectedHospital(hospital);
-    setRoute([]);
-    setRouteInfo(null);
-    setRouteError("");
+  const search = () => {
+    fetchNearbyFacilities();
   };
 
-  /* =======================================================
-     ROUTE FROM USER TO SELECTED HOSPITAL
-  ======================================================= */
+  const selectFacility = (facility) => {
+    setSelectedFacility(facility);
+    setViewMode("split");
+  };
 
-  useEffect(() => {
-    if (
-      !userLocation ||
-      !selectedHospital?.position
-    ) {
-      setRoute([]);
-      setRouteInfo(null);
-      return;
-    }
-
-    const fetchRoute = async () => {
-      setRouteLoading(true);
-      setRouteError("");
-      setRoute([]);
-
-      const startLat = userLocation[0];
-      const startLng = userLocation[1];
-
-      const endLat =
-        selectedHospital.position[0];
-
-      const endLng =
-        selectedHospital.position[1];
-
-      const url =
-        `https://router.project-osrm.org/route/v1/driving/` +
-        `${startLng},${startLat};` +
-        `${endLng},${endLat}` +
-        `?overview=full&geometries=geojson`;
-
-      try {
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          throw new Error(
-            "Route request failed."
-          );
-        }
-
-        const data = await response.json();
-
-        if (
-          !data.routes ||
-          !data.routes.length
-        ) {
-          throw new Error(
-            "No route was found."
-          );
-        }
-
-        const firstRoute =
-          data.routes[0];
-
-        const routeCoordinates =
-          firstRoute.geometry.coordinates.map(
-            ([lng, lat]) => [
-              lat,
-              lng,
-            ]
-          );
-
-        setRoute(routeCoordinates);
-
-        setRouteInfo({
-          distance:
-            firstRoute.distance / 1000,
-          duration:
-            firstRoute.duration / 60,
-        });
-      } catch (error) {
-        console.error(
-          "Route error:",
-          error
-        );
-
-        setRouteError(
-          "Unable to calculate the driving route."
-        );
-      } finally {
-        setRouteLoading(false);
-      }
-    };
-
-    fetchRoute();
-  }, [
-    userLocation,
-    selectedHospital,
-  ]);
-
-  /* =======================================================
-     COMPARE
-  ======================================================= */
-
-  const toggleCompare = (
-    hospital
-  ) => {
-    setCompareList((current) => {
-      const exists = current.some(
-        (item) =>
-          item.id === hospital.id
-      );
-
-      if (exists) {
-        return current.filter(
-          (item) =>
-            item.id !== hospital.id
-        );
+  const toggleCompare = (facility) => {
+    setCompareIds((current) => {
+      if (current.includes(facility.id)) {
+        return current.filter((id) => id !== facility.id);
       }
 
       if (current.length >= 3) {
         return current;
       }
 
-      return [...current, hospital];
+      return [...current, facility.id];
     });
   };
 
-  /* =======================================================
-     NAVIGATION
-  ======================================================= */
+  const clearFilters = () => {
+    setFacilityType("all");
+    setEmergencyOnly(false);
+    setSortBy("match");
+    setRadius(5);
+  };
 
-  const startNavigation = () => {
-    if (!selectedHospital?.position) {
-      return;
+  const startRoute = async (facility) => {
+    if (!userLocation) return;
+
+    setSelectedFacility(facility);
+    setRouteLoading(true);
+    setError("");
+
+    try {
+      const url =
+        `https://router.project-osrm.org/route/v1/driving/` +
+        `${userLocation.lon},${userLocation.lat};` +
+        `${facility.lon},${facility.lat}` +
+        `?overview=full&geometries=geojson`;
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error("Route request failed.");
+      }
+
+      const data = await response.json();
+
+      if (!data.routes?.length) {
+        throw new Error("No route found.");
+      }
+
+      const coordinates = data.routes[0].geometry.coordinates.map(
+        ([lon, lat]) => [lat, lon]
+      );
+
+      setRoute(coordinates);
+    } catch (routeError) {
+      console.error(routeError);
+      setError(
+        "The route could not be loaded. You can still open navigation in Google Maps."
+      );
+    } finally {
+      setRouteLoading(false);
     }
+  };
 
-    const destination =
-      `${selectedHospital.position[0]},` +
-      `${selectedHospital.position[1]}`;
+  const openGoogleMaps = (facility) => {
+    if (!userLocation) return;
 
-    let url =
+    const destination = `${facility.lat},${facility.lon}`;
+    const origin = `${userLocation.lat},${userLocation.lon}`;
+
+    const url =
       `https://www.google.com/maps/dir/?api=1` +
-      `&destination=${encodeURIComponent(
-        destination
-      )}` +
+      `&origin=${encodeURIComponent(origin)}` +
+      `&destination=${encodeURIComponent(destination)}` +
       `&travelmode=driving`;
 
-    if (userLocation) {
-      const origin =
-        `${userLocation[0]},` +
-        `${userLocation[1]}`;
-
-      url +=
-        `&origin=${encodeURIComponent(
-          origin
-        )}`;
-    }
-
-    window.open(
-      url,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  /* =======================================================
-     CONVERT NEARBY PLACE TO SELECTABLE OBJECT
-  ======================================================= */
-
-  const selectNearbyPlace = (
-    place
-  ) => {
-    const nearbyHospital = {
-      id: place.id,
-      name: place.name,
-
-      position: [
-        place.latitude,
-        place.longitude,
-      ],
-
-      location:
-        place.address || "Nearby",
-
-      match: null,
-      rating: null,
-      reviews: null,
-
-      specialties: [],
-      treatments: [],
-
-      costMin: null,
-      costMax: null,
-
-      insurance: [],
-      facilities: [],
-      languages: [],
-
-      emergency: place.emergency,
-      ambulance: false,
-
-      verified: false,
-      nearby: true,
-
-      phone: place.phone,
-      website: place.website,
-      openingHours:
-        place.openingHours,
-      type: place.type,
-    };
-
-    setSelectedHospital(
-      nearbyHospital
+  const compareFacilities = useMemo(() => {
+    return facilities.filter((facility) =>
+      compareIds.includes(facility.id)
     );
+  }, [facilities, compareIds]);
 
-    setRoute([]);
-    setRouteInfo(null);
-    setRouteError("");
-  };
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
+  const mapCenter = userLocation
+    ? [userLocation.lat, userLocation.lon]
+    : DEFAULT_CENTER;
 
   return (
-    <div className="hospital-finder-page">
+    <div className="hospital-finder-page" data-theme="vital">
+      <div className="hospital-finder-shell">
 
-      {/* ===================================================
-          HEADER
-      =================================================== */}
-
-      <div className="hospital-finder-header">
-
-        <div>
-          <div className="page-eyebrow">
-            HEALTHCARE DISCOVERY
-          </div>
-
-          <h1>
-            Find the right hospital
-          </h1>
-
-          <p>
-            Discover hospitals that match
-            your health needs, preferences,
-            location and budget.
-          </p>
-        </div>
-
-        <div className="location-status-wrapper">
-
-          {locationStatus ===
-            "loading" && (
-            <div className="location-loading">
-              <span className="status-dot loading-dot" />
-              Finding your location...
-            </div>
-          )}
-
-          {locationStatus ===
-            "success" && (
-            <div className="location-success">
-              <span className="status-dot" />
-              Location detected
-            </div>
-          )}
-
-          {locationStatus ===
-            "error" && (
-            <div className="location-error">
-              {locationError}
-            </div>
-          )}
-
-          <button
-            type="button"
-            className="location-button"
-            onClick={
-              getUserLocation
-            }
-          >
-            📍 Use my location
-          </button>
-        </div>
-      </div>
-
-      {/* ===================================================
-          SEARCH
-      =================================================== */}
-
-      <div className="hospital-search-section">
-
-        <div className="hospital-search-box">
-          <span className="search-icon">
-            🔎
-          </span>
-
-          <input
-            type="text"
-            value={search}
-            onChange={(event) =>
-              setSearch(
-                event.target.value
-              )
-            }
-            placeholder="Search disease, treatment, hospital or specialty..."
-          />
-        </div>
-
-        <div className="requirement-chips">
-
-          <button
-            type="button"
-            className={
-              specialty === "Nephrology"
-                ? "requirement-chip active"
-                : "requirement-chip"
-            }
-            onClick={() =>
-              setSpecialty(
-                specialty ===
-                  "Nephrology"
-                  ? "All"
-                  : "Nephrology"
-              )
-            }
-          >
-            Kidney Care
-          </button>
-
-          <button
-            type="button"
-            className={
-              emergencyOnly
-                ? "requirement-chip active"
-                : "requirement-chip"
-            }
-            onClick={() =>
-              setEmergencyOnly(
-                (current) => !current
-              )
-            }
-          >
-            Emergency
-          </button>
-
-          <button
-            type="button"
-            className="requirement-chip"
-            onClick={() =>
-              setInsurance(
-                "Government Scheme"
-              )
-            }
-          >
-            Government Scheme
-          </button>
-
-          <button
-            type="button"
-            className="requirement-chip"
-            onClick={() =>
-              setInsurance("All")
-            }
-          >
-            Clear filters
-          </button>
-
-        </div>
-      </div>
-
-      {/* ===================================================
-          MAIN CONTENT
-      =================================================== */}
-
-      <div className="hospital-finder-layout">
-
-        {/* =================================================
-            FILTER SIDEBAR
-        ================================================= */}
-
-        <aside className="hospital-filter-sidebar">
-
-          <div className="filter-header">
-            <div>
-              <span>
-                FILTERS
-              </span>
-
-              <h3>
-                Your requirements
-              </h3>
-            </div>
-          </div>
-
-          <div className="filter-group">
-
-            <label>
-              Specialty
-            </label>
-
-            <select
-              value={specialty}
-              onChange={(event) =>
-                setSpecialty(
-                  event.target.value
-                )
-              }
-            >
-              <option value="All">
-                All specialties
-              </option>
-
-              <option value="Nephrology">
-                Nephrology
-              </option>
-
-              <option value="Cardiology">
-                Cardiology
-              </option>
-
-              <option value="Neurology">
-                Neurology
-              </option>
-
-              <option value="Urology">
-                Urology
-              </option>
-
-              <option value="General Medicine">
-                General Medicine
-              </option>
-
-              <option value="Oncology">
-                Oncology
-              </option>
-
-              <option value="Orthopedics">
-                Orthopedics
-              </option>
-            </select>
-
-          </div>
-
-          <div className="filter-group">
-
-            <label>
-              Insurance
-            </label>
-
-            <select
-              value={insurance}
-              onChange={(event) =>
-                setInsurance(
-                  event.target.value
-                )
-              }
-            >
-              <option value="All">
-                Any insurance
-              </option>
-
-              <option value="Government Scheme">
-                Government Scheme
-              </option>
-
-              <option value="Private Insurance">
-                Private Insurance
-              </option>
-            </select>
-
-          </div>
-
-          <div className="filter-group">
-
-            <div className="filter-label-row">
-              <label>
-                Maximum budget
-              </label>
-
-              <strong>
-                {formatCurrency(
-                  budget
-                )}
-              </strong>
+        {/* HEADER */}
+        <header className="hospital-finder-header">
+          <div>
+            <div className="eyebrow">
+              HEALTHCARE DISCOVERY
             </div>
 
-            <input
-              type="range"
-              min="50000"
-              max="500000"
-              step="10000"
-              value={budget}
-              onChange={(event) =>
-                setBudget(
-                  Number(
-                    event.target.value
-                  )
-                )
-              }
-            />
-
-          </div>
-
-          <label className="emergency-toggle">
-
-            <input
-              type="checkbox"
-              checked={emergencyOnly}
-              onChange={(event) =>
-                setEmergencyOnly(
-                  event.target.checked
-                )
-              }
-            />
-
-            <span>
-              Emergency services required
-            </span>
-
-          </label>
-
-          <div className="filter-divider" />
-
-          <div className="filter-note">
-            <strong>
-              Matching is personalized
-            </strong>
+            <h1>Find the right healthcare facility</h1>
 
             <p>
-              Results are based on your
-              stated requirements rather
-              than a generic hospital ranking.
+              Search by health problem, treatment, or specialty.
+              We match your requirement with mapped healthcare data
+              around your location.
             </p>
           </div>
 
-        </aside>
+          <button
+            className="location-button"
+            onClick={getLocation}
+            disabled={locationStatus === "loading"}
+          >
+            <span className="location-icon">⌖</span>
 
-        {/* =================================================
-            RESULTS + MAP
-        ================================================= */}
+            {locationStatus === "loading"
+              ? "Detecting..."
+              : userLocation
+              ? "Location detected"
+              : "Use my location"}
+          </button>
+        </header>
 
-        <main className="hospital-results-area">
+        {/* SEARCH */}
+        <section className="finder-search-panel">
+          <div className="search-main">
+            <label htmlFor="health-search">
+              What healthcare do you need?
+            </label>
 
-          {/* ===============================================
-              RESULTS TOOLBAR
-          =============================================== */}
+            <div className="search-row">
+              <div className="search-input-wrapper">
+                <span className="search-symbol">⌕</span>
 
-          <div className="results-toolbar">
+                <input
+                  id="health-search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) =>
+                    setSearchQuery(event.target.value)
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      search();
+                    }
+                  }}
+                  placeholder="e.g. kidney treatment, heart, cancer, eye..."
+                />
+              </div>
 
-            <div>
-              <strong>
-                {filteredHospitals.length}
-              </strong>{" "}
-              personalized matches
+              <button
+                className="primary-search-button"
+                onClick={search}
+                disabled={loading || !userLocation}
+              >
+                {loading ? "Searching..." : "Find healthcare"}
+              </button>
             </div>
 
-            <div className="results-controls">
+            <div className="search-chips">
+              {[
+                "Kidney treatment",
+                "Heart",
+                "Cancer",
+                "Eye",
+                "Orthopedic",
+                "Children",
+                "Emergency",
+              ].map((keyword) => (
+                <button
+                  key={keyword}
+                  className="search-chip"
+                  onClick={() => {
+                    setSearchQuery(keyword);
+
+                    if (userLocation) {
+                      setTimeout(() => {
+                        fetchNearbyFacilities();
+                      }, 0);
+                    }
+                  }}
+                >
+                  {keyword}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* STATUS */}
+        {error && (
+          <div className="finder-alert">
+            <span>!</span>
+            <div>
+              <strong>Search status</strong>
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* FILTER BAR */}
+        <section className="finder-toolbar">
+          <div className="toolbar-left">
+
+            <div className="filter-group">
+              <label>Radius</label>
+
+              <select
+                value={radius}
+                onChange={(event) =>
+                  setRadius(Number(event.target.value))
+                }
+              >
+                <option value={2}>2 km</option>
+                <option value={5}>5 km</option>
+                <option value={10}>10 km</option>
+                <option value={20}>20 km</option>
+                <option value={50}>50 km</option>
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>Facility</label>
+
+              <select
+                value={facilityType}
+                onChange={(event) =>
+                  setFacilityType(event.target.value)
+                }
+              >
+                <option value="all">All facilities</option>
+
+                {facilityTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>Sort</label>
 
               <select
                 value={sortBy}
                 onChange={(event) =>
-                  setSortBy(
-                    event.target.value
-                  )
+                  setSortBy(event.target.value)
                 }
               >
-                <option value="match">
-                  Best match
-                </option>
-
-                <option value="distance">
-                  Nearest
-                </option>
-
-                <option value="rating">
-                  Highest rated
-                </option>
-
-                <option value="cost">
-                  Lowest cost
-                </option>
+                <option value="match">Requirement match</option>
+                <option value="distance">Nearest first</option>
+                <option value="name">Name</option>
               </select>
-
-              <div className="view-switcher">
-
-                <button
-                  type="button"
-                  className={
-                    view === "split"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    setView("split")
-                  }
-                >
-                  Split
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    view === "list"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    setView("list")
-                  }
-                >
-                  List
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    view === "map"
-                      ? "active"
-                      : ""
-                  }
-                  onClick={() =>
-                    setView("map")
-                  }
-                >
-                  Map
-                </button>
-
-              </div>
-
             </div>
-          </div>
 
-          {/* ===============================================
-              NEARBY HEALTHCARE
-          =============================================== */}
+            <label className="emergency-toggle">
+              <input
+                type="checkbox"
+                checked={emergencyOnly}
+                onChange={(event) =>
+                  setEmergencyOnly(event.target.checked)
+                }
+              />
 
-          <div className="nearby-healthcare-panel">
-
-            <div className="nearby-healthcare-header">
-
-              <div>
-                <span className="section-eyebrow">
-                  NEARBY
-                </span>
-
-                <h3>
-                  Healthcare around you
-                </h3>
-              </div>
-
-              <span className="nearby-count">
-                {nearbyPlaces.length}
+              <span className="toggle-track">
+                <span />
               </span>
 
-            </div>
+              Emergency only
+            </label>
 
-            {nearbyLoading && (
-              <div className="nearby-loading">
-                Finding nearby hospitals
-                and clinics...
-              </div>
-            )}
-
-            {!nearbyLoading &&
-              nearbyError && (
-                <div className="nearby-error">
-                  {nearbyError}
-                </div>
-              )}
-
-            {!nearbyLoading &&
-              !nearbyError &&
-              nearbyPlaces.length ===
-                0 && (
-                <div className="nearby-empty">
-                  No mapped healthcare
-                  facilities were found
-                  within 10 km.
-                </div>
-              )}
-
-            {!nearbyLoading &&
-              nearbyPlaces.length >
-                0 && (
-                <div className="nearby-list">
-
-                  {nearbyPlaces
-                    .slice(0, 6)
-                    .map((place) => (
-                      <button
-                        key={place.id}
-                        type="button"
-                        className="nearby-list-item"
-                        onClick={() =>
-                          selectNearbyPlace(
-                            place
-                          )
-                        }
-                      >
-
-                        <span className="nearby-list-icon">
-                          {place.type ===
-                          "Hospital"
-                            ? "🏥"
-                            : "⚕"}
-                        </span>
-
-                        <span className="nearby-list-content">
-
-                          <strong>
-                            {place.name}
-                          </strong>
-
-                          <small>
-                            {place.type}
-                            {" · "}
-                            {formatDistance(
-                              place.distance
-                            )}
-                          </small>
-
-                        </span>
-
-                        <span className="nearby-list-arrow">
-                          →
-                        </span>
-
-                      </button>
-                    ))}
-
-                </div>
-              )}
-
+            <button
+              className="clear-button"
+              onClick={clearFilters}
+            >
+              Clear filters
+            </button>
           </div>
 
-          {/* ===============================================
-              CONTENT GRID
-          =============================================== */}
+          <div className="view-switcher">
+            <button
+              className={viewMode === "list" ? "active" : ""}
+              onClick={() => setViewMode("list")}
+            >
+              List
+            </button>
 
-          <div
-            className={
-              view === "map"
-                ? "hospital-content-grid map-only"
-                : view === "list"
-                ? "hospital-content-grid list-only"
-                : "hospital-content-grid"
-            }
-          >
+            <button
+              className={viewMode === "split" ? "active" : ""}
+              onClick={() => setViewMode("split")}
+            >
+              Split
+            </button>
 
-            {/* =============================================
-                HOSPITAL LIST
-            ============================================= */}
+            <button
+              className={viewMode === "map" ? "active" : ""}
+              onClick={() => setViewMode("map")}
+            >
+              Map
+            </button>
+          </div>
+        </section>
 
-            {view !== "map" && (
-              <div className="hospital-list">
+        {/* RESULTS INFO */}
+        <div className="results-meta">
+          <div>
+            <strong>{filteredFacilities.length}</strong>{" "}
+            healthcare facilities found
+          </div>
 
-                {filteredHospitals.length ===
-                  0 && (
-                  <div className="empty-results">
-                    <div className="empty-results-icon">
-                      🔎
-                    </div>
-
-                    <h3>
-                      No matching hospitals
-                    </h3>
-
-                    <p>
-                      Try changing your
-                      search or filters.
-                    </p>
-                  </div>
-                )}
-
-                {filteredHospitals.map(
-                  (hospital) => {
-                    const isSelected =
-                      selectedHospital?.id ===
-                      hospital.id;
-
-                    const isCompared =
-                      compareList.some(
-                        (item) =>
-                          item.id ===
-                          hospital.id
-                      );
-
-                    return (
-                      <div
-                        key={hospital.id}
-                        className={
-                          isSelected
-                            ? "hospital-card selected"
-                            : "hospital-card"
-                        }
-                        onClick={() =>
-                          handleSelectHospital(
-                            hospital
-                          )
-                        }
-                      >
-
-                        <div className="hospital-card-top">
-
-                          <div className="hospital-card-icon">
-                            🏥
-                          </div>
-
-                          <div className="hospital-card-main">
-
-                            <div className="hospital-name-row">
-
-                              <h3>
-                                {hospital.name}
-                              </h3>
-
-                              {hospital.verified && (
-                                <span className="verified-badge">
-                                  ✓ Verified
-                                </span>
-                              )}
-
-                            </div>
-
-                            <p className="hospital-location">
-                              📍{" "}
-                              {hospital.location}
-                            </p>
-
-                          </div>
-
-                          <div className="match-badge">
-                            <strong>
-                              {hospital.match}%
-                            </strong>
-
-                            <span>
-                              match
-                            </span>
-                          </div>
-
-                        </div>
-
-                        <div className="hospital-card-stats">
-
-                          <div>
-                            <span>
-                              Rating
-                            </span>
-
-                            <strong>
-                              ⭐{" "}
-                              {hospital.rating}
-                            </strong>
-                          </div>
-
-                          <div>
-                            <span>
-                              Reviews
-                            </span>
-
-                            <strong>
-                              {hospital.reviews.toLocaleString(
-                                "en-IN"
-                              )}
-                            </strong>
-                          </div>
-
-                          <div>
-                            <span>
-                              Treatment
-                            </span>
-
-                            <strong>
-                              {formatCurrency(
-                                hospital.costMin
-                              )}
-                              +
-                            </strong>
-                          </div>
-
-                        </div>
-
-                        {hospital.distance !==
-                          null && (
-                          <div className="distance-row">
-
-                            <span>
-                              📍{" "}
-                              {formatDistance(
-                                hospital.distance
-                              )}
-                            </span>
-
-                            <span>
-                              🚗{" "}
-                              {formatDuration(
-                                hospital.estimatedTravelTime
-                              )}
-                            </span>
-
-                          </div>
-                        )}
-
-                        <div className="hospital-tags">
-
-                          {hospital.specialties
-                            .slice(0, 3)
-                            .map(
-                              (item) => (
-                                <span
-                                  key={item}
-                                >
-                                  {item}
-                                </span>
-                              )
-                            )}
-
-                        </div>
-
-                        <div className="hospital-card-footer">
-
-                          <div className="hospital-facilities">
-
-                            {hospital.facilities
-                              .slice(0, 3)
-                              .map(
-                                (item) => (
-                                  <span
-                                    key={item}
-                                  >
-                                    {item}
-                                  </span>
-                                )
-                              )}
-
-                          </div>
-
-                          <div className="hospital-actions">
-
-                            <button
-                              type="button"
-                              className={
-                                isCompared
-                                  ? "compare-button active"
-                                  : "compare-button"
-                              }
-                              onClick={(
-                                event
-                              ) => {
-                                event.stopPropagation();
-
-                                toggleCompare(
-                                  hospital
-                                );
-                              }}
-                            >
-                              {isCompared
-                                ? "✓ Comparing"
-                                : "Compare"}
-                            </button>
-
-                            <button
-                              type="button"
-                              className="view-hospital-button"
-                              onClick={(
-                                event
-                              ) => {
-                                event.stopPropagation();
-
-                                handleSelectHospital(
-                                  hospital
-                                );
-                              }}
-                            >
-                              View
-                            </button>
-
-                          </div>
-
-                        </div>
-
-                      </div>
-                    )
-                  }
-                )}
-
-              </div>
+          <div className="data-source">
+            Map data: OpenStreetMap
+            {lastUpdated && (
+              <>
+                {" "}
+                · Updated{" "}
+                {lastUpdated.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </>
             )}
+          </div>
+        </div>
 
-            {/* =============================================
-                MAP
-            ============================================= */}
+        {/* MAIN */}
+        <main
+          className={`finder-content view-${viewMode}`}
+        >
+          {/* LIST */}
+          {viewMode !== "map" && (
+            <section className="facility-results">
+              {loading ? (
+                <div className="loading-card">
+                  <div className="loading-spinner" />
+                  <h3>Finding nearby healthcare...</h3>
+                  <p>
+                    Searching OpenStreetMap healthcare data
+                    around your location.
+                  </p>
+                </div>
+              ) : filteredFacilities.length === 0 ? (
+                <div className="empty-card">
+                  <div className="empty-icon">⌖</div>
 
-            {view !== "list" && (
-              <div className="hospital-map-container">
-
-                <MapContainer
-                  center={
-                    userLocation ||
-                    hospitals[0].position
-                  }
-                  zoom={
-                    userLocation
-                      ? 12
-                      : 11
-                  }
-                  scrollWheelZoom={true}
-                  className="hospital-map"
-                >
-
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-
-                  <MapController
-                    selectedHospital={
-                      selectedHospital
-                    }
-                    userLocation={
-                      userLocation
-                    }
-                  />
-
-                  {/* ========================================
-                      USER LOCATION
-                  ======================================== */}
-
-                  {userLocation && (
-                    <Marker
-                      position={
-                        userLocation
-                      }
-                      icon={userIcon}
-                    >
-                      <Popup>
-                        <strong>
-                          Your location
-                        </strong>
-
-                        <br />
-
-                        Nearby healthcare
-                        facilities are
-                        shown around you.
-                      </Popup>
-                    </Marker>
-                  )}
-
-                  {/* ========================================
-                      PERSONALIZED HOSPITALS
-                  ======================================== */}
-
-                  {filteredHospitals.map(
-                    (hospital) => (
-                      <Marker
-                        key={`hospital-${hospital.id}`}
-                        position={
-                          hospital.position
-                        }
-                        icon={
-                          selectedHospital?.id ===
-                          hospital.id
-                            ? selectedHospitalIcon
-                            : hospitalIcon
-                        }
-                        eventHandlers={{
-                          click: () =>
-                            handleSelectHospital(
-                              hospital
-                            ),
-                        }}
-                      >
-
-                        <Popup>
-
-                          <div className="hospital-popup">
-
-                            <strong>
-                              {hospital.name}
-                            </strong>
-
-                            <span>
-                              {hospital.match}%
-                              requirement
-                              match
-                            </span>
-
-                            <span>
-                              ⭐{" "}
-                              {hospital.rating}
-                            </span>
-
-                            {hospital.distance !==
-                              null && (
-                              <span>
-                                📍{" "}
-                                {formatDistance(
-                                  hospital.distance
-                                )}
-                              </span>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleSelectHospital(
-                                  hospital
-                                )
-                              }
-                            >
-                              View hospital
-                            </button>
-
-                          </div>
-
-                        </Popup>
-
-                      </Marker>
-                    )
-                  )}
-
-                  {/* ========================================
-                      REAL NEARBY FACILITIES
-                  ======================================== */}
-
-                  {nearbyPlaces.map(
-                    (place) => (
-                      <Marker
-                        key={`nearby-${place.id}`}
-                        position={[
-                          place.latitude,
-                          place.longitude,
-                        ]}
-                        icon={
-                          place.type ===
-                          "Hospital"
-                            ? nearbyHospitalIcon
-                            : nearbyClinicIcon
-                        }
-                      >
-
-                        <Popup>
-
-                          <div className="nearby-popup">
-
-                            <strong>
-                              {place.name}
-                            </strong>
-
-                            <span className="nearby-popup-type">
-                              {place.type}
-                            </span>
-
-                            <span>
-                              📍{" "}
-                              {formatDistance(
-                                place.distance
-                              )}
-                            </span>
-
-                            {place.address && (
-                              <span>
-                                {place.address}
-                              </span>
-                            )}
-
-                            {place.phone && (
-                              <span>
-                                ☎{" "}
-                                {place.phone}
-                              </span>
-                            )}
-
-                            {place.openingHours && (
-                              <span>
-                                🕒{" "}
-                                {
-                                  place.openingHours
-                                }
-                              </span>
-                            )}
-
-                            {place.emergency && (
-                              <span className="nearby-emergency">
-                                Emergency services
-                                mapped
-                              </span>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                selectNearbyPlace(
-                                  place
-                                )
-                              }
-                            >
-                              View & route
-                            </button>
-
-                          </div>
-
-                        </Popup>
-
-                      </Marker>
-                    )
-                  )}
-
-                  {/* ========================================
-                      ROUTE
-                  ======================================== */}
-
-                  {route.length >
-                    0 && (
-                    <Polyline
-                      positions={route}
-                      pathOptions={{
-                        color:
-                          "#0e8f79",
-                        weight: 6,
-                        opacity: 0.85,
-                      }}
-                    />
-                  )}
-
-                </MapContainer>
-
-                {/* ==========================================
-                    MAP OVERLAY
-                ========================================== */}
-
-                <div className="map-overlay-card">
-
-                  <div className="map-overlay-top">
-
-                    <div>
-                      <span>
-                        MAP
-                      </span>
-
-                      <strong>
-                        Healthcare near you
-                      </strong>
-                    </div>
-
-                    <span className="live-map-badge">
-                      ● LIVE
-                    </span>
-
-                  </div>
+                  <h3>No matching facilities</h3>
 
                   <p>
-                    Showing personalized
-                    hospitals and real
-                    nearby healthcare
-                    facilities.
+                    Try increasing the search radius or using a
+                    broader healthcare term.
                   </p>
 
+                  <button
+                    className="primary-button"
+                    onClick={search}
+                    disabled={!userLocation}
+                  >
+                    Search again
+                  </button>
                 </div>
+              ) : (
+                filteredFacilities.map((facility) => {
+                  const isSelected =
+                    selectedFacility?.id === facility.id;
 
-                {/* ==========================================
-                    ROUTE CARD
-                ========================================== */}
+                  const isCompared =
+                    compareIds.includes(facility.id);
 
-                {selectedHospital && (
-                  <div className="route-card">
-
-                    <div className="route-card-top">
-
-                      <div>
-                        <span className="route-label">
-                          ROUTE TO
-                        </span>
-
-                        <strong>
-                          {
-                            selectedHospital.name
-                          }
-                        </strong>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedHospital(
-                            null
-                          );
-                          setRoute([]);
-                          setRouteInfo(null);
-                        }}
-                      >
-                        ×
-                      </button>
-
-                    </div>
-
-                    {routeLoading && (
-                      <div className="route-loading">
-                        Calculating driving
-                        route...
-                      </div>
-                    )}
-
-                    {!routeLoading &&
-                      routeError && (
-                        <div className="route-error">
-                          {routeError}
+                  return (
+                    <article
+                      className={`facility-card ${
+                        isSelected ? "selected" : ""
+                      }`}
+                      key={facility.id}
+                      onClick={() =>
+                        selectFacility(facility)
+                      }
+                    >
+                      <div className="facility-card-top">
+                        <div className="facility-type">
+                          {facility.type}
                         </div>
-                      )}
 
-                    {!routeLoading &&
-                      !routeError &&
-                      routeInfo && (
-                        <>
-                          <div className="route-stats">
+                        {facility.emergency && (
+                          <span className="emergency-badge">
+                            Emergency
+                          </span>
+                        )}
+                      </div>
 
-                            <div>
-                              <strong>
-                                {routeInfo.distance.toFixed(
-                                  1
-                                )}{" "}
-                                km
-                              </strong>
+                      <div className="facility-card-body">
+                        <div className="facility-main">
+                          <h2>{facility.name}</h2>
 
+                          <p className="facility-address">
+                            {facility.address}
+                          </p>
+
+                          {facility.specialties && (
+                            <p className="facility-specialties">
+                              <strong>Specialties:</strong>{" "}
+                              {facility.specialties}
+                            </p>
+                          )}
+
+                          <div className="facility-metrics">
+                            <span>
+                              {facility.distanceKm.toFixed(1)} km
+                            </span>
+
+                            {facility.travelMinutes && (
                               <span>
-                                road distance
+                                ~{facility.travelMinutes} min drive
                               </span>
-                            </div>
+                            )}
 
-                            <div>
-                              <strong>
-                                {formatDuration(
-                                  routeInfo.duration
-                                )}
-                              </strong>
-
-                              <span>
-                                estimated drive
-                              </span>
-                            </div>
-
+                            <span>
+                              {facility.match}% requirement match
+                            </span>
                           </div>
+                        </div>
 
-                          <button
-                            type="button"
-                            className="navigation-button"
-                            onClick={
-                              startNavigation
+                        <div className="match-circle">
+                          <strong>{facility.match}</strong>
+                          <span>%</span>
+                        </div>
+                      </div>
+
+                      <div className="facility-data-note">
+                        Match is calculated from available OpenStreetMap
+                        tags and your search requirement.
+                      </div>
+
+                      <div
+                        className="facility-actions"
+                        onClick={(event) =>
+                          event.stopPropagation()
+                        }
+                      >
+                        <button
+                          onClick={() =>
+                            startRoute(facility)
+                          }
+                        >
+                          {routeLoading &&
+                          selectedFacility?.id === facility.id
+                            ? "Loading route..."
+                            : "Route"}
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            openGoogleMaps(facility)
+                          }
+                        >
+                          Navigate
+                        </button>
+
+                        {facility.phone && (
+                          <a
+                            href={`tel:${facility.phone}`}
+                            onClick={(event) =>
+                              event.stopPropagation()
                             }
                           >
-                            ↗ Start Navigation
-                          </button>
-                        </>
-                      )}
+                            Call
+                          </a>
+                        )}
 
-                  </div>
+                        {facility.website && (
+                          <a
+                            href={facility.website}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(event) =>
+                              event.stopPropagation()
+                            }
+                          >
+                            Website
+                          </a>
+                        )}
+
+                        <button
+                          className={
+                            isCompared ? "compare-active" : ""
+                          }
+                          onClick={() =>
+                            toggleCompare(facility)
+                          }
+                        >
+                          {isCompared
+                            ? "Compared"
+                            : "Compare"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
+            </section>
+          )}
+
+          {/* MAP */}
+          {viewMode !== "list" && (
+            <section className="finder-map-container">
+              <MapContainer
+                center={mapCenter}
+                zoom={13}
+                scrollWheelZoom
+                className="healthcare-map"
+              >
+                <TileLayer
+                  attribution='&copy; OpenStreetMap contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+
+                <MapController
+                  center={mapCenter}
+                  selectedFacility={selectedFacility}
+                  route={route}
+                />
+
+                {userLocation && (
+                  <>
+                    <Circle
+                      center={[
+                        userLocation.lat,
+                        userLocation.lon,
+                      ]}
+                      radius={40}
+                      pathOptions={{
+                        className: "user-location-circle",
+                      }}
+                    />
+
+                    <Marker
+                      position={[
+                        userLocation.lat,
+                        userLocation.lon,
+                      ]}
+                      icon={L.divIcon({
+                        className: "user-location-marker-wrapper",
+                        html: `
+                          <div class="user-location-marker">
+                            <div></div>
+                          </div>
+                        `,
+                        iconSize: [22, 22],
+                        iconAnchor: [11, 11],
+                      })}
+                    />
+                  </>
                 )}
 
+                {filteredFacilities.map((facility) => (
+                  <Marker
+                    key={facility.id}
+                    position={[
+                      facility.lat,
+                      facility.lon,
+                    ]}
+                    icon={createFacilityIcon(
+                      selectedFacility?.id === facility.id,
+                      facility.emergency
+                    )}
+                    eventHandlers={{
+                      click: () =>
+                        selectFacility(facility),
+                    }}
+                  >
+                    <Popup>
+                      <div className="map-popup">
+                        <strong>{facility.name}</strong>
+
+                        <span>{facility.type}</span>
+
+                        <small>
+                          {facility.distanceKm.toFixed(1)} km away
+                        </small>
+
+                        <button
+                          onClick={() =>
+                            startRoute(facility)
+                          }
+                        >
+                          Route here
+                        </button>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+
+                {route && (
+                  <Polyline
+                    positions={route}
+                    pathOptions={{
+                      className: "route-line",
+                    }}
+                  />
+                )}
+              </MapContainer>
+
+              {/* MAP LEGEND */}
+              <div className="map-legend">
+                <div>
+                  <span className="legend-dot user" />
+                  Your location
+                </div>
+
+                <div>
+                  <span className="legend-dot facility" />
+                  Healthcare facility
+                </div>
+
+                <div>
+                  <span className="legend-dot emergency" />
+                  Emergency facility
+                </div>
               </div>
-            )}
-
-          </div>
-
+            </section>
+          )}
         </main>
 
-      </div>
+        {/* COMPARE */}
+        {compareFacilities.length > 0 && (
+          <section className="comparison-panel">
+            <div className="comparison-header">
+              <div>
+                <span className="eyebrow">
+                  COMPARISON
+                </span>
 
-      {/* ===================================================
-          COMPARE BAR
-      =================================================== */}
+                <h2>
+                  Compare selected facilities
+                </h2>
+              </div>
 
-      {compareList.length > 0 && (
-        <div className="compare-bar">
+              <button
+                onClick={() => setCompareIds([])}
+              >
+                Clear comparison
+              </button>
+            </div>
+
+            <div className="comparison-grid">
+              {compareFacilities.map((facility) => (
+                <div
+                  className="comparison-card"
+                  key={facility.id}
+                >
+                  <div className="comparison-score">
+                    {facility.match}%
+                  </div>
+
+                  <h3>{facility.name}</h3>
+
+                  <span>{facility.type}</span>
+
+                  <p>
+                    {facility.distanceKm.toFixed(1)} km away
+                  </p>
+
+                  <p>
+                    {facility.specialties ||
+                      "Specialty data not available"}
+                  </p>
+
+                  <button
+                    onClick={() =>
+                      selectFacility(facility)
+                    }
+                  >
+                    View on map
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* DATA DISCLAIMER */}
+        <footer className="finder-footer">
+          <div>
+            <strong>Healthcare data note</strong>
+
+            <p>
+              Facility information comes from OpenStreetMap and may
+              be incomplete or outdated. Missing information is not
+              treated as a positive or negative signal.
+            </p>
+          </div>
 
           <div>
-            <strong>
-              {compareList.length}
-            </strong>{" "}
-            hospitals selected for
-            comparison
+            <strong>Not medical advice</strong>
+
+            <p>
+              This tool helps with healthcare discovery and navigation.
+              It does not diagnose conditions or recommend a medical
+              treatment.
+            </p>
           </div>
-
-          <div className="compare-bar-actions">
-
-            <button
-              type="button"
-              onClick={() =>
-                setCompareList([])
-              }
-            >
-              Clear
-            </button>
-
-            <button
-              type="button"
-              className="compare-primary-button"
-              onClick={() =>
-                alert(
-                  "Comparison screen will be added next."
-                )
-              }
-            >
-              Compare hospitals
-            </button>
-
-          </div>
-
-        </div>
-      )}
-
+        </footer>
+      </div>
     </div>
   );
 }

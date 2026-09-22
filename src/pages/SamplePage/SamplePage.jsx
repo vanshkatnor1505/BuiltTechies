@@ -26,40 +26,7 @@ function SamplePage({
 }) {
   return (
     <div className={styles.page}>
-<<<<<<< HEAD
-      <Navbar
-        logo="CureCompanion"
-        variant="glass"
-        position="sticky"
-        links={[
-          {
-            label: "Home",
-            href: "/",
-          },
-          {
-            label: "Sample 1",
-            href: "/sample-page-1",
-          },
-          {
-            label: "Team",
-            href: "/team",
-          },
-          {
-            label: "Sample 2",
-            href: "/sample-page-2",
-          },
-        ]}
-        cta={{
-          label: "Back Home",
-          variant: "outline",
-          onClick: () => {
-            window.location.href = "/";
-          },
-        }}
-      />
-=======
       <SiteNavbar />
->>>>>>> ba4cce4388b8355860700bec4f692437fd6fc72c
 
       <main>
         {/* =================================

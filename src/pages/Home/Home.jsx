@@ -195,43 +195,6 @@ function Home() {
   };
 
   return (
-<<<<<<< HEAD
-    <div>
-      <Navbar
-        logo="CureCompanion"
-        variant="glass"
-        position="sticky"
-        links={[
-          {
-            label: "Features",
-            href: "#features",
-          },
-          {
-            label: "How It Works",
-            href: "#how-it-works",
-          },
-          {
-            label: "Team",
-            href: "#team",
-          },
-          {
-            label: "About",
-            href: "#about",
-          },
-        ]}
-        cta={{
-          label: "Launch Demo",
-          variant: "primary",
-          onClick: () => {
-            document
-              .querySelector("#demo")
-              ?.scrollIntoView({
-                behavior: "smooth",
-              });
-          },
-        }}
-      />
-=======
     <div className={styles.page}>
       <div className={styles.ambient} />
 
@@ -240,7 +203,6 @@ function Home() {
       ===================================================== */}
 
       <SiteNavbar />
->>>>>>> ba4cce4388b8355860700bec4f692437fd6fc72c
 
       <main>
         {/* =====================================================

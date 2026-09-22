@@ -54,40 +54,7 @@ function Team() {
           NAVBAR
       ================================= */}
 
-<<<<<<< HEAD
-      <Navbar
-        logo="CureCompanion"
-        variant="glass"
-        position="sticky"
-        links={[
-          {
-            label: "Home",
-            href: "/",
-          },
-          {
-            label: "Features",
-            href: "/#features",
-          },
-          {
-            label: "How It Works",
-            href: "/#how-it-works",
-          },
-          {
-            label: "Team",
-            href: "/team",
-          },
-        ]}
-        cta={{
-          label: "Back Home",
-          variant: "outline",
-          onClick: () => {
-            window.location.href = "/";
-          },
-        }}
-      />
-=======
       <SiteNavbar />
->>>>>>> ba4cce4388b8355860700bec4f692437fd6fc72c
 
       <main>
         {/* =================================
