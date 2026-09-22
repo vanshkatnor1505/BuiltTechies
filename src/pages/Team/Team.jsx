@@ -1,7 +1,4 @@
-import {
-  ArrowLeft,
-  ArrowUpRight,
-} from "lucide-react";
+import { ArrowLeft, ArrowUpRight } from "lucide-react";
 
 const Github = ({ size = 20 }) => (
   <svg
@@ -61,16 +58,10 @@ function Team() {
             HERO
         ================================= */}
 
-        <Section
-          spacing="large"
-          className={styles.heroSection}
-        >
+        <Section spacing="large" className={styles.heroSection}>
           <Container>
             <div className={styles.hero}>
-              <Link
-                to="/"
-                className={styles.backLink}
-              >
+              <Link to="/" className={styles.backLink}>
                 <ArrowLeft size={15} />
                 Back to home
               </Link>
@@ -85,16 +76,11 @@ function Team() {
               />
 
               <div className={styles.heroMeta}>
-                <Badge
-                  variant="primary"
-                  size="medium"
-                >
+                <Badge variant="primary" size="medium">
                   {teamMembers.length} Team Members
                 </Badge>
 
-                <span>
-                  One idea. One team.
-                </span>
+                <span>One idea. One team.</span>
               </div>
             </div>
           </Container>
@@ -104,10 +90,7 @@ function Team() {
             TEAM DETAILS
         ================================= */}
 
-        <Section
-          id="members"
-          className={styles.membersSection}
-        >
+        <Section id="members" className={styles.membersSection}>
           <Container>
             <div className={styles.members}>
               {teamMembers.map((member, index) => {
@@ -123,24 +106,16 @@ function Team() {
                 } = member;
 
                 return (
-                  <article
-                    key={id}
-                    className={styles.member}
-                  >
+                  <article key={id} className={styles.member}>
                     {/* Avatar */}
 
                     <div className={styles.avatarColumn}>
                       <div className={styles.avatar}>
-                        <span>
-                          {getInitial(name)}
-                        </span>
+                        <span>{getInitial(name)}</span>
                       </div>
 
                       <span className={styles.memberNumber}>
-                        {String(index + 1).padStart(
-                          2,
-                          "0"
-                        )}
+                        {String(index + 1).padStart(2, "0")}
                       </span>
                     </div>
 
@@ -149,15 +124,11 @@ function Team() {
                     <div className={styles.memberContent}>
                       <div className={styles.memberHeader}>
                         <div>
-                          <span className={styles.eyebrow}>
-                            TEAM MEMBER
-                          </span>
+                          <span className={styles.eyebrow}>TEAM MEMBER</span>
 
                           <h2>{name}</h2>
 
-                          <p className={styles.role}>
-                            {role}
-                          </p>
+                          <p className={styles.role}>{role}</p>
                         </div>
 
                         <div className={styles.memberLinks}>
@@ -196,18 +167,12 @@ function Team() {
                         </div>
                       </div>
 
-                      <p className={styles.bio}>
-                        {bio}
-                      </p>
+                      <p className={styles.bio}>{bio}</p>
 
                       {skills.length > 0 && (
                         <div className={styles.skills}>
                           {skills.map((skill) => (
-                            <Badge
-                              key={skill}
-                              size="small"
-                              variant="default"
-                            >
+                            <Badge key={skill} size="small" variant="default">
                               {skill}
                             </Badge>
                           ))}
@@ -219,15 +184,11 @@ function Team() {
                         padding="medium"
                         className={styles.contribution}
                       >
-                        <span>
-                          CONTRIBUTION
-                        </span>
+                        <span>CONTRIBUTION</span>
 
                         <p>
-                          Responsible for shaping the
-                          product and contributing to
-                          the technical execution of the
-                          project.
+                          Responsible for shaping the product and contributing
+                          to the technical execution of the project.
                         </p>
                       </Card>
                     </div>
@@ -242,10 +203,7 @@ function Team() {
             BOTTOM CTA
         ================================= */}
 
-        <Section
-          spacing="large"
-          className={styles.bottomSection}
-        >
+        <Section spacing="large" className={styles.bottomSection}>
           <Container>
             <div className={styles.bottomCta}>
               <Heading
