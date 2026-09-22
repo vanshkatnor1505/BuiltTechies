@@ -844,7 +844,7 @@ export default function HospitalFinder() {
     : DEFAULT_CENTER;
 
   return (
-    <div className="hospital-finder-page" data-theme="vital">
+    <div className="hospital-finder-page">
       <SiteNavbar />
       <div className="hospital-finder-shell">
 
