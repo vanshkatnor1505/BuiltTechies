@@ -160,24 +160,11 @@ const SEARCH_GROUPS = [
   },
   {
     key: "emergency",
-    aliases: [
-      "emergency",
-      "urgent",
-      "trauma",
-      "accident",
-      "casualty",
-    ],
+    aliases: ["emergency", "urgent", "trauma", "accident", "casualty"],
   },
   {
     key: "ent",
-    aliases: [
-      "ent",
-      "ear",
-      "nose",
-      "throat",
-      "otolaryngology",
-      "otology",
-    ],
+    aliases: ["ent", "ear", "nose", "throat", "otolaryngology", "otology"],
   },
   {
     key: "lung",
@@ -226,13 +213,7 @@ const SEARCH_GROUPS = [
   },
   {
     key: "endocrine",
-    aliases: [
-      "endocrine",
-      "endocrinology",
-      "diabetes",
-      "thyroid",
-      "hormone",
-    ],
+    aliases: ["endocrine", "endocrinology", "diabetes", "thyroid", "hormone"],
   },
 ];
 
@@ -249,9 +230,8 @@ function getSearchGroups(query) {
   return SEARCH_GROUPS.filter((group) =>
     group.aliases.some(
       (alias) =>
-        normalizedQuery.includes(alias) ||
-        alias.includes(normalizedQuery)
-    )
+        normalizedQuery.includes(alias) || alias.includes(normalizedQuery),
+    ),
   );
 }
 
@@ -339,7 +319,7 @@ function getFacilityText(tags = {}) {
       tags.operator,
     ]
       .filter(Boolean)
-      .join(" ")
+      .join(" "),
   );
 }
 
@@ -351,17 +331,11 @@ function calculateRequirementMatch(tags, query) {
   const facilityText = getFacilityText(tags);
   const groups = getSearchGroups(query);
 
-  if (
-    normalizedQuery === "hospital" ||
-    normalizedQuery === "hospitals"
-  ) {
+  if (normalizedQuery === "hospital" || normalizedQuery === "hospitals") {
     return tags.amenity === "hospital" ? 100 : 70;
   }
 
-  if (
-    normalizedQuery === "clinic" ||
-    normalizedQuery === "clinics"
-  ) {
+  if (normalizedQuery === "clinic" || normalizedQuery === "clinics") {
     return tags.amenity === "clinic" ? 100 : 70;
   }
 
@@ -373,7 +347,7 @@ function calculateRequirementMatch(tags, query) {
 
   if (groups.length > 0) {
     const matchedGroup = groups.find((group) =>
-      group.aliases.some((alias) => facilityText.includes(alias))
+      group.aliases.some((alias) => facilityText.includes(alias)),
     );
 
     if (matchedGroup) {
@@ -394,9 +368,7 @@ function calculateRequirementMatch(tags, query) {
     .split(" ")
     .filter((word) => word.length > 2);
 
-  const matchedWords = queryWords.filter((word) =>
-    facilityText.includes(word)
-  );
+  const matchedWords = queryWords.filter((word) => facilityText.includes(word));
 
   if (queryWords.length > 0) {
     score += Math.round((matchedWords.length / queryWords.length) * 20);
@@ -428,7 +400,7 @@ function transformFacility(element, userLocation, searchQuery) {
     userLocation.lat,
     userLocation.lon,
     coordinates.lat,
-    coordinates.lon
+    coordinates.lon,
   );
 
   const emergency =
@@ -440,10 +412,7 @@ function transformFacility(element, userLocation, searchQuery) {
     id: `${element.type}-${element.id}`,
     osmId: element.id,
     osmType: element.type,
-    name:
-      tags.name ||
-      tags["name:en"] ||
-      "Unnamed healthcare facility",
+    name: tags.name || tags["name:en"] || "Unnamed healthcare facility",
 
     type: getFacilityType(tags),
 
@@ -456,11 +425,7 @@ function transformFacility(element, userLocation, searchQuery) {
 
     phone: tags.phone || tags["contact:phone"] || "",
 
-    website:
-      tags.website ||
-      tags["contact:website"] ||
-      tags.url ||
-      "",
+    website: tags.website || tags["contact:website"] || tags.url || "",
 
     openingHours: tags.opening_hours || "",
 
@@ -505,13 +470,9 @@ function MapController({ center, selectedFacility, route }) {
 
   useEffect(() => {
     if (selectedFacility) {
-      map.flyTo(
-        [selectedFacility.lat, selectedFacility.lon],
-        15,
-        {
-          duration: 0.8,
-        }
-      );
+      map.flyTo([selectedFacility.lat, selectedFacility.lon], 15, {
+        duration: 0.8,
+      });
     }
   }, [selectedFacility, map]);
 
@@ -590,7 +551,7 @@ export default function HospitalFinder() {
 
         if (locationError.code === 1) {
           setError(
-            "Location permission was denied. Please allow location access in your browser."
+            "Location permission was denied. Please allow location access in your browser.",
           );
         } else if (locationError.code === 2) {
           setError("Your location could not be determined.");
@@ -602,13 +563,15 @@ export default function HospitalFinder() {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 30000,
-      }
+      },
     );
   }, []);
 
   const fetchNearbyFacilities = useCallback(async () => {
     if (!userLocation) {
-      setError("Please allow location access before searching nearby facilities.");
+      setError(
+        "Please allow location access before searching nearby facilities.",
+      );
       return;
     }
 
@@ -666,7 +629,7 @@ export default function HospitalFinder() {
 
       setLoading(false);
       setError(
-        "The healthcare map service is temporarily unavailable. Please try again in a moment."
+        "The healthcare map service is temporarily unavailable. Please try again in a moment.",
       );
       return;
     }
@@ -674,16 +637,11 @@ export default function HospitalFinder() {
     const uniqueElements = new Map();
 
     (responseData.elements || []).forEach((element) => {
-      uniqueElements.set(
-        `${element.type}-${element.id}`,
-        element
-      );
+      uniqueElements.set(`${element.type}-${element.id}`, element);
     });
 
     const transformed = Array.from(uniqueElements.values())
-      .map((element) =>
-        transformFacility(element, userLocation, searchQuery)
-      )
+      .map((element) => transformFacility(element, userLocation, searchQuery))
       .filter(Boolean)
       .filter((facility) => facility.distanceKm <= radius);
 
@@ -692,7 +650,7 @@ export default function HospitalFinder() {
 
     if (transformed.length === 0) {
       setError(
-        "No mapped healthcare facilities were found in this area. Try increasing the search radius or changing the search term."
+        "No mapped healthcare facilities were found in this area. Try increasing the search radius or changing the search term.",
       );
     }
 
@@ -709,9 +667,7 @@ export default function HospitalFinder() {
     let result = [...facilities];
 
     if (facilityType !== "all") {
-      result = result.filter(
-        (facility) => facility.type === facilityType
-      );
+      result = result.filter((facility) => facility.type === facilityType);
     }
 
     if (emergencyOnly) {
@@ -742,9 +698,7 @@ export default function HospitalFinder() {
   }, [facilities, facilityType, emergencyOnly, sortBy]);
 
   const facilityTypes = useMemo(() => {
-    return Array.from(
-      new Set(facilities.map((facility) => facility.type))
-    );
+    return Array.from(new Set(facilities.map((facility) => facility.type)));
   }, [facilities]);
 
   const search = () => {
@@ -804,14 +758,14 @@ export default function HospitalFinder() {
       }
 
       const coordinates = data.routes[0].geometry.coordinates.map(
-        ([lon, lat]) => [lat, lon]
+        ([lon, lat]) => [lat, lon],
       );
 
       setRoute(coordinates);
     } catch (routeError) {
       console.error(routeError);
       setError(
-        "The route could not be loaded. You can still open navigation in Google Maps."
+        "The route could not be loaded. You can still open navigation in Google Maps.",
       );
     } finally {
       setRouteLoading(false);
@@ -834,9 +788,7 @@ export default function HospitalFinder() {
   };
 
   const compareFacilities = useMemo(() => {
-    return facilities.filter((facility) =>
-      compareIds.includes(facility.id)
-    );
+    return facilities.filter((facility) => compareIds.includes(facility.id));
   }, [facilities, compareIds]);
 
   const mapCenter = userLocation
@@ -847,20 +799,16 @@ export default function HospitalFinder() {
     <div className="hospital-finder-page">
       <SiteNavbar />
       <div className="hospital-finder-shell">
-
         {/* HEADER */}
         <header className="hospital-finder-header">
           <div>
-            <div className="eyebrow">
-              HEALTHCARE DISCOVERY
-            </div>
+            <div className="eyebrow">HEALTHCARE DISCOVERY</div>
 
             <h1>Find the right healthcare facility</h1>
 
             <p>
-              Search by health problem, treatment, or specialty.
-              We match your requirement with mapped healthcare data
-              around your location.
+              Search by health problem, treatment, or specialty. We match your
+              requirement with mapped healthcare data around your location.
             </p>
           </div>
 
@@ -874,17 +822,15 @@ export default function HospitalFinder() {
             {locationStatus === "loading"
               ? "Detecting..."
               : userLocation
-              ? "Location detected"
-              : "Use my location"}
+                ? "Location detected"
+                : "Use my location"}
           </button>
         </header>
 
         {/* SEARCH */}
         <section className="finder-search-panel">
           <div className="search-main">
-            <label htmlFor="health-search">
-              What healthcare do you need?
-            </label>
+            <label htmlFor="health-search">What healthcare do you need?</label>
 
             <div className="search-row">
               <div className="search-input-wrapper">
@@ -894,9 +840,7 @@ export default function HospitalFinder() {
                   id="health-search"
                   type="text"
                   value={searchQuery}
-                  onChange={(event) =>
-                    setSearchQuery(event.target.value)
-                  }
+                  onChange={(event) => setSearchQuery(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       search();
@@ -959,15 +903,12 @@ export default function HospitalFinder() {
         {/* FILTER BAR */}
         <section className="finder-toolbar">
           <div className="toolbar-left">
-
             <div className="filter-group">
               <label>Radius</label>
 
               <select
                 value={radius}
-                onChange={(event) =>
-                  setRadius(Number(event.target.value))
-                }
+                onChange={(event) => setRadius(Number(event.target.value))}
               >
                 <option value={2}>2 km</option>
                 <option value={5}>5 km</option>
@@ -982,9 +923,7 @@ export default function HospitalFinder() {
 
               <select
                 value={facilityType}
-                onChange={(event) =>
-                  setFacilityType(event.target.value)
-                }
+                onChange={(event) => setFacilityType(event.target.value)}
               >
                 <option value="all">All facilities</option>
 
@@ -1001,9 +940,7 @@ export default function HospitalFinder() {
 
               <select
                 value={sortBy}
-                onChange={(event) =>
-                  setSortBy(event.target.value)
-                }
+                onChange={(event) => setSortBy(event.target.value)}
               >
                 <option value="match">Requirement match</option>
                 <option value="distance">Nearest first</option>
@@ -1015,22 +952,15 @@ export default function HospitalFinder() {
               <input
                 type="checkbox"
                 checked={emergencyOnly}
-                onChange={(event) =>
-                  setEmergencyOnly(event.target.checked)
-                }
+                onChange={(event) => setEmergencyOnly(event.target.checked)}
               />
-
               <span className="toggle-track">
                 <span />
               </span>
-
               Emergency only
             </label>
 
-            <button
-              className="clear-button"
-              onClick={clearFilters}
-            >
+            <button className="clear-button" onClick={clearFilters}>
               Clear filters
             </button>
           </div>
@@ -1062,8 +992,8 @@ export default function HospitalFinder() {
         {/* RESULTS INFO */}
         <div className="results-meta">
           <div>
-            <strong>{filteredFacilities.length}</strong>{" "}
-            healthcare facilities found
+            <strong>{filteredFacilities.length}</strong> healthcare facilities
+            found
           </div>
 
           <div className="data-source">
@@ -1082,9 +1012,7 @@ export default function HospitalFinder() {
         </div>
 
         {/* MAIN */}
-        <main
-          className={`finder-content view-${viewMode}`}
-        >
+        <main className={`finder-content view-${viewMode}`}>
           {/* LIST */}
           {viewMode !== "map" && (
             <section className="facility-results">
@@ -1093,8 +1021,8 @@ export default function HospitalFinder() {
                   <div className="loading-spinner" />
                   <h3>Finding nearby healthcare...</h3>
                   <p>
-                    Searching OpenStreetMap healthcare data
-                    around your location.
+                    Searching OpenStreetMap healthcare data around your
+                    location.
                   </p>
                 </div>
               ) : filteredFacilities.length === 0 ? (
@@ -1104,8 +1032,8 @@ export default function HospitalFinder() {
                   <h3>No matching facilities</h3>
 
                   <p>
-                    Try increasing the search radius or using a
-                    broader healthcare term.
+                    Try increasing the search radius or using a broader
+                    healthcare term.
                   </p>
 
                   <button
@@ -1118,11 +1046,9 @@ export default function HospitalFinder() {
                 </div>
               ) : (
                 filteredFacilities.map((facility) => {
-                  const isSelected =
-                    selectedFacility?.id === facility.id;
+                  const isSelected = selectedFacility?.id === facility.id;
 
-                  const isCompared =
-                    compareIds.includes(facility.id);
+                  const isCompared = compareIds.includes(facility.id);
 
                   return (
                     <article
@@ -1130,19 +1056,13 @@ export default function HospitalFinder() {
                         isSelected ? "selected" : ""
                       }`}
                       key={facility.id}
-                      onClick={() =>
-                        selectFacility(facility)
-                      }
+                      onClick={() => selectFacility(facility)}
                     >
                       <div className="facility-card-top">
-                        <div className="facility-type">
-                          {facility.type}
-                        </div>
+                        <div className="facility-type">{facility.type}</div>
 
                         {facility.emergency && (
-                          <span className="emergency-badge">
-                            Emergency
-                          </span>
+                          <span className="emergency-badge">Emergency</span>
                         )}
                       </div>
 
@@ -1150,9 +1070,7 @@ export default function HospitalFinder() {
                         <div className="facility-main">
                           <h2>{facility.name}</h2>
 
-                          <p className="facility-address">
-                            {facility.address}
-                          </p>
+                          <p className="facility-address">{facility.address}</p>
 
                           {facility.specialties && (
                             <p className="facility-specialties">
@@ -1162,19 +1080,13 @@ export default function HospitalFinder() {
                           )}
 
                           <div className="facility-metrics">
-                            <span>
-                              {facility.distanceKm.toFixed(1)} km
-                            </span>
+                            <span>{facility.distanceKm.toFixed(1)} km</span>
 
                             {facility.travelMinutes && (
-                              <span>
-                                ~{facility.travelMinutes} min drive
-                              </span>
+                              <span>~{facility.travelMinutes} min drive</span>
                             )}
 
-                            <span>
-                              {facility.match}% requirement match
-                            </span>
+                            <span>{facility.match}% requirement match</span>
                           </div>
                         </div>
 
@@ -1185,41 +1097,28 @@ export default function HospitalFinder() {
                       </div>
 
                       <div className="facility-data-note">
-                        Match is calculated from available OpenStreetMap
-                        tags and your search requirement.
+                        Match is calculated from available OpenStreetMap tags
+                        and your search requirement.
                       </div>
 
                       <div
                         className="facility-actions"
-                        onClick={(event) =>
-                          event.stopPropagation()
-                        }
+                        onClick={(event) => event.stopPropagation()}
                       >
-                        <button
-                          onClick={() =>
-                            startRoute(facility)
-                          }
-                        >
-                          {routeLoading &&
-                          selectedFacility?.id === facility.id
+                        <button onClick={() => startRoute(facility)}>
+                          {routeLoading && selectedFacility?.id === facility.id
                             ? "Loading route..."
                             : "Route"}
                         </button>
 
-                        <button
-                          onClick={() =>
-                            openGoogleMaps(facility)
-                          }
-                        >
+                        <button onClick={() => openGoogleMaps(facility)}>
                           Navigate
                         </button>
 
                         {facility.phone && (
                           <a
                             href={`tel:${facility.phone}`}
-                            onClick={(event) =>
-                              event.stopPropagation()
-                            }
+                            onClick={(event) => event.stopPropagation()}
                           >
                             Call
                           </a>
@@ -1230,25 +1129,17 @@ export default function HospitalFinder() {
                             href={facility.website}
                             target="_blank"
                             rel="noreferrer"
-                            onClick={(event) =>
-                              event.stopPropagation()
-                            }
+                            onClick={(event) => event.stopPropagation()}
                           >
                             Website
                           </a>
                         )}
 
                         <button
-                          className={
-                            isCompared ? "compare-active" : ""
-                          }
-                          onClick={() =>
-                            toggleCompare(facility)
-                          }
+                          className={isCompared ? "compare-active" : ""}
+                          onClick={() => toggleCompare(facility)}
                         >
-                          {isCompared
-                            ? "Compared"
-                            : "Compare"}
+                          {isCompared ? "Compared" : "Compare"}
                         </button>
                       </div>
                     </article>
@@ -1268,7 +1159,7 @@ export default function HospitalFinder() {
                 className="healthcare-map"
               >
                 <TileLayer
-                  attribution='&copy; OpenStreetMap contributors'
+                  attribution="&copy; OpenStreetMap contributors"
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
@@ -1281,10 +1172,7 @@ export default function HospitalFinder() {
                 {userLocation && (
                   <>
                     <Circle
-                      center={[
-                        userLocation.lat,
-                        userLocation.lon,
-                      ]}
+                      center={[userLocation.lat, userLocation.lon]}
                       radius={40}
                       pathOptions={{
                         className: "user-location-circle",
@@ -1292,10 +1180,7 @@ export default function HospitalFinder() {
                     />
 
                     <Marker
-                      position={[
-                        userLocation.lat,
-                        userLocation.lon,
-                      ]}
+                      position={[userLocation.lat, userLocation.lon]}
                       icon={L.divIcon({
                         className: "user-location-marker-wrapper",
                         html: `
@@ -1313,17 +1198,13 @@ export default function HospitalFinder() {
                 {filteredFacilities.map((facility) => (
                   <Marker
                     key={facility.id}
-                    position={[
-                      facility.lat,
-                      facility.lon,
-                    ]}
+                    position={[facility.lat, facility.lon]}
                     icon={createFacilityIcon(
                       selectedFacility?.id === facility.id,
-                      facility.emergency
+                      facility.emergency,
                     )}
                     eventHandlers={{
-                      click: () =>
-                        selectFacility(facility),
+                      click: () => selectFacility(facility),
                     }}
                   >
                     <Popup>
@@ -1332,15 +1213,9 @@ export default function HospitalFinder() {
 
                         <span>{facility.type}</span>
 
-                        <small>
-                          {facility.distanceKm.toFixed(1)} km away
-                        </small>
+                        <small>{facility.distanceKm.toFixed(1)} km away</small>
 
-                        <button
-                          onClick={() =>
-                            startRoute(facility)
-                          }
-                        >
+                        <button onClick={() => startRoute(facility)}>
                           Route here
                         </button>
                       </div>
@@ -1384,50 +1259,32 @@ export default function HospitalFinder() {
           <section className="comparison-panel">
             <div className="comparison-header">
               <div>
-                <span className="eyebrow">
-                  COMPARISON
-                </span>
+                <span className="eyebrow">COMPARISON</span>
 
-                <h2>
-                  Compare selected facilities
-                </h2>
+                <h2>Compare selected facilities</h2>
               </div>
 
-              <button
-                onClick={() => setCompareIds([])}
-              >
+              <button onClick={() => setCompareIds([])}>
                 Clear comparison
               </button>
             </div>
 
             <div className="comparison-grid">
               {compareFacilities.map((facility) => (
-                <div
-                  className="comparison-card"
-                  key={facility.id}
-                >
-                  <div className="comparison-score">
-                    {facility.match}%
-                  </div>
+                <div className="comparison-card" key={facility.id}>
+                  <div className="comparison-score">{facility.match}%</div>
 
                   <h3>{facility.name}</h3>
 
                   <span>{facility.type}</span>
 
-                  <p>
-                    {facility.distanceKm.toFixed(1)} km away
-                  </p>
+                  <p>{facility.distanceKm.toFixed(1)} km away</p>
 
                   <p>
-                    {facility.specialties ||
-                      "Specialty data not available"}
+                    {facility.specialties || "Specialty data not available"}
                   </p>
 
-                  <button
-                    onClick={() =>
-                      selectFacility(facility)
-                    }
-                  >
+                  <button onClick={() => selectFacility(facility)}>
                     View on map
                   </button>
                 </div>
@@ -1442,9 +1299,9 @@ export default function HospitalFinder() {
             <strong>Healthcare data note</strong>
 
             <p>
-              Facility information comes from OpenStreetMap and may
-              be incomplete or outdated. Missing information is not
-              treated as a positive or negative signal.
+              Facility information comes from OpenStreetMap and may be
+              incomplete or outdated. Missing information is not treated as a
+              positive or negative signal.
             </p>
           </div>
 
@@ -1452,9 +1309,8 @@ export default function HospitalFinder() {
             <strong>Not medical advice</strong>
 
             <p>
-              This tool helps with healthcare discovery and navigation.
-              It does not diagnose conditions or recommend a medical
-              treatment.
+              This tool helps with healthcare discovery and navigation. It does
+              not diagnose conditions or recommend a medical treatment.
             </p>
           </div>
         </footer>
