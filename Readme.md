@@ -12,6 +12,7 @@ BuiltTechies is a React/Vite healthcare navigation application. It helps users:
 - Upload and analyze PDF medical reports.
 
 ## Tech stack
+yooo
 
 - React 19
 - Vite
