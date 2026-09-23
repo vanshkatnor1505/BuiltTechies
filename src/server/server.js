@@ -531,7 +531,7 @@ app.post("/api/hospital-research", async (req, res) => {
       });
     }
 
-    const query = `${name} ${address} hospital patients treated success rate treatment cost insurance`;
+    const query = `${name} ${address} hospital reviews patient experience rating photos patients treated success rate treatment cost insurance`;
     const searchResponse = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -542,22 +542,59 @@ app.post("/api/hospital-research", async (req, res) => {
     const sources = (searchData.results || []).map((result) => ({ title: result.title, url: result.url, content: result.content })).filter((result) => result.url);
 
     const evidence = sources.map((source, index) => `[${index + 1}] ${source.title}\n${source.content}`).join("\n\n").slice(0, 24000);
-    let extracted = { metrics: {}, summary: "No verified hospital-specific metrics were found." };
+    let extracted = {
+      metrics: {},
+      summary: "No verified hospital-specific metrics were found.",
+      reviews: [],
+    };
     if (evidence) {
       try {
         const completion = await groq.chat.completions.create({
           model: FREE_TIER_CHAT_MODEL,
           temperature: 0,
           max_completion_tokens: 900,
-          messages: [{ role: "system", content: "Extract only explicit hospital facts from supplied web-search excerpts. Never estimate, generalize, or invent clinical statistics. Return valid JSON only: {metrics:{patientsTreated:string|null,successRate:string|null,treatmentCost:string|null,insurance:string|null}, summary:string}. Each metric must be null unless an excerpt explicitly states it for this exact hospital. Include source numbers such as [2] in every non-null value and summary claim." }, { role: "user", content: `Hospital: ${name}\nLocation: ${address}\n\nSearch evidence:\n${evidence}` }],
+          messages: [{ role: "system", content: "Extract only explicit facts about this exact hospital from the supplied web-search excerpts. Never estimate, generalize, or invent clinical statistics or reviews. Return valid JSON only: {metrics:{patientsTreated:string|null,successRate:string|null,treatmentCost:string|null,insurance:string|null}, summary:string, reviews:[{text:string,rating:string|null,sourceIndex:number}]}. Include at most three short review excerpts or public patient-experience statements when the source explicitly contains them. Keep review text faithful to the source, do not invent quotations, and use sourceIndex to reference the supplied excerpt. Each metric and review must be null or omitted unless the source explicitly supports it." }, { role: "user", content: `Hospital: ${name}\nLocation: ${address}\n\nSearch evidence:\n${evidence}` }],
         });
         extracted = JSON.parse(completion.choices?.[0]?.message?.content || "{}");
       } catch (extractionError) {
         console.error("HOSPITAL RESEARCH EXTRACTION ERROR:", extractionError);
-        extracted.summary = "Search sources were found, but verified clinical metrics could not be extracted.";
+        extracted.summary = "Search sources were found, but verified hospital information could not be extracted.";
       }
     }
-    res.json({ success: true, searched: true, metrics: extracted.metrics || {}, summary: extracted.summary || "No verified hospital-specific metrics were found.", sources: sources.map(({ title, url }) => ({ title, url })) });
+
+    let imageUrl = "";
+    if (website && /^https?:\/\//i.test(website)) {
+      try {
+        const websiteResponse = await fetch(website, {
+          signal: AbortSignal.timeout(5000),
+          headers: { "User-Agent": "CurePulse public information preview" },
+        });
+        const html = (await websiteResponse.text()).slice(0, 500000);
+        const imageMatch = html.match(
+          /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+        ) || html.match(
+          /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["'][^>]*>/i,
+        );
+
+        if (imageMatch?.[1]) {
+          imageUrl = new URL(imageMatch[1], website).href;
+        }
+      } catch (imageError) {
+        console.warn("PUBLIC HOSPITAL IMAGE LOOKUP FAILED:", imageError.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      searched: true,
+      metrics: extracted.metrics || {},
+      summary: extracted.summary || "No verified hospital-specific metrics were found.",
+      reviews: Array.isArray(extracted.reviews)
+        ? extracted.reviews.filter((review) => review?.text).slice(0, 3)
+        : [],
+      imageUrl,
+      sources: sources.map(({ title, url }) => ({ title, url })),
+    });
   } catch (error) {
     console.error("HOSPITAL RESEARCH ERROR:", error);
     res.status(502).json({ success: false, message: "Unable to verify hospital information right now." });

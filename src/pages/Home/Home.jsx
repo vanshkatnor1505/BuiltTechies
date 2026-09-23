@@ -169,11 +169,38 @@ function SlidersIcon({ size = 24, strokeWidth = 1.8 }) {
 function Home() {
   const navigate = useNavigate();
   const [requirement, setRequirement] = useState("");
-  const openFinder = (query = requirement, emergency = false) => {
+  const openFinder = (
+    query = requirement,
+    emergency = false,
+    location = null,
+  ) => {
     const params = new URLSearchParams();
     if (query.trim()) params.set("query", query.trim());
     if (emergency) params.set("emergency", "true");
+    if (location) {
+      params.set("lat", String(location.lat));
+      params.set("lon", String(location.lon));
+      params.set("accuracy", String(location.accuracy));
+    }
     navigate(`/find-hospitals${params.size ? `?${params}` : ""}`);
+  };
+  const openEmergencyFinder = (useLocation = false) => {
+    if (!useLocation || !navigator.geolocation) {
+      openFinder("Emergency", true);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        openFinder("Emergency", true, {
+          lat: coords.latitude,
+          lon: coords.longitude,
+          accuracy: coords.accuracy,
+        });
+      },
+      () => openFinder("Emergency", true),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+    );
   };
   const scrollTo = (id) => {
     document.querySelector(id)?.scrollIntoView({
@@ -225,7 +252,7 @@ function Home() {
                 <button
                   type="button"
                   className={styles.emergencyPrimary}
-                  onClick={() => openFinder("Emergency", true)}
+                  onClick={() => openEmergencyFinder(true)}
                 >
                   <MapPin size={18} />
                   Use my location
@@ -234,7 +261,7 @@ function Home() {
                 <button
                   type="button"
                   className={styles.emergencySecondary}
-                  onClick={() => openFinder("Emergency", true)}
+                  onClick={() => openEmergencyFinder()}
                 >
                   <Hospital size={18} />
                   Find emergency hospital
@@ -265,7 +292,7 @@ function Home() {
               <div className={styles.emergencyOptions}>
                 <button
                   type="button"
-                  onClick={() => console.log("Nearest emergency hospital")}
+                  onClick={() => openEmergencyFinder(true)}
                 >
                   <div>
                     <Hospital size={18} />
@@ -281,7 +308,9 @@ function Home() {
 
                 <button
                   type="button"
-                  onClick={() => console.log("Ambulance assistance")}
+                  onClick={() => {
+                    window.location.href = "tel:112";
+                  }}
                 >
                   <div>
                     <Siren size={18} />
@@ -297,7 +326,7 @@ function Home() {
 
                 <button
                   type="button"
-                  onClick={() => console.log("Emergency guidance")}
+                  onClick={() => navigate("/chatbot")}
                 >
                   <div>
                     <HeartPulse size={18} />
@@ -451,7 +480,7 @@ function Home() {
           <button
             type="button"
             className={styles.primaryButton}
-            onClick={() => scrollTo("#assistant")}
+            onClick={() => navigate("/chatbot")}
           >
             Talk to Vital
             <ArrowRight size={18} />
@@ -686,7 +715,7 @@ function Home() {
             <button
               type="button"
               className={styles.primaryButton}
-              onClick={() => console.log("Open Vital Assistant")}
+              onClick={() => navigate("/chatbot")}
             >
               Talk to Vital Assistant
               <ArrowRight size={18} />

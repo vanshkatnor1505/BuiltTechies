@@ -637,7 +637,7 @@ export default function HospitalFinder() {
     useState("all");
 
   const [emergencyOnly, setEmergencyOnly] =
-    useState(false);
+    useState(searchParams.get("emergency") === "true");
 
   const [sortBy, setSortBy] =
     useState("match");

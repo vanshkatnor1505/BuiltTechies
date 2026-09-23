@@ -83,15 +83,15 @@ const standardColumns = [
     links: [
       { label: "Documentation", href: "/Terms-and-Conditions.docx" },
       { label: "FAQ", href: "/faq" },
-      { label: "Contact", href: "/#contact" },
+      { label: "Contact", href: "/contact" },
     ],
   },
 ];
 
 const standardLegalLinks = [
-  { label: "Privacy", href: "/#privacy" },
+  { label: "Privacy", href: "/Terms-and-Conditions.docx" },
   { label: "Terms", href: "/Terms-and-Conditions.docx" },
-  { label: "Contact", href: "/#contact" },
+  { label: "Contact", href: "/contact" },
 ];
 
 function Footer({
