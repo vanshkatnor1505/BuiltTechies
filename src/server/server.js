@@ -11,6 +11,10 @@ dotenv.config();
 const app = express();
 
 const PORT = process.env.PORT || 5000;
+const allowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -21,7 +25,8 @@ app.use(
     origin(origin, callback) {
       if (
         !origin ||
-        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+        allowedOrigins.includes(origin)
       ) {
         callback(null, true);
         return;
