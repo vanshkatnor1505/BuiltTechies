@@ -1,7 +1,6 @@
-import { ArrowUpRight, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 
 import Container from "../../layout/Container/Container";
-import Button from "../../common/Button/Button";
 import Divider from "../../common/Divider/Divider";
 
 import styles from "./Footer.module.css";
@@ -42,60 +41,6 @@ const Github = ({ size = 20 }) => (
   </svg>
 );
 
-const defaultColumns = [
-  {
-    title: "Product",
-    links: [
-      {
-        label: "Features",
-        href: "#features",
-      },
-      {
-        label: "Solutions",
-        href: "#solutions",
-      },
-      {
-        label: "Pricing",
-        href: "#pricing",
-      },
-    ],
-  },
-  {
-    title: "Resources",
-    links: [
-      {
-        label: "Documentation",
-        href: "#documentation",
-      },
-      {
-        label: "FAQ",
-        href: "#faq",
-      },
-      {
-        label: "Contact",
-        href: "#contact",
-      },
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      {
-        label: "About",
-        href: "#about",
-      },
-      {
-        label: "Team",
-        href: "#team",
-      },
-      {
-        label: "Careers",
-        href: "#careers",
-      },
-    ],
-  },
-];
-
 const defaultSocials = [
   {
     label: "GitHub",
@@ -114,31 +59,54 @@ const defaultSocials = [
   },
 ];
 
+const standardColumns = [
+  {
+    title: "Explore",
+    links: [
+      { label: "Home", href: "/" },
+      { label: "Find Hospitals", href: "/find-hospitals" },
+      { label: "Compare & Research", href: "/compare" },
+      { label: "AI Assistant", href: "/chatbot" },
+    ],
+  },
+  {
+    title: "Healthcare",
+    links: [
+      { label: "How It Works", href: "/#how-it-works" },
+      { label: "Medical Reports", href: "/chatbot" },
+      { label: "Emergency Help", href: "/#emergency" },
+      { label: "Team", href: "/team" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "Documentation", href: "/Terms-and-Conditions.docx" },
+      { label: "FAQ", href: "/faq" },
+      { label: "Contact", href: "/#contact" },
+    ],
+  },
+];
+
+const standardLegalLinks = [
+  { label: "Privacy", href: "/#privacy" },
+  { label: "Terms", href: "/Terms-and-Conditions.docx" },
+  { label: "Contact", href: "/#contact" },
+];
+
 function Footer({
-  logo = "CurePulse",
-  description = "Build something extraordinary with a reusable foundation designed for rapid product development.",
-  columns = defaultColumns,
-  socials = defaultSocials,
-  cta,
-  email,
-  legalLinks = [
-    {
-      label: "Privacy",
-      href: "#privacy",
-    },
-    {
-      label: "Terms",
-      href: "#terms",
-    },
-    {
-      label: "Contact",
-      href: "#contact",
-    },
-  ],
-  copyright,
   variant = "default",
   className = "",
 }) {
+  const logo = "CurePulse";
+  const description =
+    "A healthcare discovery platform designed to help people find, understand, compare, and access suitable healthcare options.";
+  const columns = standardColumns;
+  const socials = defaultSocials;
+  const email = "hello@curepulse.health";
+  const legalLinks = standardLegalLinks;
+  const copyright = "CurePulse. All rights reserved.";
+
   const footerClasses = [styles.footer, styles[variant], className]
     .filter(Boolean)
     .join(" ");
@@ -162,20 +130,6 @@ function Footer({
 
             <p className={styles.description}>{description}</p>
 
-            {cta && (
-              <div className={styles.brandCta}>
-                <Button
-                  variant={cta.variant || "primary"}
-                  size={cta.size || "medium"}
-                  onClick={cta.onClick}
-                >
-                  {cta.label}
-
-                  <ArrowUpRight size={15} />
-                </Button>
-              </div>
-            )}
-
             {email && (
               <a href={`mailto:${email}`} className={styles.email}>
                 <Mail size={15} />
@@ -198,8 +152,22 @@ function Footer({
                   {column.links.map((link) => (
                     <a
                       key={link.label}
-                      href={link.href}
+                      href={
+                        link.label === "Documentation"
+                          ? "/Terms-and-Conditions.docx"
+                          : link.href
+                      }
                       className={styles.link}
+                      target={
+                        link.label === "Documentation"
+                          ? "_blank"
+                          : undefined
+                      }
+                      rel={
+                        link.label === "Documentation"
+                          ? "noreferrer"
+                          : undefined
+                      }
                     >
                       {link.label}
                     </a>

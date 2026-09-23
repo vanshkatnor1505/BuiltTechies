@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import HospitalFinder from "./pages/HospitalFinder";
 import Chatbot from "./pages/Chatbot/Chatbot";
 import HospitalComparison from "./pages/HospitalComparison/HospitalComparison";
+import FAQ from "./pages/FAQ/FAQ";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/team" element={<Team />} />
         <Route path="/find-hospitals" element={<HospitalFinder />} />
         <Route path="/compare" element={<HospitalComparison />} />
+        <Route path="/faq" element={<FAQ />} />
 
         <Route path="/chatbot" element={<Chatbot />} />
 

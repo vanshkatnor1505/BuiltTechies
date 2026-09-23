@@ -1,0 +1,85 @@
+.curepulse-map {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  position: relative;
+  overflow: hidden;
+  background: #eef1f4;
+}
+
+.curepulse-map-marker {
+  width: 34px;
+  height: 42px;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  transition: transform 0.18s ease;
+}
+
+.curepulse-map-marker:hover {
+  transform: scale(1.08);
+}
+
+.curepulse-map-marker-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: #dc2626;
+  border: 3px solid #ffffff;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.curepulse-map-marker-dot span {
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.curepulse-map-marker-selected {
+  z-index: 10;
+}
+
+.curepulse-map-marker-selected .curepulse-map-marker-dot {
+  background: #2563eb;
+  transform: rotate(-45deg) scale(1.18);
+}
+
+.curepulse-map-popup {
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 2px;
+}
+
+.curepulse-map-popup strong {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.curepulse-map-popup span {
+  font-size: 12px;
+  color: #666;
+}
+
+.curepulse-map-popup small {
+  font-size: 11px;
+  color: #888;
+}
+
+.maplibregl-popup-content {
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.maplibregl-ctrl-group {
+  border-radius: 8px !important;
+  overflow: hidden;
+}

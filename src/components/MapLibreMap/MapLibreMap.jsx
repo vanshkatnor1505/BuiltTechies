@@ -1,0 +1,324 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  Map,
+  NavigationControl,
+  Marker,
+} from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+const DEFAULT_CENTER = [76.7794, 30.7333];
+
+export default function MapLibreMap({
+  userLocation,
+  facilities = [],
+  selectedFacility,
+  onSelectFacility,
+  route = null,
+}) {
+  const mapContainer = useRef(null);
+  const mapRef = useRef(null);
+  const markersRef = useRef([]);
+  const userMarkerRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  /*
+   * ---------------------------------------------------------
+   * CREATE MAP
+   * ---------------------------------------------------------
+   */
+
+  useEffect(() => {
+    if (!mapContainer.current || mapRef.current) return;
+
+    const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
+
+    console.log("Geoapify key exists:", Boolean(apiKey));
+
+    if (!apiKey) {
+      console.error("VITE_GEOAPIFY_API_KEY is missing.");
+      return;
+    }
+
+    /*
+     * We intentionally use Geoapify RASTER tiles here.
+     *
+     * This avoids the vector style.json rendering path.
+     */
+    const rasterTiles =
+      `https://maps.geoapify.com/v1/tile/osm-bright/` +
+      `{z}/{x}/{y}.png?apiKey=${apiKey}`;
+
+    const initialCenter = userLocation
+      ? [userLocation.lon, userLocation.lat]
+      : DEFAULT_CENTER;
+
+    console.log("Creating MapLibre raster map...");
+    console.log("Initial center:", initialCenter);
+
+    const map = new Map({
+      container: mapContainer.current,
+
+      center: initialCenter,
+
+      zoom: userLocation ? 13 : 10,
+
+      attributionControl: true,
+
+      style: {
+        version: 8,
+
+        sources: {
+          "geoapify-raster": {
+            type: "raster",
+            tiles: [rasterTiles],
+            tileSize: 256,
+            minzoom: 0,
+            maxzoom: 20,
+          },
+        },
+
+        layers: [
+          {
+            id: "geoapify-raster-layer",
+            type: "raster",
+            source: "geoapify-raster",
+
+            paint: {
+              "raster-opacity": 1,
+              "raster-fade-duration": 0,
+            },
+          },
+        ],
+      },
+    });
+
+    map.addControl(
+      new NavigationControl(),
+      "top-right"
+    );
+
+    map.on("load", () => {
+      console.log("SUCCESS: Raster map loaded.");
+
+      setMapReady(true);
+      map.resize();
+    });
+
+    map.on("error", (event) => {
+      console.error("MAP ERROR:", event);
+
+      if (event?.error) {
+        console.error(
+          "Map error details:",
+          event.error
+        );
+      }
+    });
+
+    map.on("idle", () => {
+      console.log("Map is idle and rendered.");
+    });
+
+    mapRef.current = map;
+
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+    });
+
+    resizeObserver.observe(mapContainer.current);
+
+    return () => {
+      resizeObserver.disconnect();
+
+      markersRef.current.forEach((marker) => {
+        marker.remove();
+      });
+
+      markersRef.current = [];
+
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
+
+      map.remove();
+
+      mapRef.current = null;
+      setMapReady(false);
+    };
+  }, []);
+
+  /*
+   * ---------------------------------------------------------
+   * UPDATE USER LOCATION
+   * ---------------------------------------------------------
+   */
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !mapReady || !userLocation) return;
+
+    const center = [
+      Number(userLocation.lon),
+      Number(userLocation.lat),
+    ];
+
+    if (!center.every(Number.isFinite)) return;
+
+    map.flyTo({
+      center,
+      zoom: 13,
+      essential: true,
+    });
+  }, [mapReady, userLocation]);
+
+  /*
+   * ---------------------------------------------------------
+   * FACILITY MARKERS
+   * ---------------------------------------------------------
+   */
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !mapReady) return;
+
+    // Remove old markers
+    markersRef.current.forEach((marker) => {
+      marker.remove();
+    });
+
+    markersRef.current = [];
+
+    facilities.forEach((facility) => {
+      const longitude = Number(facility.lon);
+      const latitude = Number(facility.lat);
+
+      if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+        return;
+      }
+
+      const markerElement =
+        document.createElement("div");
+
+      markerElement.style.width = "30px";
+      markerElement.style.height = "30px";
+      markerElement.style.borderRadius = "50%";
+      markerElement.style.background = "#dc2626";
+      markerElement.style.border =
+        "3px solid white";
+      markerElement.style.boxShadow =
+        "0 3px 10px rgba(0, 0, 0, 0.35)";
+      markerElement.style.cursor = "pointer";
+
+      markerElement.title =
+        facility.name ||
+        "Healthcare facility";
+
+      markerElement.addEventListener(
+        "click",
+        () => {
+          if (onSelectFacility) {
+            onSelectFacility(facility);
+          }
+        }
+      );
+
+      const marker = new Marker({
+        element: markerElement,
+        anchor: "center",
+      })
+        .setLngLat([longitude, latitude])
+        .addTo(map);
+
+      markersRef.current.push(marker);
+    });
+
+    return () => {
+      markersRef.current.forEach((marker) => {
+        marker.remove();
+      });
+
+      markersRef.current = [];
+    };
+  }, [facilities, mapReady, onSelectFacility]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !mapReady || !userLocation) return;
+
+    const longitude = Number(userLocation.lon);
+    const latitude = Number(userLocation.lat);
+
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+      return;
+    }
+
+    const markerElement = document.createElement("div");
+    markerElement.style.width = "18px";
+    markerElement.style.height = "18px";
+    markerElement.style.borderRadius = "50%";
+    markerElement.style.background = "#2563eb";
+    markerElement.style.border = "4px solid white";
+    markerElement.style.boxShadow = "0 0 0 6px rgba(37, 99, 235, 0.25)";
+    markerElement.title = "Your current location";
+
+    const marker = new Marker({
+      element: markerElement,
+      anchor: "center",
+    })
+      .setLngLat([longitude, latitude])
+      .addTo(map);
+
+    userMarkerRef.current = marker;
+
+    return () => {
+      marker.remove();
+      userMarkerRef.current = null;
+    };
+  }, [mapReady, userLocation]);
+
+  /*
+   * ---------------------------------------------------------
+   * SELECTED FACILITY
+   * ---------------------------------------------------------
+   */
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !mapReady || !selectedFacility) return;
+
+    const longitude = Number(selectedFacility.lon);
+    const latitude = Number(selectedFacility.lat);
+
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+      return;
+    }
+
+    map.flyTo({
+      center: [longitude, latitude],
+      zoom: 15,
+      essential: true,
+    });
+  }, [mapReady, selectedFacility]);
+
+  /*
+   * ---------------------------------------------------------
+   * MAP CONTAINER
+   * ---------------------------------------------------------
+   */
+
+  return (
+    <div
+      ref={mapContainer}
+      style={{
+        width: "100%",
+        height: "100%",
+        minHeight: "500px",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    />
+  );
+}

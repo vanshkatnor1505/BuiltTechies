@@ -261,7 +261,10 @@ function Chatbot() {
         }),
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await response.json()
+        : {};
 
       if (!response.ok) {
         throw new Error(data.message || "AI request failed.");
@@ -555,14 +558,19 @@ function Chatbot() {
     } catch (error) {
       console.error("REPORT ERROR:", error);
 
+      const message =
+        error instanceof TypeError &&
+        error.message.toLowerCase().includes("fetch")
+          ? "The report service is unavailable. Start the backend with npm run server, then try uploading the PDF again."
+          : error.message || "I couldn't analyze this PDF. Please try again.";
+
       setMessages((currentMessages) => [
         ...currentMessages,
         {
           id: Date.now() + 1,
           type: "assistant",
           time: "Now",
-          content:
-            error.message || "I couldn't analyze this PDF. Please try again.",
+          content: message,
         },
       ]);
     } finally {

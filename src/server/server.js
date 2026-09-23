@@ -18,7 +18,17 @@ const groq = new Groq({
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin(origin, callback) {
+      if (
+        !origin ||
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      ) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Request origin is not allowed by the API."));
+    },
   }),
 );
 

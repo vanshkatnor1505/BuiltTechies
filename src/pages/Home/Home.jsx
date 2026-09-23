@@ -113,24 +113,24 @@ const STEPS = [
 
 const TEAM = [
   {
-    name: "Vansh",
+    name: "Vanshdeep Katnor",
     role: "Product & Development",
     initial: "V",
   },
   {
-    name: "Team Member",
-    role: "Development",
-    initial: "T",
+    name: "Eshav Chumber",
+    role: "Data Base / AI Engineer",
+    initial: "E",
   },
   {
-    name: "Team Member",
-    role: "Design & Research",
-    initial: "T",
+    name: "Sakshi Choudhary",
+    role: "Presentator / Graphics Designer",
+    initial: "S",
   },
   {
-    name: "Team Member",
-    role: "Product & Innovation",
-    initial: "T",
+    name: "Manjot Sandhu",
+    role: "Tech Presentator / Team Organizer",
+    initial: "M",
   },
 ];
 

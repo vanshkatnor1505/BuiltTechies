@@ -35,12 +35,19 @@ const comparisonRows = [
 ];
 
 function HospitalComparison() {
-  const { searchState, setSearchState } = useHospitalSearch();
+  const {
+    searchState,
+    setSearchState,
+    toggleCompare,
+    clearComparison,
+  } = useHospitalSearch();
   const [loadingId, setLoadingId] = useState("");
   const [facilitiesPage, setFacilitiesPage] = useState(0);
   const FACILITIES_PER_PAGE = 5;
   const facilities = searchState.facilities || [];
-  const compareIds = searchState.compareIds || [];
+  const compareIds = (searchState.compareIds || []).filter((id) =>
+    facilities.some((facility) => facility.id === id),
+  );
   const researchById = searchState.researchById || {};
   const selectedFacilities = facilities
     .filter((facility) => compareIds.includes(facility.id))
@@ -53,16 +60,6 @@ function HospitalComparison() {
     facilitiesPage * FACILITIES_PER_PAGE,
     (facilitiesPage + 1) * FACILITIES_PER_PAGE,
   );
-
-  const toggleFacility = (facility) => {
-    setSearchState((current) => {
-      const ids = current.compareIds || [];
-      const nextIds = ids.includes(facility.id)
-        ? ids.filter((id) => id !== facility.id)
-        : ids.length < 3 ? [...ids, facility.id] : ids;
-      return { ...current, compareIds: nextIds };
-    });
-  };
 
   const researchFacility = async (facility) => {
     if (researchById[facility.id] || loadingId) return;
@@ -136,7 +133,7 @@ function HospitalComparison() {
                   <button
                     className={`comparison-picker-card ${compareIds.includes(facility.id) ? "selected" : ""}`}
                     key={facility.id}
-                    onClick={() => toggleFacility(facility)}
+                    onClick={() => toggleCompare(facility)}
                   >
                     <span>{facility.type}</span>
                     <strong>{facility.name}</strong>
@@ -170,7 +167,7 @@ function HospitalComparison() {
                     <span className="comparison-eyebrow">SIDE-BY-SIDE VIEW</span>
                     <h2>Hospital comparison</h2>
                   </div>
-                  <button className="comparison-clear-button" onClick={() => setSearchState((current) => ({ ...current, compareIds: [] }))}>
+                  <button className="comparison-clear-button" onClick={clearComparison}>
                     Clear selection
                   </button>
                 </div>
