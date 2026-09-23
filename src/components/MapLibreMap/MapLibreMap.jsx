@@ -15,6 +15,7 @@ export default function MapLibreMap({
   onSelectFacility,
   route = null,
   mapCenter = null,
+  showUserLocation = true,
 }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
@@ -198,13 +199,25 @@ export default function MapLibreMap({
         const longitudes = coordinates.map(([longitude]) => longitude);
         const latitudes = coordinates.map(([, latitude]) => latitude);
 
-        map.fitBounds(
-          [
-            [Math.min(...longitudes), Math.min(...latitudes)],
-            [Math.max(...longitudes), Math.max(...latitudes)],
-          ],
-          { padding: 70, maxZoom: 6, duration: 700 },
-        );
+        const bounds = [
+          [Math.min(...longitudes), Math.min(...latitudes)],
+          [Math.max(...longitudes), Math.max(...latitudes)],
+        ];
+
+        map.resize();
+        map.fitBounds(bounds, {
+          padding: { top: 120, right: 80, bottom: 120, left: 80 },
+          maxZoom: 5,
+          duration: 700,
+        });
+
+        map.once("idle", () => {
+          map.fitBounds(bounds, {
+            padding: { top: 120, right: 80, bottom: 120, left: 80 },
+            maxZoom: 5,
+            duration: 0,
+          });
+        });
         return;
       }
     }
@@ -255,11 +268,20 @@ export default function MapLibreMap({
       markerElement.style.background = facility.nationwide
         ? "#0f766e"
         : "#dc2626";
+      markerElement.style.zIndex = facility.nationwide ? "20" : "10";
       markerElement.style.border =
         "3px solid white";
       markerElement.style.boxShadow =
         "0 3px 10px rgba(0, 0, 0, 0.35)";
       markerElement.style.cursor = "pointer";
+
+      markerElement.textContent = "H";
+      markerElement.style.display = "grid";
+      markerElement.style.placeItems = "center";
+      markerElement.style.color = "white";
+      markerElement.style.fontSize = "14px";
+      markerElement.style.fontWeight = "900";
+      markerElement.style.fontFamily = "Arial, sans-serif";
 
       markerElement.title =
         facility.nationwide
@@ -297,7 +319,15 @@ export default function MapLibreMap({
   useEffect(() => {
     const map = mapRef.current;
 
-    if (!map || !mapReady || !userLocation) return;
+    if (!map || !mapReady) return;
+
+    if (!showUserLocation) {
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
+      return;
+    }
+
+    if (!userLocation) return;
 
     const longitude = Number(userLocation.lon);
     const latitude = Number(userLocation.lat);
@@ -328,7 +358,7 @@ export default function MapLibreMap({
       marker.remove();
       userMarkerRef.current = null;
     };
-  }, [mapReady, userLocation]);
+  }, [mapReady, showUserLocation, userLocation]);
 
   /*
    * ---------------------------------------------------------

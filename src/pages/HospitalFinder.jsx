@@ -90,12 +90,20 @@ function getHospitalFallbacks(disease) {
 
 function getIndiaHospitalFacilities(hospitals, disease, userLocation) {
   return hospitals.map((hospital, index) => {
+    const fallbackOffsets = [
+      [-0.45, -0.55],
+      [0.35, -0.3],
+      [-0.2, 0.45],
+      [0.5, 0.5],
+      [-0.55, 0.2],
+    ];
+    const [latitudeOffset, longitudeOffset] = fallbackOffsets[index % fallbackOffsets.length];
     const location = Number.isFinite(hospital.lat) && Number.isFinite(hospital.lon)
       ? { city: hospital.city || "India", lat: hospital.lat, lon: hospital.lon }
       : {
-        city: hospital.city || "India",
-        lat: userLocation?.lat || 20.5937,
-        lon: userLocation?.lon || 78.9629,
+        city: hospital.city || userLocation?.state || "State-wide search",
+        lat: (userLocation?.lat || 20.5937) + latitudeOffset,
+        lon: (userLocation?.lon || 78.9629) + longitudeOffset,
       };
     const distanceKm = userLocation
       ? haversineDistance(userLocation.lat, userLocation.lon, location.lat, location.lon)
@@ -2405,6 +2413,7 @@ export default function HospitalFinder() {
                   userLocation
                 }
                 mapCenter={mapCenter}
+                showUserLocation={searchScope !== "india"}
                 facilities={
                   mapFacilities
                 }
@@ -2420,10 +2429,12 @@ export default function HospitalFinder() {
               {/* MAP LEGEND */}
 
               <div className="map-legend">
-                <div>
-                  <span className="legend-dot user" />
-                  Your location
-                </div>
+                {searchScope !== "india" && (
+                  <div>
+                    <span className="legend-dot user" />
+                    Your location
+                  </div>
+                )}
 
                 <div>
                   <span className="legend-dot facility" />
