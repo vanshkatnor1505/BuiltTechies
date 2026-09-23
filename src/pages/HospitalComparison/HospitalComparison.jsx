@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ExternalLink } from "lucide-react";
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 import { useHospitalSearch } from "../../context/HospitalSearchContext";
@@ -172,28 +171,30 @@ function HospitalComparison() {
                     Clear selection
                   </button>
                 </div>
-                <div className="comparison-image-grid">
-                  {selectedFacilities.map((facility) => {
-                    const googleImagesUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(
-                      `${facility.name} ${facility.address || ""} hospital`,
-                    )}`;
-
-                    return (
-                      <article className="comparison-image-card" key={facility.id}>
-                        <strong>{facility.name}</strong>
-                        <a
-                          className="comparison-google-images-link"
-                          href={googleImagesUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <span>View on Google Images</span>
-                          <ExternalLink size={15} strokeWidth={2.4} aria-hidden="true" />
-                        </a>
-                      </article>
-                    );
-                  })}
-                </div>
+                {selectedFacilities.some((facility) => facility.research?.images?.length > 0) && (
+                  <div className="comparison-image-grid">
+                    {selectedFacilities
+                      .filter((facility) => facility.research?.images?.length > 0)
+                      .map((facility) => (
+                        <article className="comparison-image-card" key={facility.id}>
+                          <strong>{facility.name}</strong>
+                          <div className="comparison-image-list">
+                            {facility.research.images.slice(0, 3).map((image) => (
+                              <a
+                                href={image.sourceUrl || image.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="comparison-image-link"
+                                key={image.url}
+                              >
+                                <img src={image.url} alt={`${facility.name} hospital`} loading="lazy" />
+                              </a>
+                            ))}
+                          </div>
+                        </article>
+                      ))}
+                  </div>
+                )}
                 <div className="comparison-table-wrap">
                   <table className="comparison-table">
                     <thead>
