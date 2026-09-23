@@ -514,11 +514,140 @@ app.use((error, req, res, next) => {
    missing clinical metrics are never inferred by the AI.
 ========================================================= */
 
+async function searchGoogleImages(name, address = "") {
+  if (!process.env.GOOGLE_SEARCH_API_KEY || !process.env.GOOGLE_SEARCH_ENGINE_ID) {
+    return [];
+  }
+
+  const query = encodeURIComponent(`${name} ${address} hospital`);
+  const response = await fetch(
+    `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(process.env.GOOGLE_SEARCH_API_KEY)}&cx=${encodeURIComponent(process.env.GOOGLE_SEARCH_ENGINE_ID)}&q=${query}&searchType=image&num=6&safe=active`,
+  );
+
+  if (!response.ok) {
+    throw new Error("Google image search could not be reached.");
+  }
+
+  const data = await response.json();
+  return (data.items || [])
+    .filter((item) => item.link)
+    .map((item) => ({
+      title: item.title || `${name} hospital`,
+      url: item.link,
+      sourceUrl: item.image?.contextLink || item.link,
+      artist: "",
+      source: "Google Images",
+    }));
+}
+
+async function searchGooglePlaceImages(name, address = "") {
+  if (!process.env.GOOGLE_MAPS_API_KEY) {
+    return [];
+  }
+
+  const query = encodeURIComponent(`${name} ${address}`);
+  const response = await fetch(
+    `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${encodeURIComponent(process.env.GOOGLE_MAPS_API_KEY)}`,
+  );
+
+  if (!response.ok) {
+    throw new Error("Google Maps place search could not be reached.");
+  }
+
+  const data = await response.json();
+  if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+    throw new Error(`Google Maps place search failed (${data.status}).`);
+  }
+
+  const place = data.results?.[0];
+  const placeUrl = place?.place_id
+    ? `https://www.google.com/maps/search/?api=1&query=Google&query_place_id=${encodeURIComponent(place.place_id)}`
+    : `https://www.google.com/maps/search/?api=1&query=${query}`;
+
+  return (place?.photos || [])
+    .slice(0, 6)
+    .map((photo) => ({
+      title: `${name} hospital`,
+      url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=900&photo_reference=${encodeURIComponent(photo.photo_reference)}&key=${encodeURIComponent(process.env.GOOGLE_MAPS_API_KEY)}`,
+      sourceUrl: placeUrl,
+      artist: photo.html_attributions?.[0]?.replace(/<[^>]*>/g, "") || "",
+      source: "Google Maps",
+    }));
+}
+
+async function searchHospitalImagesFromCommons(name, address = "") {
+  const query = encodeURIComponent(`${name} ${address}`);
+  const response = await fetch(
+    `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${query}&gsrnamespace=6&gsrlimit=6&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=900&format=json&origin=*`,
+    {
+      headers: {
+        "User-Agent": "BuiltTechies healthcare comparison app",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("The image search provider could not be reached.");
+  }
+
+  const data = await response.json();
+  return Object.values(data.query?.pages || {})
+    .map((page) => {
+      const imageInfo = page.imageinfo?.[0];
+      const metadata = imageInfo?.extmetadata || {};
+      const mime = imageInfo?.mime || "";
+
+      if (!imageInfo?.thumburl || !mime.startsWith("image/")) {
+        return null;
+      }
+
+      return {
+        title: page.title?.replace(/^File:/, "") || "Hospital image",
+        url: imageInfo.thumburl,
+        sourceUrl: imageInfo.descriptionurl || imageInfo.url,
+        artist: metadata.Artist?.value?.replace(/<[^>]*>/g, "") || "",
+        source: "Wikimedia Commons",
+      };
+    })
+    .filter(Boolean);
+}
+
+async function searchHospitalImages(name, address = "") {
+  const googleImages = [
+    ...(await searchGoogleImages(name, address).catch((error) => {
+      console.error("GOOGLE IMAGE SEARCH ERROR:", error);
+      return [];
+    })),
+    ...(await searchGooglePlaceImages(name, address).catch((error) => {
+      console.error("GOOGLE MAPS IMAGE SEARCH ERROR:", error);
+      return [];
+    })),
+  ];
+
+  if (googleImages.length > 0) {
+    return googleImages;
+  }
+
+  return searchHospitalImagesFromCommons(name, address);
+}
+
 app.post("/api/hospital-research", async (req, res) => {
   try {
     const { name, address = "", website = "" } = req.body;
     if (!name || typeof name !== "string") {
       return res.status(400).json({ success: false, message: "Hospital name is required." });
+    }
+
+    let images = [];
+    try {
+      images = await searchHospitalImages(name, address);
+    } catch (imageError) {
+      console.error("HOSPITAL IMAGE SEARCH ERROR:", imageError);
+      try {
+        images = await searchHospitalImagesFromCommons(name, address);
+      } catch (fallbackError) {
+        console.error("HOSPITAL IMAGE FALLBACK ERROR:", fallbackError);
+      }
     }
 
     if (!process.env.TAVILY_API_KEY) {
@@ -527,6 +656,7 @@ app.post("/api/hospital-research", async (req, res) => {
         searched: false,
         message: "Internet verification is not configured. Add TAVILY_API_KEY to enable source-backed web research.",
         metrics: {},
+        images,
         sources: website ? [{ title: "Hospital website listed in map data", url: website }] : [],
       });
     }
@@ -549,7 +679,7 @@ app.post("/api/hospital-research", async (req, res) => {
           model: FREE_TIER_CHAT_MODEL,
           temperature: 0,
           max_completion_tokens: 900,
-          messages: [{ role: "system", content: "Extract only explicit hospital facts from supplied web-search excerpts. Never estimate, generalize, or invent clinical statistics. Return valid JSON only: {metrics:{patientsTreated:string|null,successRate:string|null,treatmentCost:string|null,insurance:string|null}, summary:string}. Each metric must be null unless an excerpt explicitly states it for this exact hospital. Include source numbers such as [2] in every non-null value and summary claim." }, { role: "user", content: `Hospital: ${name}\nLocation: ${address}\n\nSearch evidence:\n${evidence}` }],
+          messages: [{ role: "system", content: "Extract only explicit hospital facts from supplied web-search excerpts. Never estimate, generalize, or invent clinical statistics. Return valid JSON only: {metrics:{patientsTreated:string|null,successRate:string|null,treatmentCost:string|null,insurance:string|null}, summary:string}. Each metric must be null unless an excerpt explicitly states it for this exact hospital. A successRate may be calculated only when the same excerpt provides both a successful-outcome count and the total treated count; calculate (successful outcomes / total outcomes) * 100, round to one decimal place, and label it as calculated with the source citation. Do not calculate a rate from unrelated reviews, ratings, rankings, or the requirement match score. Include source numbers such as [2] in every non-null value and summary claim." }, { role: "user", content: `Hospital: ${name}\nLocation: ${address}\n\nSearch evidence:\n${evidence}` }],
         });
         extracted = JSON.parse(completion.choices?.[0]?.message?.content || "{}");
       } catch (extractionError) {
@@ -557,7 +687,7 @@ app.post("/api/hospital-research", async (req, res) => {
         extracted.summary = "Search sources were found, but verified clinical metrics could not be extracted.";
       }
     }
-    res.json({ success: true, searched: true, metrics: extracted.metrics || {}, summary: extracted.summary || "No verified hospital-specific metrics were found.", sources: sources.map(({ title, url }) => ({ title, url })) });
+    res.json({ success: true, searched: true, metrics: extracted.metrics || {}, summary: extracted.summary || "No verified hospital-specific metrics were found.", images, sources: sources.map(({ title, url }) => ({ title, url })) });
   } catch (error) {
     console.error("HOSPITAL RESEARCH ERROR:", error);
     res.status(502).json({ success: false, message: "Unable to verify hospital information right now." });

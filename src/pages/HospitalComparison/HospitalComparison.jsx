@@ -171,6 +171,49 @@ function HospitalComparison() {
                     Clear selection
                   </button>
                 </div>
+                <div className="comparison-image-grid">
+                  {selectedFacilities.map((facility) => {
+                    const images = facility.research?.images || [];
+                    const visibleImages = images.slice(0, 3);
+
+                    return (
+                      <article className="comparison-image-card" key={facility.id}>
+                        {visibleImages.length > 0 ? (
+                          <div className="comparison-image-list">
+                            {visibleImages.map((image) => (
+                              <a
+                                href={image.sourceUrl || image.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="comparison-image-link"
+                                key={image.url}
+                              >
+                                <img
+                                  src={image.url}
+                                  alt={`${facility.name} hospital`}
+                                  loading="lazy"
+                                />
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="comparison-image-placeholder">
+                            {facility.research
+                              ? "No public image found"
+                              : "Verify data to search for images"}
+                          </div>
+                        )}
+                        <strong>{facility.name}</strong>
+                        {visibleImages.length > 0 && (
+                          <small>
+                            Image source: {visibleImages[0].source || "Public web image"}
+                            {visibleImages[0].artist ? ` · ${visibleImages[0].artist}` : ""}
+                          </small>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
                 <div className="comparison-table-wrap">
                   <table className="comparison-table">
                     <thead>

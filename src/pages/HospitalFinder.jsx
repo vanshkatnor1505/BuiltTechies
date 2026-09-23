@@ -916,8 +916,10 @@ export default function HospitalFinder() {
    */
 
   const researchFacility = async (facility) => {
+    const existingResearch = researchById[facility.id];
+
     if (
-      researchById[facility.id] ||
+      (existingResearch && !existingResearch.error) ||
       researchLoadingId
     ) {
       return;
@@ -971,7 +973,8 @@ export default function HospitalFinder() {
           ...(current.researchById || {}),
           [facility.id]: {
             error:
-              researchError.message,
+              researchError.message ||
+              "Unable to verify this facility right now.",
           },
         },
       }));
@@ -1881,6 +1884,7 @@ export default function HospitalFinder() {
                           </button>
 
                           <button
+                            type="button"
                             onClick={() =>
                               researchFacility(
                                 facility,
@@ -1890,9 +1894,28 @@ export default function HospitalFinder() {
                             {researchLoadingId ===
                               facility.id
                               ? "Researching..."
+                              : researchById[facility.id]
+                                ?.error
+                                ? "Retry verify"
                               : "Verify data"}
                           </button>
                         </div>
+
+                        {researchById[facility.id] && (
+                          <div
+                            className={`facility-research-status ${
+                              researchById[facility.id].error
+                                ? "is-error"
+                                : "is-success"
+                            }`}
+                            role="status"
+                          >
+                            {researchById[facility.id].error
+                              ? researchById[facility.id].error
+                              : researchById[facility.id].summary ||
+                                "Verified source data is available in the comparison panel."}
+                          </div>
+                        )}
                       </article>
                     );
                   },
