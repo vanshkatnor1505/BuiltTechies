@@ -90,6 +90,7 @@ In Render, open **Environment → Environment Variables** and add:
 ```env
 PORT=10000
 CORS_ORIGINS=https://YOUR-VERCEL-DOMAIN.vercel.app
+FRONTEND_URL=https://YOUR-VERCEL-DOMAIN.vercel.app
 GROQ_API_KEY=your_groq_key
 GROQ_CHAT_MODEL=openai/gpt-oss-20b
 GROQ_STT_MODEL=whisper-large-v3-turbo
@@ -105,16 +106,29 @@ routes.
 
 ### Get the backend URL
 
-After Render deploys successfully, copy the service URL. It will look similar
-to:
+After Render deploys successfully, copy the service URL from the Render
+dashboard. Do not open the example URL below literally; replace it with your
+actual service URL. It will look similar to:
 
 ```text
 https://builttechies-api.onrender.com
 ```
 
-Open that URL in a browser. A generic Express response or route response means
-the service is reachable. If it does not start, inspect the Render logs and
-confirm the start command is exactly `npm run server`.
+Open this exact URL in a browser:
+
+```text
+https://YOUR-ACTUAL-RENDER-SERVICE.onrender.com/health
+```
+
+Expected response:
+
+```json
+{"success":true,"service":"BuiltTechies API"}
+```
+
+If `/health` returns `404`, Render is serving an older commit, a different
+service, or a different project root. Confirm the start command is exactly
+`npm run server`, then trigger **Manual Deploy → Deploy latest commit**.
 
 ## 5. Deploy the frontend on Vercel
 
@@ -163,6 +177,7 @@ Go back to Render and update:
 
 ```env
 CORS_ORIGINS=https://builttechies.vercel.app
+FRONTEND_URL=https://builttechies.vercel.app
 ```
 
 For multiple allowed origins, separate them with commas:
