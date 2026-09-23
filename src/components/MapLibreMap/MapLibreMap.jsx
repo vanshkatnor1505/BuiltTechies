@@ -22,6 +22,7 @@ export default function MapLibreMap({
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const userMarkerRef = useRef(null);
+  const fitBoundsIdleHandlerRef = useRef(null);
   const initialMapCenterRef = useRef(mapCenter);
   const initialUserLocationRef = useRef(userLocation);
   const [mapReady, setMapReady] = useState(false);
@@ -185,6 +186,13 @@ export default function MapLibreMap({
 
     if (!map || !mapReady || !Array.isArray(mapCenter)) return;
 
+    if (fitBoundsIdleHandlerRef.current) {
+      map.off("idle", fitBoundsIdleHandlerRef.current);
+      fitBoundsIdleHandlerRef.current = null;
+    }
+
+    if (selectedFacility) return;
+
     const nationwideFacilities = facilities.filter(
       (facility) => facility.nationwide,
     );
@@ -212,14 +220,24 @@ export default function MapLibreMap({
           duration: 700,
         });
 
-        map.once("idle", () => {
+        const refitOnIdle = () => {
+          fitBoundsIdleHandlerRef.current = null;
           map.fitBounds(bounds, {
             padding: { top: 120, right: 80, bottom: 120, left: 80 },
             maxZoom: 5,
             duration: 0,
           });
-        });
-        return;
+        };
+
+        fitBoundsIdleHandlerRef.current = refitOnIdle;
+        map.once("idle", refitOnIdle);
+
+        return () => {
+          map.off("idle", refitOnIdle);
+          if (fitBoundsIdleHandlerRef.current === refitOnIdle) {
+            fitBoundsIdleHandlerRef.current = null;
+          }
+        };
       }
     }
 
@@ -232,7 +250,7 @@ export default function MapLibreMap({
       zoom: mapZoom,
       essential: true,
     });
-  }, [facilities, mapCenter, mapReady, mapZoom]);
+  }, [facilities, mapCenter, mapReady, mapZoom, selectedFacility]);
 
   /*
    * ---------------------------------------------------------
