@@ -60,6 +60,20 @@ const upload = multer({
   },
 });
 
+const audioUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+  fileFilter: (req, file, callback) => {
+    if (!file.mimetype.startsWith("audio/")) {
+      return callback(new Error("Only audio files are allowed."));
+    }
+
+    callback(null, true);
+  },
+});
+
 /* =========================================================
    HEALTHCARE SYSTEM PROMPT
 ========================================================= */
@@ -227,7 +241,7 @@ app.post("/api/chat", async (req, res) => {
 
 app.post(
   "/api/transcribe",
-  upload.single("audio"),
+  audioUpload.single("audio"),
   async (req, res) => {
     try {
       if (!req.file) {

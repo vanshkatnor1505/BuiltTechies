@@ -383,7 +383,9 @@ function Chatbot() {
 
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
-        : "audio/webm";
+        : MediaRecorder.isTypeSupported("audio/mp4")
+          ? "audio/mp4"
+          : "audio/webm";
 
       const recorder = new MediaRecorder(stream, { mimeType });
 
@@ -399,10 +401,12 @@ function Chatbot() {
         stream.getTracks().forEach((track) => track.stop());
 
         const audioBlob = new Blob(audioChunksRef.current, {
-          type: mimeType,
+          type: recorder.mimeType || mimeType,
         });
 
-        await transcribeAudio(audioBlob);
+        if (audioBlob.size > 0) {
+          await transcribeAudio(audioBlob, recorder.mimeType || mimeType);
+        }
       };
 
       mediaRecorderRef.current = recorder;
@@ -439,13 +443,14 @@ function Chatbot() {
      TRANSCRIBE AUDIO
   ======================================================= */
 
-  const transcribeAudio = async (audioBlob) => {
+  const transcribeAudio = async (audioBlob, mimeType) => {
     setIsTranscribing(true);
 
     try {
       const formData = new FormData();
 
-      formData.append("audio", audioBlob, "voice.webm");
+      const extension = mimeType.includes("mp4") ? "mp4" : "webm";
+      formData.append("audio", audioBlob, `voice.${extension}`);
 
       formData.append("language", language);
 
@@ -468,7 +473,10 @@ function Chatbot() {
     } catch (error) {
       console.error("TRANSCRIPTION ERROR:", error);
 
-      alert("Unable to understand the voice input. Please try again.");
+      alert(
+        error.message ||
+          "Unable to understand the voice input. Please try again.",
+      );
     } finally {
       setIsTranscribing(false);
     }
@@ -1177,6 +1185,7 @@ function Chatbot() {
                 {/* VOICE */}
 
                 <button
+                  type="button"
                   className={`${styles.composerIcon} ${
                     isRecording ? styles.recordingButton : ""
                   }`}
