@@ -896,6 +896,37 @@
   line-height: 1.45;
 }
 
+.facility-research-status p {
+  margin: 0;
+}
+
+.facility-research-images {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.facility-research-images a {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: 7px;
+  background: var(--hf-surface-2);
+}
+
+.facility-research-images img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 180ms ease;
+}
+
+.facility-research-images a:hover img {
+  transform: scale(1.04);
+}
+
 .facility-research-status.is-success {
   background: #ecfdf3;
   color: #166534;

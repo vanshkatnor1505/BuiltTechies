@@ -721,6 +721,18 @@ app.post("/api/hospital-research", async (req, res) => {
       reviews: Array.isArray(extracted.reviews)
         ? extracted.reviews.filter((review) => review?.text).slice(0, 3)
         : [],
+      images: imageUrl
+        ? [
+          ...images,
+          {
+            title: `${name} hospital website image`,
+            url: imageUrl,
+            sourceUrl: website,
+            artist: "",
+            source: "Hospital website",
+          },
+        ]
+        : images,
       imageUrl,
       sources: sources.map(({ title, url }) => ({ title, url })),
     });
