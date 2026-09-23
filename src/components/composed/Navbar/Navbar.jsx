@@ -6,6 +6,7 @@ import Button from "../../common/Button/Button";
 import IconButton from "../../common/IconButton/IconButton";
 import ThemeToggle from "../../common/ThemeToggle/ThemeToggle";
 import AuthControls from "../../auth/AuthControls/AuthControls";
+import { useTheme } from "../../../context/ThemeContext";
 
 import styles from "./Navbar.module.css";
 
@@ -32,6 +33,7 @@ function Navbar({
   position = "sticky",
   className = "",
 }) {
+  const { mode } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("");
 
@@ -164,14 +166,29 @@ function Navbar({
           ================================= */}
 
           <a
-            href="#"
+            href="/"
             className={styles.logo}
             aria-label="Home"
             onClick={() =>
               setMenuOpen(false)
             }
           >
-            {logo}
+            {logo === "CurePulse" ? (
+              <>
+                <img
+                  src={
+                    mode === "dark"
+                      ? "/darkmode%20logo.png"
+                      : "/light%20mode%20logo.png"
+                  }
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span className={styles.logoName}>CurePulse</span>
+              </>
+            ) : (
+              logo
+            )}
           </a>
 
           {/* =================================

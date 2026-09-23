@@ -107,6 +107,7 @@
   align-items: center;
 
   flex-shrink: 0;
+  margin-left: -16px;
 
   color: var(--text-primary);
 
@@ -120,7 +121,30 @@
     opacity var(--transition-fast);
 }
 
+.logo img {
+  display: block;
+
+  width: 116px;
+  height: 54px;
+  margin-right: -18px;
+
+  object-fit: contain;
+}
+
+.logoName {
+  color: var(--text-primary);
+
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
 .logo:hover {
+  color: var(--accent-primary);
+}
+
+.logo:hover .logoName {
   color: var(--accent-primary);
 }
 
@@ -435,6 +459,20 @@
 
     gap: 8px;
   }
+
+  .logo img {
+    width: 96px;
+    height: 48px;
+    margin-right: -10px;
+  }
+
+  .logo {
+    margin-left: -12px;
+  }
+
+  .logoName {
+    font-size: 15px;
+  }
 }
 
 
@@ -449,6 +487,20 @@
 
   .inner {
     min-height: 60px;
+  }
+
+  .logo img {
+    width: 88px;
+    height: 44px;
+    margin-right: -12px;
+  }
+
+  .logo {
+    margin-left: -10px;
+  }
+
+  .logoName {
+    font-size: 14px;
   }
 
   .mobileNav {
