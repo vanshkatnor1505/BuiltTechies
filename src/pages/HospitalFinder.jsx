@@ -1912,8 +1912,34 @@ export default function HospitalFinder() {
                           >
                             {researchById[facility.id].error
                               ? researchById[facility.id].error
-                              : researchById[facility.id].summary ||
-                                "Verified source data is available in the comparison panel."}
+                              : (
+                                <>
+                                  <p>
+                                    {researchById[facility.id].summary ||
+                                      "Verified source data is available in the comparison panel."}
+                                  </p>
+
+                                  {researchById[facility.id].images?.length > 0 && (
+                                    <div className="facility-research-images">
+                                      {researchById[facility.id].images.slice(0, 3).map((image) => (
+                                        <a
+                                          key={image.url}
+                                          href={image.sourceUrl || image.url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          title={image.title || "Open image source"}
+                                        >
+                                          <img
+                                            src={image.url}
+                                            alt={`${facility.name} hospital`}
+                                            loading="lazy"
+                                          />
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              )}
                           </div>
                         )}
                       </article>
