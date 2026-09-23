@@ -805,11 +805,15 @@ export default function HospitalFinder() {
   const autoSearchRequested =
     useRef(false);
 
+  const recommendationRequestId =
+    useRef(0);
+
   const loadStateRecommendations = useCallback(async (disease, scope = "india") => {
     if (!isHealthcareSearch(disease)) {
       return;
     }
 
+    const requestId = ++recommendationRequestId.current;
     setStateRecommendationsLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/state-hospital-recommendations`, {
@@ -830,6 +834,9 @@ export default function HospitalFinder() {
         !Array.isArray(data.recommendations)
       ) {
         throw new Error("The research API returned an invalid response.");
+      }
+      if (requestId !== recommendationRequestId.current) {
+        return;
       }
       const hospitals = scope === "state" && data.recommendations?.length
         ? data.recommendations.map((recommendation) => ({
@@ -860,6 +867,9 @@ export default function HospitalFinder() {
         updatedAt: new Date().toISOString(),
       }));
     } catch (recommendationError) {
+      if (requestId !== recommendationRequestId.current) {
+        return;
+      }
       console.error("STATE HOSPITAL RESEARCH ERROR:", recommendationError);
       const nationwideFacilities = getIndiaHospitalFacilities(
         getHospitalFallbacks(disease),
@@ -882,7 +892,9 @@ export default function HospitalFinder() {
         updatedAt: new Date().toISOString(),
       }));
     } finally {
-      setStateRecommendationsLoading(false);
+      if (requestId === recommendationRequestId.current) {
+        setStateRecommendationsLoading(false);
+      }
     }
   }, [setSearchState, userState, userLocation]);
 
@@ -1065,6 +1077,7 @@ export default function HospitalFinder() {
       setError("");
       setSelectedFacility(null);
       setRoute(null);
+      recommendationRequestId.current += 1;
 
       try {
         const data =
@@ -1109,7 +1122,6 @@ export default function HospitalFinder() {
         }));
 
         setLastUpdated(new Date());
-        loadStateRecommendations(activeQuery);
 
         if (transformed.length === 0) {
           setError(
@@ -1138,7 +1150,6 @@ export default function HospitalFinder() {
       }
     },
     [
-      loadStateRecommendations,
       radius,
       searchQuery,
       setSearchState,
@@ -1433,6 +1444,22 @@ export default function HospitalFinder() {
     loadStateRecommendations(searchQuery);
   };
 
+  const handleSearchScopeChange = (nextScope) => {
+    if (nextScope === searchScope) {
+      return;
+    }
+
+    recommendationRequestId.current += 1;
+    autoSearchRequested.current = false;
+    setSearchScope(nextScope);
+    setFacilities([]);
+    setStateRecommendations(null);
+    setStateRecommendationsLoading(false);
+    setSelectedFacility(null);
+    setRoute(null);
+    setError("");
+  };
+
   /*
    * SELECT FACILITY
    */
@@ -1674,14 +1701,14 @@ export default function HospitalFinder() {
               <button
                 type="button"
                 className={searchScope === "india" ? "active" : ""}
-                onClick={() => setSearchScope("india")}
+                onClick={() => handleSearchScopeChange("india")}
               >
                 Best researched in India
               </button>
               <button
                 type="button"
                 className={searchScope === "nearby" ? "active" : ""}
-                onClick={() => setSearchScope("nearby")}
+                onClick={() => handleSearchScopeChange("nearby")}
               >
                 Nearby hospitals
               </button>
