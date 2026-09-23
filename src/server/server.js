@@ -683,11 +683,7 @@ app.post("/api/hospital-research", async (req, res) => {
           model: FREE_TIER_CHAT_MODEL,
           temperature: 0,
           max_completion_tokens: 900,
-<<<<<<< HEAD
           messages: [{ role: "system", content: "Extract only explicit facts about this exact hospital from the supplied web-search excerpts. Never estimate, generalize, or invent clinical statistics or reviews. Return valid JSON only: {metrics:{patientsTreated:string|null,successRate:string|null,treatmentCost:string|null,insurance:string|null}, summary:string, reviews:[{text:string,rating:string|null,sourceIndex:number}]}. Include at most three short review excerpts or public patient-experience statements when the source explicitly contains them. Keep review text faithful to the source, do not invent quotations, and use sourceIndex to reference the supplied excerpt. Each metric and review must be null or omitted unless the source explicitly supports it." }, { role: "user", content: `Hospital: ${name}\nLocation: ${address}\n\nSearch evidence:\n${evidence}` }],
-=======
-          messages: [{ role: "system", content: "Extract only explicit hospital facts from supplied web-search excerpts. Never estimate, generalize, or invent clinical statistics. Return valid JSON only: {metrics:{patientsTreated:string|null,successRate:string|null,treatmentCost:string|null,insurance:string|null}, summary:string}. Each metric must be null unless an excerpt explicitly states it for this exact hospital. A successRate may be calculated only when the same excerpt provides both a successful-outcome count and the total treated count; calculate (successful outcomes / total outcomes) * 100, round to one decimal place, and label it as calculated with the source citation. Do not calculate a rate from unrelated reviews, ratings, rankings, or the requirement match score. Include source numbers such as [2] in every non-null value and summary claim." }, { role: "user", content: `Hospital: ${name}\nLocation: ${address}\n\nSearch evidence:\n${evidence}` }],
->>>>>>> 6a3773f68177880b8772b1962da4510cc5061fd0
         });
         extracted = JSON.parse(completion.choices?.[0]?.message?.content || "{}");
       } catch (extractionError) {
@@ -695,8 +691,6 @@ app.post("/api/hospital-research", async (req, res) => {
         extracted.summary = "Search sources were found, but verified hospital information could not be extracted.";
       }
     }
-<<<<<<< HEAD
-
     let imageUrl = "";
     if (website && /^https?:\/\//i.test(website)) {
       try {
@@ -730,9 +724,6 @@ app.post("/api/hospital-research", async (req, res) => {
       imageUrl,
       sources: sources.map(({ title, url }) => ({ title, url })),
     });
-=======
-    res.json({ success: true, searched: true, metrics: extracted.metrics || {}, summary: extracted.summary || "No verified hospital-specific metrics were found.", images, sources: sources.map(({ title, url }) => ({ title, url })) });
->>>>>>> 6a3773f68177880b8772b1962da4510cc5061fd0
   } catch (error) {
     console.error("HOSPITAL RESEARCH ERROR:", error);
     res.status(502).json({ success: false, message: "Unable to verify hospital information right now." });
