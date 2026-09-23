@@ -4,10 +4,7 @@ import MapLibreMap from "../components/MapLibreMap/MapLibreMap";
 import "./HospitalFinder.css";
 import SiteNavbar from "../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../components/composed/Footer/Footer";
-import {
-  reverseGeocodeLocation,
-  searchNearbyHealthcare,
-} from "../services/geoapify";
+import { searchNearbyHealthcare } from "../services/geoapify";
 import { useHospitalSearch } from "../context/HospitalSearchContext";
 
 const DEFAULT_CENTER = [30.7333, 76.7794];
@@ -252,6 +249,60 @@ function getSearchGroups(query) {
       (alias) =>
         normalizedQuery.includes(alias) ||
         alias.includes(normalizedQuery),
+    ),
+  );
+}
+
+function isHealthcareSearch(query) {
+  const normalizedQuery = normalize(query);
+  const medicalTerms = [
+    "ache",
+    "allergy",
+    "arthritis",
+    "asthma",
+    "autism",
+    "blood pressure",
+    "cholera",
+    "cold",
+    "dengue",
+    "depression",
+    "diabetes",
+    "diarrhea",
+    "disease",
+    "disorder",
+    "infection",
+    "influenza",
+    "migraine",
+    "malaria",
+    "pneumonia",
+    "symptom",
+    "syndrome",
+    "tuberculosis",
+    "tumor",
+    "typhoid",
+    "ulcer",
+    "virus",
+    "fever",
+  ];
+  const medicalSuffixPattern =
+    /\b[a-z]+(?:algia|emia|itis|osis|opathy|oma|penia|plasia|sclerosis|syndrome|virus)\b/;
+  const hasMedicalTerm = medicalTerms.some((term) =>
+    normalizedQuery.includes(term),
+  );
+  const hasDiseaseLikeName = medicalSuffixPattern.test(normalizedQuery);
+  const hasMedicalContext = /\b(?:disease|condition|problem|treatment|therapy|care|doctor|specialist|hospital|clinic|medicine)\b/.test(
+    normalizedQuery,
+  );
+
+  return Boolean(
+    normalizedQuery &&
+    (
+      getSearchGroups(normalizedQuery).some(
+        (group) => group.key !== "general",
+      ) ||
+      hasMedicalTerm ||
+      hasDiseaseLikeName ||
+      hasMedicalContext
     ),
   );
 }
@@ -629,12 +680,19 @@ export default function HospitalFinder() {
     useState("idle");
 
   const [facilities, setFacilities] =
-    useState(searchState.facilities || []);
+    useState(
+      searchParams.get("scope") === "nearby"
+        ? searchState.facilities || []
+        : [],
+    );
 
   const [selectedFacility, setSelectedFacility] =
     useState(null);
 
   const [radius, setRadius] = useState(5);
+
+  const [searchScope, setSearchScope] =
+    useState(searchParams.get("scope") === "nearby" ? "nearby" : "india");
 
   const [facilityType, setFacilityType] =
     useState("all");
@@ -675,36 +733,34 @@ export default function HospitalFinder() {
   const autoSearchRequested =
     useRef(false);
 
-  const loadStateRecommendations = useCallback(async (location, disease) => {
-    if (!location || !disease.trim()) {
+  const loadStateRecommendations = useCallback(async (disease) => {
+    if (!isHealthcareSearch(disease)) {
       return;
     }
 
     setStateRecommendationsLoading(true);
     try {
-      const locationData = await reverseGeocodeLocation({
-        latitude: location.lat,
-        longitude: location.lon,
-      });
-      const state = locationData.state || locationData.county || "";
-      if (!state) {
-        setStateRecommendations(null);
-        return;
-      }
-
       const response = await fetch(`${API_URL}/api/state-hospital-recommendations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ disease, state }),
+        body: JSON.stringify({ disease }),
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
       if (!response.ok) {
         throw new Error(data.message || "State-wide research failed.");
+      }
+      if (!Array.isArray(data.recommendations)) {
+        throw new Error("The research API returned an invalid response.");
       }
       setStateRecommendations(data);
     } catch (recommendationError) {
       console.error("STATE HOSPITAL RESEARCH ERROR:", recommendationError);
-      setStateRecommendations(null);
+      setStateRecommendations({
+        disease,
+        recommendations: [],
+        error: recommendationError.message ||
+          "India-wide hospital research is unavailable right now.",
+      });
     } finally {
       setStateRecommendationsLoading(false);
     }
@@ -761,11 +817,8 @@ export default function HospitalFinder() {
 
       setLocationStatus("success");
       setLoading(false);
-      if (searchQuery.trim()) {
-        loadStateRecommendations(
-          { lat: latitude, lon: longitude },
-          searchQuery,
-        );
+      if (searchScope === "india" && isHealthcareSearch(searchQuery)) {
+        loadStateRecommendations(searchQuery);
       }
     };
 
@@ -861,6 +914,7 @@ export default function HospitalFinder() {
     );
   }, [
     loadStateRecommendations,
+    searchScope,
     searchQuery,
   ]);
   /*
@@ -929,7 +983,7 @@ export default function HospitalFinder() {
         }));
 
         setLastUpdated(new Date());
-        loadStateRecommendations(userLocation, activeQuery);
+        loadStateRecommendations(activeQuery);
 
         if (transformed.length === 0) {
           setError(
@@ -1060,6 +1114,7 @@ export default function HospitalFinder() {
 
   useEffect(() => {
     if (
+      searchScope !== "nearby" ||
       !userLocation ||
       facilities.length > 0 ||
       autoSearchRequested.current
@@ -1073,6 +1128,7 @@ export default function HospitalFinder() {
   }, [
     facilities.length,
     fetchNearbyFacilities,
+    searchScope,
     userLocation,
   ]);
 
@@ -1222,7 +1278,23 @@ export default function HospitalFinder() {
    */
 
   const search = () => {
-    fetchNearbyFacilities();
+    if (!isHealthcareSearch(searchQuery)) {
+      setError(
+        "Please enter a health-related search, such as kidney treatment, cardiology, diabetes, cancer, eye care, or emergency care.",
+      );
+      setStateRecommendations(null);
+      return;
+    }
+
+    if (searchScope === "nearby") {
+      fetchNearbyFacilities();
+      return;
+    }
+
+    setFacilities([]);
+    setSelectedFacility(null);
+    setError("");
+    loadStateRecommendations(searchQuery);
   };
 
   /*
@@ -1451,12 +1523,29 @@ export default function HospitalFinder() {
                 onClick={search}
                 disabled={
                   loading ||
-                  !userLocation
+                  (searchScope === "nearby" && !userLocation)
                 }
               >
                 {loading
                   ? "Searching..."
                   : "Find healthcare"}
+              </button>
+            </div>
+
+            <div className="search-scope-toggle" role="group" aria-label="Search scope">
+              <button
+                type="button"
+                className={searchScope === "india" ? "active" : ""}
+                onClick={() => setSearchScope("india")}
+              >
+                Best researched in India
+              </button>
+              <button
+                type="button"
+                className={searchScope === "nearby" ? "active" : ""}
+                onClick={() => setSearchScope("nearby")}
+              >
+                Nearby hospitals
               </button>
             </div>
 
@@ -1478,10 +1567,13 @@ export default function HospitalFinder() {
                       keyword,
                     );
 
-                    if (userLocation) {
+                    if (searchScope === "nearby" && userLocation) {
                       fetchNearbyFacilities(
                         keyword,
                       );
+                    } else if (searchScope === "india") {
+                      setFacilities([]);
+                      loadStateRecommendations(keyword);
                     }
                   }}
                 >
@@ -1705,36 +1797,45 @@ export default function HospitalFinder() {
         {stateRecommendationsLoading && (
           <section className="state-recommendations">
             <div className="state-recommendations-heading">
-              <span className="eyebrow">STATE-WIDE RESEARCH</span>
-              <h2>Finding leading options for {searchQuery || "your requirement"}...</h2>
+              <span className="eyebrow">INDIA-WIDE RESEARCH</span>
+              <h2>Finding leading options in India for {searchQuery || "your requirement"}...</h2>
             </div>
           </section>
         )}
 
         {!stateRecommendationsLoading &&
-          stateRecommendations?.recommendations?.length > 0 && (
+          stateRecommendations &&
+          !stateRecommendationsLoading && (
             <section className="state-recommendations">
               <div className="state-recommendations-heading">
                 <div>
-                  <span className="eyebrow">STATE-WIDE RESEARCH</span>
-                  <h2>Top researched options in {stateRecommendations.state}</h2>
+                  <span className="eyebrow">INDIA-WIDE RESEARCH</span>
+                  <h2>Leading researched hospitals in India</h2>
                   <p>
-                    These are source-backed search results for {stateRecommendations.disease}.
+                    These are source-backed search results for{" "}
+                    {stateRecommendations.disease || searchQuery}.
                     They are not a universal clinical ranking.
                   </p>
                 </div>
               </div>
-              <div className="state-recommendation-grid">
-                {stateRecommendations.recommendations.map((recommendation) => (
+              {stateRecommendations.recommendations?.length > 0 ? (
+                <div className="state-recommendation-grid">
+                  {stateRecommendations.recommendations.map((recommendation) => (
                   <article className="state-recommendation-card" key={recommendation.sourceUrl}>
                     <h3>{recommendation.name}</h3>
                     <p>{recommendation.summary}</p>
                     <a href={recommendation.sourceUrl} target="_blank" rel="noreferrer">
-                      Read source
+                      {recommendation.sourceLabel || "Read source"}
                     </a>
                   </article>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="state-recommendation-empty">
+                  {stateRecommendations.error ||
+                    "No India-wide hospital results were returned. Try the search again."}
+                </p>
+              )}
             </section>
           )}
 

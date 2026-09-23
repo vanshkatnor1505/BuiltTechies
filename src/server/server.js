@@ -47,14 +47,15 @@ app.get("/health", (req, res) => {
     success: true,
     service: "BuiltTechies API",
   });
+});
 
-  app.post("/api/state-hospital-recommendations", async (req, res) => {
+app.post("/api/state-hospital-recommendations", async (req, res) => {
     try {
-      const { disease, state = "" } = req.body;
-      if (!disease || typeof disease !== "string" || !state || typeof state !== "string") {
+      const { disease } = req.body;
+      if (!disease || typeof disease !== "string") {
         return res.status(400).json({
           success: false,
-          message: "Disease and state are required.",
+          message: "A disease or treatment keyword is required.",
         });
       }
 
@@ -62,8 +63,8 @@ app.get("/health", (req, res) => {
         return res.json({
           success: true,
           searched: false,
-          recommendations: [],
-          message: "State-wide research requires TAVILY_API_KEY.",
+          recommendations: getIndiaHospitalFallbacks(disease),
+          message: "Live research is unavailable. Showing major India-wide hospitals to research.",
         });
       }
 
@@ -72,12 +73,29 @@ app.get("/health", (req, res) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           api_key: process.env.TAVILY_API_KEY,
-          query: `top hospitals for ${disease} treatment in ${state} India`,
+          query: `best hospitals in India for ${disease} treatment`,
           search_depth: "advanced",
           max_results: 6,
           include_answer: false,
         }),
       });
+
+function getIndiaHospitalFallbacks(disease) {
+      const hospitals = [
+        "All India Institute of Medical Sciences (AIIMS), New Delhi",
+        "Tata Memorial Hospital, Mumbai",
+        "Christian Medical College, Vellore",
+        "Apollo Hospitals, India",
+        "Medanta - The Medicity, Gurugram",
+      ];
+
+      return hospitals.map((name) => ({
+        name,
+        summary: `Explore ${name} for ${disease} treatment, specialist availability, and current patient services.`,
+        sourceUrl: `https://www.google.com/search?q=${encodeURIComponent(`${name} ${disease} treatment`)}`,
+        sourceLabel: "Search hospital details",
+      }));
+}
 
       if (!searchResponse.ok) {
         throw new Error("The state-wide hospital research provider could not be reached.");
@@ -96,7 +114,7 @@ app.get("/health", (req, res) => {
       res.json({
         success: true,
         searched: true,
-        state,
+        country: "India",
         disease,
         recommendations,
         disclaimer: "These are source-backed search results, not a universal clinical ranking.",
@@ -109,7 +127,6 @@ app.get("/health", (req, res) => {
       });
     }
   });
-});
 
 /* =========================================================
    MULTER

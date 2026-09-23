@@ -289,6 +289,33 @@ VITE_API_URL=https://your-render-service.onrender.com
 
 Then redeploy Vercel. Vite embeds `VITE_*` values during the build.
 
+### Country-wide search shows `Unexpected token '<'`
+
+This means the request received the Vercel HTML page instead of the backend
+JSON response. In Vercel, set:
+
+```env
+VITE_API_URL=https://YOUR-ACTUAL-RENDER-SERVICE.onrender.com
+```
+
+Do not set it to the Vercel frontend URL, and do not leave it as
+`http://localhost:5000`. Then redeploy the frontend.
+
+Confirm the backend is deployed from the latest commit by opening:
+
+```text
+https://YOUR-ACTUAL-RENDER-SERVICE.onrender.com/health
+```
+
+The country-wide route must be available at:
+
+```text
+POST https://YOUR-ACTUAL-RENDER-SERVICE.onrender.com/api/state-hospital-recommendations
+```
+
+If the route returns `404`, redeploy the Render service using the latest
+commit and confirm its start command is `npm run server`.
+
 ### CORS error
 
 Set the exact Vercel origin in Render:
