@@ -4,7 +4,10 @@ import MapLibreMap from "../components/MapLibreMap/MapLibreMap";
 import "./HospitalFinder.css";
 import SiteNavbar from "../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../components/composed/Footer/Footer";
-import { searchNearbyHealthcare } from "../services/geoapify";
+import {
+  reverseGeocodeLocation,
+  searchNearbyHealthcare,
+} from "../services/geoapify";
 import { useHospitalSearch } from "../context/HospitalSearchContext";
 
 const DEFAULT_CENTER = [30.7333, 76.7794];
@@ -651,6 +654,12 @@ export default function HospitalFinder() {
   const [error, setError] =
     useState("");
 
+  const [stateRecommendations, setStateRecommendations] =
+    useState(null);
+
+  const [stateRecommendationsLoading, setStateRecommendationsLoading] =
+    useState(false);
+
   const [route, setRoute] =
     useState(null);
 
@@ -665,6 +674,41 @@ export default function HospitalFinder() {
 
   const autoSearchRequested =
     useRef(false);
+
+  const loadStateRecommendations = useCallback(async (location, disease) => {
+    if (!location || !disease.trim()) {
+      return;
+    }
+
+    setStateRecommendationsLoading(true);
+    try {
+      const locationData = await reverseGeocodeLocation({
+        latitude: location.lat,
+        longitude: location.lon,
+      });
+      const state = locationData.state || locationData.county || "";
+      if (!state) {
+        setStateRecommendations(null);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/state-hospital-recommendations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ disease, state }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "State-wide research failed.");
+      }
+      setStateRecommendations(data);
+    } catch (recommendationError) {
+      console.error("STATE HOSPITAL RESEARCH ERROR:", recommendationError);
+      setStateRecommendations(null);
+    } finally {
+      setStateRecommendationsLoading(false);
+    }
+  }, []);
 
   const locationRequestStarted =
     useRef(false);
@@ -717,6 +761,12 @@ export default function HospitalFinder() {
 
       setLocationStatus("success");
       setLoading(false);
+      if (searchQuery.trim()) {
+        loadStateRecommendations(
+          { lat: latitude, lon: longitude },
+          searchQuery,
+        );
+      }
     };
 
     const handleError = (error) => {
@@ -809,7 +859,10 @@ export default function HospitalFinder() {
         maximumAge: 0,
       }
     );
-  }, []);
+  }, [
+    loadStateRecommendations,
+    searchQuery,
+  ]);
   /*
    * GEOAPIFY SEARCH
    */
@@ -876,6 +929,7 @@ export default function HospitalFinder() {
         }));
 
         setLastUpdated(new Date());
+        loadStateRecommendations(userLocation, activeQuery);
 
         if (transformed.length === 0) {
           setError(
@@ -904,6 +958,7 @@ export default function HospitalFinder() {
       }
     },
     [
+      loadStateRecommendations,
       radius,
       searchQuery,
       setSearchState,
@@ -1646,6 +1701,42 @@ export default function HospitalFinder() {
             )}
           </div>
         </div>
+
+        {stateRecommendationsLoading && (
+          <section className="state-recommendations">
+            <div className="state-recommendations-heading">
+              <span className="eyebrow">STATE-WIDE RESEARCH</span>
+              <h2>Finding leading options for {searchQuery || "your requirement"}...</h2>
+            </div>
+          </section>
+        )}
+
+        {!stateRecommendationsLoading &&
+          stateRecommendations?.recommendations?.length > 0 && (
+            <section className="state-recommendations">
+              <div className="state-recommendations-heading">
+                <div>
+                  <span className="eyebrow">STATE-WIDE RESEARCH</span>
+                  <h2>Top researched options in {stateRecommendations.state}</h2>
+                  <p>
+                    These are source-backed search results for {stateRecommendations.disease}.
+                    They are not a universal clinical ranking.
+                  </p>
+                </div>
+              </div>
+              <div className="state-recommendation-grid">
+                {stateRecommendations.recommendations.map((recommendation) => (
+                  <article className="state-recommendation-card" key={recommendation.sourceUrl}>
+                    <h3>{recommendation.name}</h3>
+                    <p>{recommendation.summary}</p>
+                    <a href={recommendation.sourceUrl} target="_blank" rel="noreferrer">
+                      Read source
+                    </a>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
 
         {/* MAIN */}
 

@@ -1,4 +1,5 @@
 const GEOAPIFY_API_URL = "https://api.geoapify.com/v2/places";
+const GEOAPIFY_GEOCODE_URL = "https://api.geoapify.com/v1/geocode/reverse";
 
 const getApiKey = () => {
   const key = import.meta.env.VITE_GEOAPIFY_API_KEY;
@@ -58,4 +59,18 @@ export async function searchNearbyHealthcare({
   const data = await response.json();
 
   return data;
+}
+
+export async function reverseGeocodeLocation({ latitude, longitude }) {
+  const params = new URLSearchParams({
+    lat: String(latitude),
+    lon: String(longitude),
+    apiKey: getApiKey(),
+  });
+  const response = await fetch(`${GEOAPIFY_GEOCODE_URL}?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Location lookup failed (${response.status}).`);
+  }
+  const data = await response.json();
+  return data.features?.[0]?.properties || {};
 }

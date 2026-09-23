@@ -47,6 +47,68 @@ app.get("/health", (req, res) => {
     success: true,
     service: "BuiltTechies API",
   });
+
+  app.post("/api/state-hospital-recommendations", async (req, res) => {
+    try {
+      const { disease, state = "" } = req.body;
+      if (!disease || typeof disease !== "string" || !state || typeof state !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "Disease and state are required.",
+        });
+      }
+
+      if (!process.env.TAVILY_API_KEY) {
+        return res.json({
+          success: true,
+          searched: false,
+          recommendations: [],
+          message: "State-wide research requires TAVILY_API_KEY.",
+        });
+      }
+
+      const searchResponse = await fetch("https://api.tavily.com/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_key: process.env.TAVILY_API_KEY,
+          query: `top hospitals for ${disease} treatment in ${state} India`,
+          search_depth: "advanced",
+          max_results: 6,
+          include_answer: false,
+        }),
+      });
+
+      if (!searchResponse.ok) {
+        throw new Error("The state-wide hospital research provider could not be reached.");
+      }
+
+      const data = await searchResponse.json();
+      const recommendations = (data.results || [])
+        .filter((result) => result.url && result.title)
+        .slice(0, 5)
+        .map((result) => ({
+          name: result.title,
+          summary: result.content || "Open the source for treatment and hospital details.",
+          sourceUrl: result.url,
+        }));
+
+      res.json({
+        success: true,
+        searched: true,
+        state,
+        disease,
+        recommendations,
+        disclaimer: "These are source-backed search results, not a universal clinical ranking.",
+      });
+    } catch (error) {
+      console.error("STATE HOSPITAL RESEARCH ERROR:", error);
+      res.status(502).json({
+        success: false,
+        message: "Unable to find state-wide hospital recommendations right now.",
+      });
+    }
+  });
 });
 
 /* =========================================================

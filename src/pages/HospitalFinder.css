@@ -937,6 +937,62 @@
   color: #b91c1c;
 }
 
+.state-recommendations {
+  margin: 22px 0;
+  padding: 20px;
+  border: 1px solid var(--hf-border);
+  border-radius: var(--hf-radius-lg);
+  background: var(--hf-surface);
+}
+
+.state-recommendations-heading h2 {
+  margin: 6px 0;
+  font-size: 20px;
+}
+
+.state-recommendations-heading p {
+  margin: 0;
+  color: var(--hf-text-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.state-recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.state-recommendation-card {
+  padding: 15px;
+  border: 1px solid var(--hf-border);
+  border-radius: 12px;
+  background: var(--hf-surface-2);
+}
+
+.state-recommendation-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.state-recommendation-card p {
+  display: -webkit-box;
+  margin: 0 0 12px;
+  overflow: hidden;
+  color: var(--hf-text-2);
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.state-recommendation-card a {
+  color: var(--hf-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .comparison-grid {
   display: grid;
   grid-template-columns: repeat(
