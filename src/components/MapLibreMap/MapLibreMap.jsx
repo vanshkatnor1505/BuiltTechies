@@ -14,11 +14,14 @@ export default function MapLibreMap({
   selectedFacility,
   onSelectFacility,
   route = null,
+  mapCenter = null,
 }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const userMarkerRef = useRef(null);
+  const initialMapCenterRef = useRef(mapCenter);
+  const initialUserLocationRef = useRef(userLocation);
   const [mapReady, setMapReady] = useState(false);
 
   /*
@@ -48,9 +51,9 @@ export default function MapLibreMap({
       `https://maps.geoapify.com/v1/tile/osm-bright/` +
       `{z}/{x}/{y}.png?apiKey=${apiKey}`;
 
-    const initialCenter = userLocation
-      ? [userLocation.lon, userLocation.lat]
-      : DEFAULT_CENTER;
+    const initialCenter = initialMapCenterRef.current || (initialUserLocationRef.current
+      ? [initialUserLocationRef.current.lon, initialUserLocationRef.current.lat]
+      : DEFAULT_CENTER);
 
     console.log("Creating MapLibre raster map...");
     console.log("Initial center:", initialCenter);
@@ -60,7 +63,11 @@ export default function MapLibreMap({
 
       center: initialCenter,
 
-      zoom: userLocation ? 13 : 10,
+      zoom: initialMapCenterRef.current
+        ? 5
+        : initialUserLocationRef.current
+          ? 13
+          : 10,
 
       attributionControl: true,
 
@@ -155,7 +162,7 @@ export default function MapLibreMap({
   useEffect(() => {
     const map = mapRef.current;
 
-    if (!map || !mapReady || !userLocation) return;
+    if (!map || !mapReady || !userLocation || mapCenter) return;
 
     const center = [
       Number(userLocation.lon),
@@ -169,7 +176,49 @@ export default function MapLibreMap({
       zoom: 13,
       essential: true,
     });
-  }, [mapReady, userLocation]);
+  }, [mapCenter, mapReady, userLocation]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !mapReady || !Array.isArray(mapCenter)) return;
+
+    const nationwideFacilities = facilities.filter(
+      (facility) => facility.nationwide,
+    );
+
+    if (nationwideFacilities.length > 0) {
+      const coordinates = nationwideFacilities
+        .map((facility) => [Number(facility.lon), Number(facility.lat)])
+        .filter(([longitude, latitude]) =>
+          Number.isFinite(longitude) && Number.isFinite(latitude),
+        );
+
+      if (coordinates.length > 0) {
+        const longitudes = coordinates.map(([longitude]) => longitude);
+        const latitudes = coordinates.map(([, latitude]) => latitude);
+
+        map.fitBounds(
+          [
+            [Math.min(...longitudes), Math.min(...latitudes)],
+            [Math.max(...longitudes), Math.max(...latitudes)],
+          ],
+          { padding: 70, maxZoom: 6, duration: 700 },
+        );
+        return;
+      }
+    }
+
+    const center = mapCenter.map(Number);
+
+    if (!center.every(Number.isFinite)) return;
+
+    map.flyTo({
+      center,
+      zoom: 5,
+      essential: true,
+    });
+  }, [facilities, mapCenter, mapReady]);
 
   /*
    * ---------------------------------------------------------
@@ -203,7 +252,9 @@ export default function MapLibreMap({
       markerElement.style.width = "30px";
       markerElement.style.height = "30px";
       markerElement.style.borderRadius = "50%";
-      markerElement.style.background = "#dc2626";
+      markerElement.style.background = facility.nationwide
+        ? "#0f766e"
+        : "#dc2626";
       markerElement.style.border =
         "3px solid white";
       markerElement.style.boxShadow =
@@ -211,8 +262,9 @@ export default function MapLibreMap({
       markerElement.style.cursor = "pointer";
 
       markerElement.title =
-        facility.name ||
-        "Healthcare facility";
+        facility.nationwide
+          ? `${facility.name || "Hospital"} - specialist match`
+          : facility.name || "Healthcare facility";
 
       markerElement.addEventListener(
         "click",

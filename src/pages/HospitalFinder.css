@@ -518,6 +518,16 @@
   font-weight: 850;
 }
 
+.specialist-badge {
+  margin-left: auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hf-secondary) 14%, transparent);
+  color: var(--hf-secondary);
+  font-size: 10px;
+  font-weight: 850;
+}
+
 .facility-card-body {
   display: flex;
   justify-content: space-between;
@@ -988,6 +998,42 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   margin-top: 16px;
+}
+
+.state-recommendation-group + .state-recommendation-group {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--hf-border);
+}
+
+.state-recommendation-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.state-recommendation-group-heading h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.state-recommendation-group-heading span,
+.state-recommendation-kind {
+  color: var(--hf-primary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.state-recommendation-kind {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.resource-recommendation-card .state-recommendation-kind {
+  color: var(--hf-secondary);
 }
 
 .state-recommendation-card {

@@ -51,7 +51,7 @@ app.get("/health", (req, res) => {
 
 app.post("/api/state-hospital-recommendations", async (req, res) => {
     try {
-      const { disease } = req.body;
+      const { disease, state } = req.body;
       if (!disease || typeof disease !== "string") {
         return res.status(400).json({
           success: false,
@@ -63,7 +63,8 @@ app.post("/api/state-hospital-recommendations", async (req, res) => {
         return res.json({
           success: true,
           searched: false,
-          recommendations: getIndiaHospitalFallbacks(disease),
+          hospitals: getIndiaHospitalFallbacks(disease),
+          resources: getIndiaResourceFallbacks(),
           message: "Live research is unavailable. Showing major India-wide hospitals to research.",
         });
       }
@@ -73,7 +74,7 @@ app.post("/api/state-hospital-recommendations", async (req, res) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           api_key: process.env.TAVILY_API_KEY,
-          query: `best hospitals in India for ${disease} treatment`,
+          query: `best hospitals in ${state || "India"} for ${disease} treatment`,
           search_depth: "advanced",
           max_results: 6,
           include_answer: false,
@@ -97,6 +98,29 @@ function getIndiaHospitalFallbacks(disease) {
       }));
 }
 
+function getIndiaResourceFallbacks() {
+      return [
+        {
+          name: "Ayushman Bharat Digital Mission",
+          summary: "Government health services, digital health records, and verified healthcare access information.",
+          sourceUrl: "https://abdm.gov.in/",
+          sourceLabel: "Visit official resource",
+        },
+        {
+          name: "National Health Authority",
+          summary: "Public information about health schemes, coverage, and access to care across India.",
+          sourceUrl: "https://nha.gov.in/",
+          sourceLabel: "Visit official resource",
+        },
+        {
+          name: "eSanjeevani",
+          summary: "India's national telemedicine service for remote medical consultations and care guidance.",
+          sourceUrl: "https://esanjeevani.mohfw.gov.in/",
+          sourceLabel: "Visit official resource",
+        },
+      ];
+}
+
       if (!searchResponse.ok) {
         throw new Error("The state-wide hospital research provider could not be reached.");
       }
@@ -115,8 +139,14 @@ function getIndiaHospitalFallbacks(disease) {
         success: true,
         searched: true,
         country: "India",
+        state: state || null,
         disease,
-        recommendations,
+        hospitals: getIndiaHospitalFallbacks(disease),
+        recommendations: state ? recommendations : undefined,
+        resources: recommendations.map((result) => ({
+          ...result,
+          sourceLabel: "Read research source",
+        })),
         disclaimer: "These are source-backed search results, not a universal clinical ranking.",
       });
     } catch (error) {

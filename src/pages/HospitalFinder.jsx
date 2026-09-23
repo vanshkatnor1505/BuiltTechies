@@ -4,13 +4,126 @@ import MapLibreMap from "../components/MapLibreMap/MapLibreMap";
 import "./HospitalFinder.css";
 import SiteNavbar from "../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../components/composed/Footer/Footer";
-import { searchNearbyHealthcare } from "../services/geoapify";
+import {
+  reverseGeocodeLocation,
+  searchNearbyHealthcare,
+} from "../services/geoapify";
 import { useHospitalSearch } from "../context/HospitalSearchContext";
 
 const DEFAULT_CENTER = [30.7333, 76.7794];
 
 const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+const INDIA_SPECIALIST_HOSPITALS = {
+  kidney: [
+    ["Institute of Kidney Diseases and Research Center", "Ahmedabad", "Nephrology, kidney transplant, dialysis", 23.0339, 72.5850],
+    ["Medanta Institute of Kidney and Urology", "Gurugram", "Nephrology, renal transplant, urology", 28.4395, 77.1027],
+    ["Manipal Hospitals - Institute of Renal Sciences", "Bengaluru", "Kidney transplant, nephrology, dialysis", 12.9592, 77.6474],
+    ["Apollo Hospitals - Institute of Nephrology", "Chennai", "Nephrology, renal transplant, urology", 13.0067, 80.2206],
+  ],
+  heart: [
+    ["Narayana Institute of Cardiac Sciences", "Bengaluru", "Cardiology, cardiac surgery, heart transplant", 12.8596, 77.6633],
+    ["Fortis Escorts Heart Institute", "New Delhi", "Interventional cardiology, cardiac surgery", 28.5677, 77.2310],
+    ["Asian Heart Institute", "Mumbai", "Cardiology, bypass surgery, heart transplant", 19.0437, 73.0169],
+    ["Medanta Heart Institute", "Gurugram", "Cardiology, electrophysiology, cardiac surgery", 28.4395, 77.1027],
+  ],
+  cancer: [
+    ["Tata Memorial Hospital", "Mumbai", "Medical oncology, radiation oncology, cancer surgery", 19.0048, 72.8430],
+    ["Homi Bhabha Cancer Hospital", "Sangrur", "Cancer surgery, chemotherapy, radiotherapy", 30.2458, 75.8425],
+    ["Cancer Institute (WIA)", "Chennai", "Oncology, radiation therapy, cancer surgery", 13.0108, 80.2388],
+    ["Rajiv Gandhi Cancer Institute and Research Centre", "New Delhi", "Medical oncology, robotic surgery, radiotherapy", 28.7077, 77.1197],
+  ],
+  brain: [
+    ["National Institute of Mental Health and Neuro Sciences", "Bengaluru", "Neurology, neurosurgery, stroke care", 12.9430, 77.5960],
+    ["Sree Chitra Tirunal Institute for Medical Sciences", "Thiruvananthapuram", "Neurosurgery, stroke, interventional neurology", 8.5241, 76.9366],
+    ["Institute of Neurosciences, Medanta", "Gurugram", "Neurosurgery, epilepsy, movement disorders", 28.4395, 77.1027],
+    ["Apollo Proton Cancer Centre", "Chennai", "Neuro-oncology, neurosurgery, proton therapy", 12.9352, 80.2362],
+  ],
+  orthopedic: [
+    ["Indian Spinal Injuries Centre", "New Delhi", "Spine surgery, orthopedics, rehabilitation", 28.5480, 77.1730],
+    ["Sancheti Institute for Orthopaedics", "Pune", "Joint replacement, spine, sports medicine", 18.5204, 73.8567],
+    ["Wockhardt Hospitals - Orthopaedic Institute", "Mumbai", "Joint replacement, trauma, sports injuries", 19.0715, 72.8805],
+    ["Ganga Hospital", "Coimbatore", "Orthopedics, trauma, reconstructive surgery", 11.0168, 76.9558],
+  ],
+  eye: [
+    ["L V Prasad Eye Institute", "Hyderabad", "Cataract, retina, cornea, glaucoma", 17.4126, 78.4071],
+    ["Aravind Eye Hospital", "Madurai", "Cataract, retina, cornea, eye care", 9.9252, 78.1198],
+    ["Sankara Nethralaya", "Chennai", "Retina, cornea, glaucoma, ocular oncology", 13.0569, 80.2510],
+    ["Dr. Shroff's Charity Eye Hospital", "New Delhi", "Cataract, pediatric ophthalmology, cornea", 28.6508, 77.1926],
+  ],
+  children: [
+    ["Indraprastha Apollo Children's Hospital", "New Delhi", "Pediatrics, pediatric surgery, neonatology", 28.5355, 77.2837],
+    ["Rainbow Children's Hospital", "Hyderabad", "Pediatrics, neonatology, pediatric surgery", 17.4296, 78.4071],
+    ["Children's Hospital, AIIMS", "New Delhi", "Pediatric oncology, surgery, critical care", 28.5672, 77.2100],
+    ["Kokilaben Dhirubhai Ambani Hospital - Children", "Mumbai", "Pediatrics, pediatric surgery, cardiology", 19.1334, 72.8253],
+  ],
+  women: [
+    ["Indira IVF and Women's Health Institute", "Mumbai", "Fertility, IVF, reproductive medicine", 19.1136, 72.8697],
+    ["Cloudnine Hospital", "Bengaluru", "Maternity, fertility, gynecology", 12.9716, 77.5946],
+    ["CK Birla Hospital for Women", "Gurugram", "High-risk pregnancy, fertility, gynecology", 28.4595, 77.0266],
+    ["Institute of Obstetrics and Gynaecology", "Hyderabad", "Obstetrics, gynecology, maternal care", 17.3850, 78.4867],
+  ],
+  general: [
+    ["All India Institute of Medical Sciences (AIIMS)", "New Delhi", "Multi-specialty care, emergency medicine, surgery", 28.5672, 77.2100],
+    ["Christian Medical College", "Vellore", "Multi-specialty care, transplant, critical care", 12.9249, 79.1350],
+    ["Apollo Hospitals", "Chennai", "Multi-specialty care, emergency medicine, surgery", 13.0067, 80.2206],
+    ["Sir Ganga Ram Hospital", "New Delhi", "Multi-specialty care, cardiology, oncology", 28.6387, 77.1900],
+  ],
+};
+
+function getHospitalFallbacks(disease) {
+  const group = getSearchGroups(disease)[0]?.key || "general";
+  const hospitals = INDIA_SPECIALIST_HOSPITALS[group] || INDIA_SPECIALIST_HOSPITALS.general;
+
+  return hospitals.map(([name, city, specialties, lat, lon]) => ({
+    name: `${name}, ${city}`,
+    city,
+    specialties,
+    lat,
+    lon,
+    summary: `Specialist starting point for ${disease} care: ${specialties}. Verify current departments and appointment availability directly with the hospital.`,
+    sourceUrl: `https://www.google.com/search?q=${encodeURIComponent(`${name} ${city} ${disease} treatment`)}`,
+    sourceLabel: "Research hospital",
+  }));
+}
+
+function getIndiaHospitalFacilities(hospitals, disease, userLocation) {
+  return hospitals.map((hospital, index) => {
+    const location = Number.isFinite(hospital.lat) && Number.isFinite(hospital.lon)
+      ? { city: hospital.city || "India", lat: hospital.lat, lon: hospital.lon }
+      : {
+        city: hospital.city || "India",
+        lat: userLocation?.lat || 20.5937,
+        lon: userLocation?.lon || 78.9629,
+      };
+    const distanceKm = userLocation
+      ? haversineDistance(userLocation.lat, userLocation.lon, location.lat, location.lon)
+      : 0;
+
+    return {
+      id: `india-hospital-${index}-${location.city.toLowerCase()}`,
+      name: hospital.name,
+      type: "Hospital",
+      lat: location.lat,
+      lon: location.lon,
+      address: `${location.city}, India`,
+      specialties: hospital.specialties || disease,
+      emergency: false,
+      match: 95 - index * 2,
+      distanceKm,
+      travelMinutes: null,
+      website: hospital.sourceUrl,
+      tags: {
+        name: hospital.name,
+        healthcare: "hospital",
+        specialties: hospital.specialties || disease,
+      },
+      nationwide: true,
+      sourceUrl: hospital.sourceUrl,
+    };
+  });
+}
 
 const MAX_MAP_MARKERS = 40;
 const RESULTS_PER_PAGE = 3;
@@ -345,7 +458,6 @@ function getSpecialties(tags = {}) {
     tags["healthcare:specialties"],
     tags["medical:specialty"],
     tags["medical_specialty"],
-    tags.speciality,
     tags.specialties,
     tags.description,
     tags["healthcare:speciality:en"],
@@ -365,9 +477,6 @@ function getFacilityText(tags = {}) {
       tags["healthcare:specialties"],
       tags["medical:specialty"],
       tags["medical_specialty"],
-      tags.speciality,
-      tags.specialties,
-      tags.description,
       tags.operator,
     ]
       .filter(Boolean)
@@ -693,6 +802,7 @@ export default function HospitalFinder() {
 
   const [searchScope, setSearchScope] =
     useState(searchParams.get("scope") === "nearby" ? "nearby" : "india");
+  const [userState, setUserState] = useState("");
 
   const [facilityType, setFacilityType] =
     useState("all");
@@ -733,7 +843,7 @@ export default function HospitalFinder() {
   const autoSearchRequested =
     useRef(false);
 
-  const loadStateRecommendations = useCallback(async (disease) => {
+  const loadStateRecommendations = useCallback(async (disease, scope = "india") => {
     if (!isHealthcareSearch(disease)) {
       return;
     }
@@ -743,28 +853,76 @@ export default function HospitalFinder() {
       const response = await fetch(`${API_URL}/api/state-hospital-recommendations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ disease }),
+        body: JSON.stringify({
+          disease,
+          state: scope === "state" ? userState : undefined,
+        }),
       });
       const data = await readApiResponse(response);
       if (!response.ok) {
         throw new Error(data.message || "State-wide research failed.");
       }
-      if (!Array.isArray(data.recommendations)) {
+      if (
+        !Array.isArray(data.hospitals) &&
+        !Array.isArray(data.resources) &&
+        !Array.isArray(data.recommendations)
+      ) {
         throw new Error("The research API returned an invalid response.");
       }
-      setStateRecommendations(data);
+      const hospitals = scope === "state" && data.recommendations?.length
+        ? data.recommendations.map((recommendation) => ({
+          ...recommendation,
+          specialties: disease,
+        }))
+        : getHospitalFallbacks(disease);
+      setStateRecommendations({
+        ...data,
+        hospitals,
+        resources: scope === "state" && data.recommendations?.length
+          ? data.resources || []
+          : data.resources?.length
+          ? data.resources
+          : data.recommendations || [],
+      });
+      const nationwideFacilities = getIndiaHospitalFacilities(
+        hospitals,
+        disease,
+        userLocation,
+      );
+      setFacilities(nationwideFacilities);
+      setSearchState((current) => ({
+        ...current,
+        query: disease,
+        facilities: nationwideFacilities,
+        compareIds: [],
+        updatedAt: new Date().toISOString(),
+      }));
     } catch (recommendationError) {
       console.error("STATE HOSPITAL RESEARCH ERROR:", recommendationError);
+      const nationwideFacilities = getIndiaHospitalFacilities(
+        getHospitalFallbacks(disease),
+        disease,
+        userLocation,
+      );
       setStateRecommendations({
         disease,
-        recommendations: [],
+        hospitals: getHospitalFallbacks(disease),
+        resources: [],
         error: recommendationError.message ||
-          "India-wide hospital research is unavailable right now.",
+          "Live research is unavailable. Showing hospitals to research.",
       });
+      setFacilities(nationwideFacilities);
+      setSearchState((current) => ({
+        ...current,
+        query: disease,
+        facilities: nationwideFacilities,
+        compareIds: [],
+        updatedAt: new Date().toISOString(),
+      }));
     } finally {
       setStateRecommendationsLoading(false);
     }
-  }, []);
+  }, [setSearchState, userState, userLocation]);
 
   const locationRequestStarted =
     useRef(false);
@@ -814,6 +972,12 @@ export default function HospitalFinder() {
         lon: longitude,
         accuracy,
       });
+
+      reverseGeocodeLocation({ latitude, longitude })
+        .then((location) => {
+          setUserState(location.state || location.county || "");
+        })
+        .catch(() => setUserState(""));
 
       setLocationStatus("success");
       setLoading(false);
@@ -1115,6 +1279,7 @@ export default function HospitalFinder() {
   useEffect(() => {
     if (
       searchScope !== "nearby" ||
+      radius === 100 ||
       !userLocation ||
       facilities.length > 0 ||
       autoSearchRequested.current
@@ -1128,6 +1293,7 @@ export default function HospitalFinder() {
   }, [
     facilities.length,
     fetchNearbyFacilities,
+    radius,
     searchScope,
     userLocation,
   ]);
@@ -1286,6 +1452,14 @@ export default function HospitalFinder() {
       return;
     }
 
+    if (searchScope === "nearby" && radius === 100) {
+      setFacilities([]);
+      setSelectedFacility(null);
+      setError("");
+      loadStateRecommendations(searchQuery, "state");
+      return;
+    }
+
     if (searchScope === "nearby") {
       fetchNearbyFacilities();
       return;
@@ -1428,12 +1602,14 @@ export default function HospitalFinder() {
     ],
   );
 
-  const mapCenter = userLocation
-    ? [
-      userLocation.lat,
-      userLocation.lon,
-    ]
-    : DEFAULT_CENTER;
+  const mapCenter = useMemo(
+    () => searchScope === "india"
+      ? [78.9629, 20.5937]
+      : userLocation
+        ? [userLocation.lon, userLocation.lat]
+        : [DEFAULT_CENTER[1], DEFAULT_CENTER[0]],
+    [searchScope, userLocation],
+  );
 
   return (
     <div className="hospital-finder-page">
@@ -1604,40 +1780,46 @@ export default function HospitalFinder() {
 
         <section className="finder-toolbar">
           <div className="toolbar-left">
-            <div className="filter-group">
-              <label>Radius</label>
+            {searchScope === "nearby" && (
+              <div className="filter-group">
+                <label>Radius</label>
 
-              <select
-                value={radius}
-                onChange={(event) =>
-                  setRadius(
-                    Number(
-                      event.target.value,
-                    ),
-                  )
-                }
-              >
-                <option value={2}>
-                  2 km
-                </option>
+                <select
+                  value={radius}
+                  onChange={(event) =>
+                    setRadius(
+                      Number(
+                        event.target.value,
+                      ),
+                    )
+                  }
+                >
+                  <option value={2}>
+                    2 km
+                  </option>
 
-                <option value={5}>
-                  5 km
-                </option>
+                  <option value={5}>
+                    5 km
+                  </option>
 
-                <option value={10}>
-                  10 km
-                </option>
+                  <option value={10}>
+                    10 km
+                  </option>
 
-                <option value={20}>
-                  20 km
-                </option>
+                  <option value={20}>
+                    20 km
+                  </option>
 
-                <option value={50}>
-                  50 km
-                </option>
-              </select>
-            </div>
+                  <option value={50}>
+                    50 km
+                  </option>
+
+                  <option value={100}>
+                    State level (100 km)
+                  </option>
+                </select>
+              </div>
+            )}
 
             <div className="filter-group">
               <label>Facility</label>
@@ -1810,32 +1992,40 @@ export default function HospitalFinder() {
               <div className="state-recommendations-heading">
                 <div>
                   <span className="eyebrow">INDIA-WIDE RESEARCH</span>
-                  <h2>Leading researched hospitals in India</h2>
+                  <h2>Hospitals and resources across India</h2>
                   <p>
-                    These are source-backed search results for{" "}
+                    Hospitals are listed beside the map below. Use the supporting resources for{" "}
                     {stateRecommendations.disease || searchQuery}.
-                    They are not a universal clinical ranking.
+                    Hospital listings are starting points, not a universal clinical ranking.
                   </p>
                 </div>
               </div>
-              {stateRecommendations.recommendations?.length > 0 ? (
-                <div className="state-recommendation-grid">
-                  {stateRecommendations.recommendations.map((recommendation) => (
-                  <article className="state-recommendation-card" key={recommendation.sourceUrl}>
-                    <h3>{recommendation.name}</h3>
-                    <p>{recommendation.summary}</p>
-                    <a href={recommendation.sourceUrl} target="_blank" rel="noreferrer">
-                      {recommendation.sourceLabel || "Read source"}
-                    </a>
-                  </article>
-                  ))}
+              {stateRecommendations.resources?.length > 0 && (
+                <div className="state-recommendation-group resources-group">
+                  <div className="state-recommendation-group-heading">
+                    <h3>Supporting resources</h3>
+                    <span>{stateRecommendations.resources.length} sources</span>
+                  </div>
+                  <div className="state-recommendation-grid">
+                    {stateRecommendations.resources.map((resource) => (
+                      <article className="state-recommendation-card resource-recommendation-card" key={resource.sourceUrl}>
+                        <span className="state-recommendation-kind">Resource</span>
+                        <h3>{resource.name}</h3>
+                        <p>{resource.summary}</p>
+                        <a href={resource.sourceUrl} target="_blank" rel="noreferrer">
+                          {resource.sourceLabel || "Read resource"}
+                        </a>
+                      </article>
+                    ))}
+                  </div>
                 </div>
-              ) : (
+              )}
+              {!stateRecommendations.hospitals?.length && !stateRecommendations.resources?.length && !stateRecommendations.recommendations?.length ? (
                 <p className="state-recommendation-empty">
                   {stateRecommendations.error ||
                     "No India-wide hospital results were returned. Try the search again."}
                 </p>
-              )}
+              ) : null}
             </section>
           )}
 
@@ -1926,6 +2116,12 @@ export default function HospitalFinder() {
                               Emergency
                             </span>
                           )}
+
+                          {facility.nationwide && (
+                            <span className="specialist-badge">
+                              Specialist match
+                            </span>
+                          )}
                         </div>
 
                         <div className="facility-card-body">
@@ -1952,12 +2148,16 @@ export default function HospitalFinder() {
                             )}
 
                             <div className="facility-metrics">
-                              <span>
-                                {facility.distanceKm.toFixed(
-                                  1,
-                                )}{" "}
-                                km
-                              </span>
+                              {facility.nationwide ? (
+                                <span>India-wide</span>
+                              ) : (
+                                <span>
+                                  {facility.distanceKm.toFixed(
+                                    1,
+                                  )}{" "}
+                                  km
+                                </span>
+                              )}
 
                               {facility.travelMinutes && (
                                 <span>
@@ -2204,6 +2404,7 @@ export default function HospitalFinder() {
                 userLocation={
                   userLocation
                 }
+                mapCenter={mapCenter}
                 facilities={
                   mapFacilities
                 }
