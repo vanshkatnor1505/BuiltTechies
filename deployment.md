@@ -106,16 +106,29 @@ routes.
 
 ### Get the backend URL
 
-After Render deploys successfully, copy the service URL. It will look similar
-to:
+After Render deploys successfully, copy the service URL from the Render
+dashboard. Do not open the example URL below literally; replace it with your
+actual service URL. It will look similar to:
 
 ```text
 https://builttechies-api.onrender.com
 ```
 
-Open that URL in a browser. A generic Express response or route response means
-the service is reachable. If it does not start, inspect the Render logs and
-confirm the start command is exactly `npm run server`.
+Open this exact URL in a browser:
+
+```text
+https://YOUR-ACTUAL-RENDER-SERVICE.onrender.com/health
+```
+
+Expected response:
+
+```json
+{"success":true,"service":"BuiltTechies API"}
+```
+
+If `/health` returns `404`, Render is serving an older commit, a different
+service, or a different project root. Confirm the start command is exactly
+`npm run server`, then trigger **Manual Deploy → Deploy latest commit**.
 
 ## 5. Deploy the frontend on Vercel
 
