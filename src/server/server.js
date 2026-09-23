@@ -626,6 +626,17 @@ async function searchHospitalImagesFromCommons(name, address = "") {
     .filter(Boolean);
 }
 
+function getHospitalImageFallback(name) {
+  return [{
+    title: `${name} hospital`,
+    url: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=1200&q=85",
+    sourceUrl: "https://unsplash.com/",
+    artist: "",
+    source: "Hospital image fallback",
+    isFallback: true,
+  }];
+}
+
 async function searchHospitalImages(name, address = "") {
   const googleImages = [
     ...(await searchGoogleImages(name, address).catch((error) => {
@@ -642,7 +653,10 @@ async function searchHospitalImages(name, address = "") {
     return googleImages;
   }
 
-  return searchHospitalImagesFromCommons(name, address);
+  const commonsImages = await searchHospitalImagesFromCommons(name, address);
+  return commonsImages.length > 0
+    ? commonsImages
+    : getHospitalImageFallback(name);
 }
 
 app.post("/api/hospital-research", async (req, res) => {
@@ -662,6 +676,10 @@ app.post("/api/hospital-research", async (req, res) => {
       } catch (fallbackError) {
         console.error("HOSPITAL IMAGE FALLBACK ERROR:", fallbackError);
       }
+    }
+
+    if (images.length === 0) {
+      images = getHospitalImageFallback(name);
     }
 
     if (!process.env.TAVILY_API_KEY) {

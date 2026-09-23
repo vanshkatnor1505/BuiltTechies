@@ -6,6 +6,33 @@ import { useHospitalSearch } from "../../context/HospitalSearchContext";
 import "./HospitalComparison.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const FALLBACK_HOSPITAL_IMAGE =
+  `data:image/svg+xml,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">
+      <defs>
+        <linearGradient id="background" x1="0" x2="1" y1="0" y2="1">
+          <stop stop-color="#dff5f0"/>
+          <stop offset="1" stop-color="#8bcfc6"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="675" fill="url(#background)"/>
+      <rect x="170" y="210" width="860" height="330" rx="18" fill="#ffffff"/>
+      <rect x="490" y="120" width="220" height="420" rx="12" fill="#f7fbfb"/>
+      <rect x="560" y="160" width="80" height="150" fill="#2b9d91"/>
+      <rect x="525" y="195" width="150" height="80" fill="#2b9d91"/>
+      <g fill="#b9dfda">
+        <rect x="240" y="275" width="100" height="90" rx="8"/>
+        <rect x="370" y="275" width="100" height="90" rx="8"/>
+        <rect x="730" y="275" width="100" height="90" rx="8"/>
+        <rect x="860" y="275" width="100" height="90" rx="8"/>
+        <rect x="240" y="405" width="100" height="90" rx="8"/>
+        <rect x="370" y="405" width="100" height="90" rx="8"/>
+        <rect x="730" y="405" width="100" height="90" rx="8"/>
+        <rect x="860" y="405" width="100" height="90" rx="8"/>
+      </g>
+      <text x="600" y="610" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#176c65">Hospital image</text>
+    </svg>
+  `)}`;
 
 async function readApiResponse(response) {
   const contentType = response.headers.get("content-type") || "";
@@ -173,8 +200,19 @@ function HospitalComparison() {
                 </div>
                 <div className="comparison-image-grid">
                   {selectedFacilities.map((facility) => {
-                    const images = facility.research?.images || [];
+                    const images = facility.research?.images?.length
+                      ? facility.research.images
+                      : [{
+                        title: `${facility.name} hospital`,
+                        url: FALLBACK_HOSPITAL_IMAGE,
+                        sourceUrl: "https://www.google.com/search?tbm=isch&q=hospital",
+                        source: "Representative hospital image",
+                        isFallback: true,
+                      }];
                     const visibleImages = images.slice(0, 3);
+                    const googleImagesUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(
+                      `${facility.name} ${facility.address || ""} hospital`,
+                    )}`;
 
                     return (
                       <article className="comparison-image-card" key={facility.id}>
@@ -192,21 +230,35 @@ function HospitalComparison() {
                                   src={image.url}
                                   alt={`${facility.name} hospital`}
                                   loading="lazy"
+                                  onError={(event) => {
+                                    if (event.currentTarget.src !== FALLBACK_HOSPITAL_IMAGE) {
+                                      event.currentTarget.src = FALLBACK_HOSPITAL_IMAGE;
+                                    }
+                                  }}
                                 />
                               </a>
                             ))}
                           </div>
                         ) : (
                           <div className="comparison-image-placeholder">
-                            {facility.research
-                              ? "No public image found"
-                              : "Verify data to search for images"}
+                            Representative hospital image
                           </div>
                         )}
                         <strong>{facility.name}</strong>
+                        <a
+                          className="comparison-google-images-link"
+                          href={googleImagesUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View top Google Images
+                        </a>
                         {visibleImages.length > 0 && (
                           <small>
                             Image source: {visibleImages[0].source || "Public web image"}
+                            {visibleImages[0].isFallback
+                              ? " · Representative image, not the exact facility"
+                              : ""}
                             {visibleImages[0].artist ? ` · ${visibleImages[0].artist}` : ""}
                           </small>
                         )}
