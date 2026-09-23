@@ -137,7 +137,9 @@ function Chatbot() {
 
   const [isAnalyzingReport, setIsAnalyzingReport] = useState(false);
 
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [, setIsSpeaking] = useState(false);
+
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
 
   const mediaRecorderRef = useRef(null);
 
@@ -157,7 +159,7 @@ function Chatbot() {
   ======================================================= */
 
   const speak = (text) => {
-    if (!("speechSynthesis" in window) || !text) {
+    if (!isAudioEnabled || !("speechSynthesis" in window) || !text) {
       return;
     }
 
@@ -200,6 +202,16 @@ function Chatbot() {
     }
 
     setIsSpeaking(false);
+  };
+
+  const toggleAudio = () => {
+    if (isAudioEnabled) {
+      stopSpeaking();
+      setIsAudioEnabled(false);
+      return;
+    }
+
+    setIsAudioEnabled(true);
   };
 
   const isComparisonRequest = (value) =>
@@ -921,16 +933,13 @@ function Chatbot() {
 
               <button
                 className={styles.headerIconButton}
-                onClick={
-                  isSpeaking
-                    ? stopSpeaking
-                    : () => speak(messages[messages.length - 1]?.content)
-                }
+                onClick={toggleAudio}
                 aria-label={
-                  isSpeaking ? "Stop speaking" : "Read response aloud"
+                  isAudioEnabled ? "Turn off audio" : "Turn on audio"
                 }
+                aria-pressed={isAudioEnabled}
               >
-                {isSpeaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                {isAudioEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
               </button>
             </div>
           </header>
