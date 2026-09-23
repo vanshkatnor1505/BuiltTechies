@@ -1458,6 +1458,10 @@ export default function HospitalFinder() {
     setSelectedFacility(null);
     setRoute(null);
     setError("");
+
+    if (nextScope === "india" && isHealthcareSearch(searchQuery)) {
+      loadStateRecommendations(searchQuery);
+    }
   };
 
   /*
@@ -2321,6 +2325,7 @@ export default function HospitalFinder() {
                   userLocation
                 }
                 mapCenter={mapCenter}
+                mapZoom={searchScope === "india" ? 5 : 13}
                 showUserLocation={searchScope !== "india"}
                 facilities={
                   mapFacilities

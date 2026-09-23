@@ -15,6 +15,7 @@ export default function MapLibreMap({
   onSelectFacility,
   route = null,
   mapCenter = null,
+  mapZoom = 13,
   showUserLocation = true,
 }) {
   const mapContainer = useRef(null);
@@ -228,10 +229,10 @@ export default function MapLibreMap({
 
     map.flyTo({
       center,
-      zoom: 5,
+      zoom: mapZoom,
       essential: true,
     });
-  }, [facilities, mapCenter, mapReady]);
+  }, [facilities, mapCenter, mapReady, mapZoom]);
 
   /*
    * ---------------------------------------------------------
