@@ -89,7 +89,12 @@ function getHospitalFallbacks(disease) {
   }));
 }
 
-function getIndiaHospitalFacilities(hospitals, disease, userLocation) {
+function getIndiaHospitalFacilities(
+  hospitals,
+  disease,
+  userLocation,
+  emergencyMode = false,
+) {
   return hospitals.map((hospital, index) => {
     const fallbackOffsets = [
       [-0.45, -0.55],
@@ -118,7 +123,7 @@ function getIndiaHospitalFacilities(hospitals, disease, userLocation) {
       lon: location.lon,
       address: `${location.city}, India`,
       specialties: hospital.specialties || disease,
-      emergency: false,
+      emergency: emergencyMode,
       match: 95 - index * 2,
       distanceKm,
       travelMinutes: null,
@@ -526,6 +531,7 @@ function transformGeoapifyFacility(
   feature,
   userLocation,
   searchQuery,
+  emergencyMode = false,
 ) {
   const properties = feature?.properties || {};
   const coordinates = feature?.geometry?.coordinates;
@@ -596,6 +602,7 @@ function transformGeoapifyFacility(
     .join(", ");
 
   const emergency =
+    (emergencyMode && hospitalCategory) ||
     normalizedName.includes("emergency") ||
     normalizedName.includes("trauma") ||
     normalizedName.includes("casualty") ||
@@ -808,7 +815,11 @@ export default function HospitalFinder() {
   const recommendationRequestId =
     useRef(0);
 
-  const loadStateRecommendations = useCallback(async (disease, scope = "india") => {
+  const loadStateRecommendations = useCallback(async (
+    disease,
+    scope = "india",
+    emergencyMode = emergencyOnly,
+  ) => {
     if (!isHealthcareSearch(disease)) {
       return;
     }
@@ -857,6 +868,7 @@ export default function HospitalFinder() {
         hospitals,
         disease,
         userLocation,
+        emergencyMode,
       );
       setFacilities(nationwideFacilities);
       setSearchState((current) => ({
@@ -875,6 +887,7 @@ export default function HospitalFinder() {
         getHospitalFallbacks(disease),
         disease,
         userLocation,
+        emergencyMode,
       );
       setStateRecommendations({
         disease,
@@ -896,7 +909,7 @@ export default function HospitalFinder() {
         setStateRecommendationsLoading(false);
       }
     }
-  }, [setSearchState, userState, userLocation]);
+  }, [emergencyOnly, setSearchState, userState, userLocation]);
 
   const locationRequestStarted =
     useRef(false);
@@ -1060,7 +1073,7 @@ export default function HospitalFinder() {
    */
 
   const fetchNearbyFacilities = useCallback(
-    async (queryOverride = null) => {
+    async (queryOverride = null, emergencyMode = emergencyOnly) => {
       if (!userLocation) {
         setError(
           "Please allow location access before searching nearby facilities.",
@@ -1085,7 +1098,7 @@ export default function HospitalFinder() {
             latitude: userLocation.lat,
             longitude: userLocation.lon,
             radius,
-            limit: 20,
+            limit: emergencyMode ? 100 : 20,
           });
 
         const features = Array.isArray(
@@ -1100,6 +1113,7 @@ export default function HospitalFinder() {
               feature,
               userLocation,
               activeQuery,
+              emergencyMode,
             ),
           )
           .filter(Boolean)
@@ -1152,6 +1166,7 @@ export default function HospitalFinder() {
     [
       radius,
       searchQuery,
+      emergencyOnly,
       setSearchState,
       userLocation,
     ],
@@ -1460,7 +1475,7 @@ export default function HospitalFinder() {
     setError("");
 
     if (nextScope === "india" && isHealthcareSearch(searchQuery)) {
-      loadStateRecommendations(searchQuery);
+      loadStateRecommendations(searchQuery, "india", emergencyOnly);
     }
   };
 
@@ -1873,11 +1888,34 @@ export default function HospitalFinder() {
                 checked={
                   emergencyOnly
                 }
-                onChange={(event) =>
-                  setEmergencyOnly(
-                    event.target.checked,
-                  )
-                }
+                onChange={(event) => {
+                  const nextEmergencyMode =
+                    event.target.checked;
+
+                  setEmergencyOnly(nextEmergencyMode);
+
+                  if (
+                    searchScope === "nearby" &&
+                    userLocation
+                  ) {
+                    fetchNearbyFacilities(
+                      searchQuery,
+                      nextEmergencyMode,
+                    );
+                  } else if (
+                    searchScope === "india" &&
+                    isHealthcareSearch(searchQuery)
+                  ) {
+                    setFacilities([]);
+                    setSelectedFacility(null);
+                    setError("");
+                    loadStateRecommendations(
+                      searchQuery,
+                      "india",
+                      nextEmergencyMode,
+                    );
+                  }
+                }}
               />
 
               <span className="toggle-track">
