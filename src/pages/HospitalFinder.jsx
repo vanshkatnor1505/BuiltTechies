@@ -972,9 +972,10 @@ export default function HospitalFinder() {
         researchById: {
           ...(current.researchById || {}),
           [facility.id]: {
-            error:
-              researchError.message ||
-              "Unable to verify this facility right now.",
+            error: researchError instanceof TypeError
+              ? `Research service could not be reached at ${API_URL}. Check that the backend is running and CORS_ORIGINS contains this website.`
+              : researchError.message ||
+                "Unable to verify this facility right now.",
           },
         },
       }));

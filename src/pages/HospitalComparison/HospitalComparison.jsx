@@ -110,7 +110,7 @@ function HospitalComparison() {
       }));
     } catch (error) {
       const message = error instanceof TypeError
-        ? "Research service is unavailable. Start the backend with npm run server and try again."
+        ? `Research service could not be reached at ${API_URL}. Check that the backend is running and CORS_ORIGINS contains this website.`
         : error.message;
       setSearchState((current) => ({
         ...current,

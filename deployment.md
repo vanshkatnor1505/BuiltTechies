@@ -90,6 +90,7 @@ In Render, open **Environment → Environment Variables** and add:
 ```env
 PORT=10000
 CORS_ORIGINS=https://YOUR-VERCEL-DOMAIN.vercel.app
+FRONTEND_URL=https://YOUR-VERCEL-DOMAIN.vercel.app
 GROQ_API_KEY=your_groq_key
 GROQ_CHAT_MODEL=openai/gpt-oss-20b
 GROQ_STT_MODEL=whisper-large-v3-turbo
@@ -163,6 +164,7 @@ Go back to Render and update:
 
 ```env
 CORS_ORIGINS=https://builttechies.vercel.app
+FRONTEND_URL=https://builttechies.vercel.app
 ```
 
 For multiple allowed origins, separate them with commas:
