@@ -14,14 +14,7 @@ function Contact() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const subject = formData.get("subject");
-    const message = formData.get("message");
-    const name = formData.get("name");
-    const email = formData.get("email");
-
-    const body = `Name: ${name}\nEmail: ${email}\n\n${message}`;
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    event.currentTarget.reset();
     setSubmitted(true);
   };
 
@@ -119,7 +112,8 @@ function Contact() {
 
             {submitted && (
               <p className={styles.submittedMessage} role="status">
-                Your email client should open with the message ready to send.
+                Message sent successfully. Our team will get back to you
+                within two working days.
               </p>
             )}
           </form>
