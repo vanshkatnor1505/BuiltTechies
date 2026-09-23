@@ -9,6 +9,7 @@ import {
   searchNearbyHealthcare,
 } from "../services/geoapify";
 import { useHospitalSearch } from "../context/HospitalSearchContext";
+import { isMedicalQuery } from "../utils/medicalQuery";
 
 const DEFAULT_CENTER = [30.7333, 76.7794];
 
@@ -375,56 +376,9 @@ function getSearchGroups(query) {
 }
 
 function isHealthcareSearch(query) {
-  const normalizedQuery = normalize(query);
-  const medicalTerms = [
-    "ache",
-    "allergy",
-    "arthritis",
-    "asthma",
-    "autism",
-    "blood pressure",
-    "cholera",
-    "cold",
-    "dengue",
-    "depression",
-    "diabetes",
-    "diarrhea",
-    "disease",
-    "disorder",
-    "infection",
-    "influenza",
-    "migraine",
-    "malaria",
-    "pneumonia",
-    "symptom",
-    "syndrome",
-    "tuberculosis",
-    "tumor",
-    "typhoid",
-    "ulcer",
-    "virus",
-    "fever",
-  ];
-  const medicalSuffixPattern =
-    /\b[a-z]+(?:algia|emia|itis|osis|opathy|oma|penia|plasia|sclerosis|syndrome|virus)\b/;
-  const hasMedicalTerm = medicalTerms.some((term) =>
-    normalizedQuery.includes(term),
-  );
-  const hasDiseaseLikeName = medicalSuffixPattern.test(normalizedQuery);
-  const hasMedicalContext = /\b(?:disease|condition|problem|treatment|therapy|care|doctor|specialist|hospital|clinic|medicine)\b/.test(
-    normalizedQuery,
-  );
-
   return Boolean(
-    normalizedQuery &&
-    (
-      getSearchGroups(normalizedQuery).some(
-        (group) => group.key !== "general",
-      ) ||
-      hasMedicalTerm ||
-      hasDiseaseLikeName ||
-      hasMedicalContext
-    ),
+    isMedicalQuery(query) ||
+    getSearchGroups(query).some((group) => group.key !== "general"),
   );
 }
 

@@ -29,6 +29,7 @@ import {
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 import { useHospitalSearch } from "../../context/HospitalSearchContext";
+import { isMedicalQuery } from "../../utils/medicalQuery";
 
 import styles from "./Chatbot.module.css";
 
@@ -207,6 +208,9 @@ function Chatbot() {
   const isHospitalSearchRequest = (value) =>
     /\b(find|locate|nearby|nearest|hospital|clinic|kidney|dialysis|cardiac|cancer|doctor|treatment|emergency|healthcare|budget|₹|rs\.?)\b/i.test(value);
 
+  const NON_MEDICAL_MESSAGE =
+    "I’m Vital, a healthcare assistant. I can only help with health, medical reports, treatments, symptoms, hospitals, doctors, and healthcare navigation. Please ask a healthcare-related question.";
+
   const openHospitalFinder = (query, location) => {
     const params = new URLSearchParams();
     params.set("query", query);
@@ -299,6 +303,24 @@ function Chatbot() {
     const updatedMessages = [...messages, userMessage];
 
     setMessages(updatedMessages);
+
+    const hasMedicalContext = updatedMessages.some(
+      (message) =>
+        message.type === "user" && isMedicalQuery(message.content),
+    );
+
+    if (!hasMedicalContext) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: Date.now() + 1,
+          type: "assistant",
+          time: "Now",
+          content: NON_MEDICAL_MESSAGE,
+        },
+      ]);
+      return;
+    }
 
     setInput("");
 

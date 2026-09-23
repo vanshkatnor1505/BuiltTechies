@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import multer from "multer";
 import Groq from "groq-sdk";
 import { PDFParse } from "pdf-parse";
+import { isMedicalQuery } from "../utils/medicalQuery.js";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
@@ -222,20 +223,22 @@ You can:
 IMPORTANT SAFETY RULES:
 
 1. You are NOT a doctor.
-2. Do not claim to diagnose the user.
-3. Do not present a definitive diagnosis.
-4. Do not prescribe medicines or dosages.
-5. Do not invent hospital information.
-6. Do not invent treatment costs, success rates, doctors,
+2. Stay within healthcare topics. If a message is unrelated to health,
+   politely explain that you can only help with healthcare questions.
+3. Do not claim to diagnose the user.
+4. Do not present a definitive diagnosis.
+5. Do not prescribe medicines or dosages.
+6. Do not invent hospital information.
+7. Do not invent treatment costs, success rates, doctors,
    insurance coverage or medical outcomes.
-7. If information is unavailable, explicitly say that it
+8. If information is unavailable, explicitly say that it
    needs to be verified.
-8. For emergency symptoms, recommend contacting local emergency
+9. For emergency symptoms, recommend contacting local emergency
    services or going to the nearest emergency department.
-9. Medical report explanations are informational and should not
+10. Medical report explanations are informational and should not
    replace assessment by a qualified healthcare professional.
-10. Keep responses clear and practical.
-11. Ask only the follow-up questions that are actually needed.
+11. Keep responses clear and practical.
+12. Ask only the follow-up questions that are actually needed.
 
 When discussing hospitals, distinguish between:
 - user requirements
@@ -296,6 +299,31 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Messages must be an array.",
+      });
+    }
+
+    const userMessages = messages.filter(
+      (message) =>
+        message &&
+        message.role === "user" &&
+        typeof message.content === "string",
+    );
+
+    if (
+      userMessages.length === 0 ||
+      !userMessages.some((message) => isMedicalQuery(message.content))
+    ) {
+      const offTopicMessages = {
+        en: "I’m Vital, a healthcare assistant. I can only help with health, medical reports, treatments, symptoms, hospitals, doctors, and healthcare navigation. Please ask a healthcare-related question.",
+        hi: "मैं Vital, एक स्वास्थ्य सहायक हूँ। मैं केवल स्वास्थ्य, मेडिकल रिपोर्ट, उपचार, लक्षण, अस्पताल, डॉक्टर और स्वास्थ्य सेवाओं से जुड़े सवालों में मदद कर सकता हूँ। कृपया स्वास्थ्य से संबंधित प्रश्न पूछें।",
+        pa: "ਮੈਂ Vital, ਇੱਕ ਸਿਹਤ ਸਹਾਇਕ ਹਾਂ। ਮੈਂ ਸਿਰਫ਼ ਸਿਹਤ, ਮੈਡੀਕਲ ਰਿਪੋਰਟਾਂ, ਇਲਾਜ, ਲੱਛਣਾਂ, ਹਸਪਤਾਲਾਂ, ਡਾਕਟਰਾਂ ਅਤੇ ਸਿਹਤ ਸੇਵਾਵਾਂ ਨਾਲ ਜੁੜੇ ਸਵਾਲਾਂ ਵਿੱਚ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ। ਕਿਰਪਾ ਕਰਕੇ ਸਿਹਤ ਨਾਲ ਸਬੰਧਤ ਸਵਾਲ ਪੁੱਛੋ।",
+      };
+
+      return res.json({
+        success: true,
+        message: offTopicMessages[language] || offTopicMessages.en,
+        language,
+        handledAs: "off-topic",
       });
     }
 
