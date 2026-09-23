@@ -13,6 +13,8 @@
   .facility-actions a:focus-visible {
     outline: 3px solid var(--hf-primary-soft);
     outline-offset: 2px;
+
+    /* yoo */
   }
   --hf-secondary: var(--accent-secondary);
   --hf-text: var(--text-primary);
