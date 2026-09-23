@@ -84,6 +84,7 @@ const standardColumns = [
       { label: "Documentation", href: "/Terms-and-Conditions.docx" },
       { label: "FAQ", href: "/faq" },
       { label: "Contact", href: "/contact" },
+      { label: "Analytics", href: "/analytics" },
     ],
   },
 ];
