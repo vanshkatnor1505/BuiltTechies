@@ -73,6 +73,16 @@ const INDIA_SPECIALIST_HOSPITALS = {
   ],
 };
 
+const PUNJAB_TOP_HOSPITALS = [
+  ["Post Graduate Institute of Medical Education and Research (PGIMER)", "Chandigarh", "Multi-specialty care, emergency medicine, surgery", 30.7646, 76.7756],
+  ["Fortis Hospital", "Mohali", "Multi-specialty care, cardiology, oncology, emergency medicine", 30.7046, 76.7179],
+  ["Max Super Speciality Hospital", "Mohali", "Multi-specialty care, cardiac sciences, oncology, neurology", 30.7046, 76.7179],
+  ["Christian Medical College and Hospital", "Ludhiana", "Multi-specialty care, cardiology, oncology, critical care", 30.9009, 75.8573],
+  ["Dayanand Medical College and Hospital", "Ludhiana", "Multi-specialty care, trauma, cardiology, neurology", 30.9120, 75.8402],
+  ["Government Medical College and Hospital", "Amritsar", "Multi-specialty care, emergency medicine, surgery", 31.6340, 74.8723],
+  ["Rajindra Hospital", "Patiala", "Multi-specialty care, emergency medicine, surgery", 30.3398, 76.3869],
+];
+
 function getHospitalFallbacks(disease) {
   const group = getSearchGroups(disease)[0]?.key || "general";
   const hospitals = INDIA_SPECIALIST_HOSPITALS[group] || INDIA_SPECIALIST_HOSPITALS.general;
@@ -86,6 +96,19 @@ function getHospitalFallbacks(disease) {
     summary: `Specialist starting point for ${disease} care: ${specialties}. Verify current departments and appointment availability directly with the hospital.`,
     sourceUrl: `https://www.google.com/search?q=${encodeURIComponent(`${name} ${city} ${disease} treatment`)}`,
     sourceLabel: "Research hospital",
+  }));
+}
+
+function getPunjabHospitalFallbacks(disease) {
+  return PUNJAB_TOP_HOSPITALS.map(([name, city, specialties, lat, lon]) => ({
+    name: `${name}, ${city}`,
+    city,
+    specialties,
+    lat,
+    lon,
+    summary: `Top hospital in Punjab for ${disease} care. Verify current departments and appointment availability directly with the hospital.`,
+    sourceUrl: `https://www.google.com/search?q=${encodeURIComponent(`${name} ${city} ${disease} treatment`)}`,
+    sourceLabel: "Punjab hospital",
   }));
 }
 
@@ -826,6 +849,34 @@ export default function HospitalFinder() {
 
     const requestId = ++recommendationRequestId.current;
     setStateRecommendationsLoading(true);
+
+    if (scope === "state") {
+      const hospitals = getPunjabHospitalFallbacks(disease);
+      const stateFacilities = getIndiaHospitalFacilities(
+        hospitals,
+        disease,
+        userLocation,
+        emergencyMode,
+      );
+
+      setStateRecommendations({
+        disease,
+        state: "Punjab",
+        hospitals,
+        resources: hospitals,
+      });
+      setFacilities(stateFacilities);
+      setSearchState((current) => ({
+        ...current,
+        query: disease,
+        facilities: stateFacilities,
+        compareIds: [],
+        updatedAt: new Date().toISOString(),
+      }));
+      setStateRecommendationsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/api/state-hospital-recommendations`, {
         method: "POST",
@@ -1619,6 +1670,8 @@ export default function HospitalFinder() {
     [searchScope, userLocation],
   );
 
+  const isSearching = loading || stateRecommendationsLoading;
+
   return (
     <div className="hospital-finder-page">
       <SiteNavbar />
@@ -1706,11 +1759,11 @@ export default function HospitalFinder() {
                 className="primary-search-button"
                 onClick={search}
                 disabled={
-                  loading ||
+                  isSearching ||
                   (searchScope === "nearby" && !userLocation)
                 }
               >
-                {loading
+                {isSearching
                   ? "Searching..."
                   : "Find healthcare"}
               </button>
@@ -2016,18 +2069,20 @@ export default function HospitalFinder() {
 
           {viewMode !== "map" && (
             <section className="facility-results">
-              {loading ? (
+              {isSearching ? (
                 <div className="loading-card">
                   <div className="loading-spinner" />
 
                   <h3>
-                    Finding nearby
-                    healthcare...
+                    {searchScope === "nearby"
+                      ? "Finding nearby healthcare..."
+                      : "Researching hospitals for your search..."}
                   </h3>
 
                   <p>
-                    Searching nearby
-                    healthcare facilities...
+                    {searchScope === "nearby"
+                      ? "Searching nearby healthcare facilities..."
+                      : "Loading specialist hospital recommendations and matching facilities..."}
                   </p>
                 </div>
               ) : filteredFacilities.length ===
