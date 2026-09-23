@@ -1984,59 +1984,6 @@ export default function HospitalFinder() {
           </div>
         </div>
 
-        {stateRecommendationsLoading && (
-          <section className="state-recommendations">
-            <div className="state-recommendations-heading">
-              <span className="eyebrow">INDIA-WIDE RESEARCH</span>
-              <h2>Finding leading options in India for {searchQuery || "your requirement"}...</h2>
-            </div>
-          </section>
-        )}
-
-        {!stateRecommendationsLoading &&
-          stateRecommendations &&
-          !stateRecommendationsLoading && (
-            <section className="state-recommendations">
-              <div className="state-recommendations-heading">
-                <div>
-                  <span className="eyebrow">INDIA-WIDE RESEARCH</span>
-                  <h2>Hospitals and resources across India</h2>
-                  <p>
-                    Hospitals are listed beside the map below. Use the supporting resources for{" "}
-                    {stateRecommendations.disease || searchQuery}.
-                    Hospital listings are starting points, not a universal clinical ranking.
-                  </p>
-                </div>
-              </div>
-              {stateRecommendations.resources?.length > 0 && (
-                <div className="state-recommendation-group resources-group">
-                  <div className="state-recommendation-group-heading">
-                    <h3>Supporting resources</h3>
-                    <span>{stateRecommendations.resources.length} sources</span>
-                  </div>
-                  <div className="state-recommendation-grid">
-                    {stateRecommendations.resources.map((resource) => (
-                      <article className="state-recommendation-card resource-recommendation-card" key={resource.sourceUrl}>
-                        <span className="state-recommendation-kind">Resource</span>
-                        <h3>{resource.name}</h3>
-                        <p>{resource.summary}</p>
-                        <a href={resource.sourceUrl} target="_blank" rel="noreferrer">
-                          {resource.sourceLabel || "Read resource"}
-                        </a>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {!stateRecommendations.hospitals?.length && !stateRecommendations.resources?.length && !stateRecommendations.recommendations?.length ? (
-                <p className="state-recommendation-empty">
-                  {stateRecommendations.error ||
-                    "No India-wide hospital results were returned. Try the search again."}
-                </p>
-              ) : null}
-            </section>
-          )}
-
         {/* MAIN */}
 
         <main
@@ -2449,6 +2396,59 @@ export default function HospitalFinder() {
             </section>
           )}
         </main>
+
+        {stateRecommendationsLoading && (
+          <section className="state-recommendations">
+            <div className="state-recommendations-heading">
+              <span className="eyebrow">INDIA-WIDE RESEARCH</span>
+              <h2>Finding leading options in India for {searchQuery || "your requirement"}...</h2>
+            </div>
+          </section>
+        )}
+
+        {!stateRecommendationsLoading &&
+          stateRecommendations &&
+          !stateRecommendationsLoading && (
+            <section className="state-recommendations">
+              <div className="state-recommendations-heading">
+                <div>
+                  <span className="eyebrow">INDIA-WIDE RESEARCH</span>
+                  <h2>Hospitals and resources across India</h2>
+                  <p>
+                    Hospitals are listed beside the map below. Use the supporting resources for{" "}
+                    {stateRecommendations.disease || searchQuery}.
+                    Hospital listings are starting points, not a universal clinical ranking.
+                  </p>
+                </div>
+              </div>
+              {stateRecommendations.resources?.length > 0 && (
+                <div className="state-recommendation-group resources-group">
+                  <div className="state-recommendation-group-heading">
+                    <h3>Supporting resources</h3>
+                    <span>{stateRecommendations.resources.length} sources</span>
+                  </div>
+                  <div className="state-recommendation-grid">
+                    {stateRecommendations.resources.map((resource) => (
+                      <article className="state-recommendation-card resource-recommendation-card" key={resource.sourceUrl}>
+                        <span className="state-recommendation-kind">Resource</span>
+                        <h3>{resource.name}</h3>
+                        <p>{resource.summary}</p>
+                        <a href={resource.sourceUrl} target="_blank" rel="noreferrer">
+                          {resource.sourceLabel || "Read resource"}
+                        </a>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {!stateRecommendations.hospitals?.length && !stateRecommendations.resources?.length && !stateRecommendations.recommendations?.length ? (
+                <p className="state-recommendation-empty">
+                  {stateRecommendations.error ||
+                    "No India-wide hospital results were returned. Try the search again."}
+                </p>
+              ) : null}
+            </section>
+          )}
 
         {/* COMPARISON */}
 

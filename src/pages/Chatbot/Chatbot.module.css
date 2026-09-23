@@ -1863,9 +1863,6 @@
 
     background: rgba(0, 0, 0, 0.42);
 
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-
     cursor: pointer;
   }
 

@@ -318,6 +318,61 @@ export default function MapLibreMap({
 
   useEffect(() => {
     const map = mapRef.current;
+    const sourceId = "route-source";
+    const layerId = "route-line";
+
+    if (!map || !mapReady) return;
+
+    if (map.getLayer(layerId)) {
+      map.removeLayer(layerId);
+    }
+
+    if (map.getSource(sourceId)) {
+      map.removeSource(sourceId);
+    }
+
+    if (!Array.isArray(route) || route.length < 2) return;
+
+    map.addSource(sourceId, {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "LineString",
+          coordinates: route,
+        },
+      },
+    });
+
+    map.addLayer({
+      id: layerId,
+      type: "line",
+      source: sourceId,
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
+      paint: {
+        "line-color": "#2563eb",
+        "line-width": 5,
+        "line-opacity": 0.82,
+      },
+    });
+
+    return () => {
+      if (map.getLayer(layerId)) {
+        map.removeLayer(layerId);
+      }
+
+      if (map.getSource(sourceId)) {
+        map.removeSource(sourceId);
+      }
+    };
+  }, [mapReady, route]);
+
+  useEffect(() => {
+    const map = mapRef.current;
 
     if (!map || !mapReady) return;
 
