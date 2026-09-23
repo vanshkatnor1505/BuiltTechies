@@ -147,6 +147,27 @@ function Chatbot() {
 
   const fileInputRef = useRef(null);
 
+  const conversationRef = useRef(null);
+
+  useEffect(() => {
+    const conversation = conversationRef.current;
+
+    if (!conversation) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      conversation.scrollTo({
+        top: conversation.scrollHeight,
+        behavior: "smooth",
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [messages, isTyping]);
+
   /* =======================================================
      CURRENT LANGUAGE
   ======================================================= */
@@ -305,6 +326,8 @@ function Chatbot() {
       return;
     }
 
+    setInput("");
+
     const userMessage = {
       id: Date.now(),
       type: "user",
@@ -333,8 +356,6 @@ function Chatbot() {
       ]);
       return;
     }
-
-    setInput("");
 
     if (isComparisonRequest(trimmedInput)) {
       setMessages((currentMessages) => [
@@ -948,7 +969,7 @@ function Chatbot() {
               CONVERSATION
           ================================================= */}
 
-          <div className={styles.conversation}>
+          <div ref={conversationRef} className={styles.conversation}>
             <div className={styles.conversationInner}>
               <div className={styles.welcome}>
                 <div className={styles.welcomeOrb}>
