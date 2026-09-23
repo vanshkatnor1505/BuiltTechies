@@ -43,7 +43,7 @@ export const teamMembers = [
   {
     id: "member-3",
     name: "Sakshi Choudhary",
-    role: "Presenter / Graphics Designer",
+    role: "Presentator / Graphics Designer",
     shortBio:
       "Creates compelling visuals and storytelling that make ideas clear, engaging, and memorable.",
     bio:
@@ -64,7 +64,7 @@ export const teamMembers = [
   {
     id: "member-4",
     name: "Manjot Sandhu",
-    role: "Tech Presenter / Team Organizer",
+    role: "Tech Presentator / Team Organizer",
     shortBio:
       "Coordinates the team, aligns technical efforts, and communicates the project vision with clarity.",
     bio:
@@ -77,7 +77,7 @@ export const teamMembers = [
       "Documentation",
       "Collaboration",
     ],
-    github: "#",
+    github: "https://github.com/manjotsandhuyt-07",
     linkedin: "#",
     portfolio: "#",
   },

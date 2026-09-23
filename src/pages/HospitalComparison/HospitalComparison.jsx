@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 import { useHospitalSearch } from "../../context/HospitalSearchContext";
@@ -251,7 +252,8 @@ function HospitalComparison() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          View top Google Images
+                          <span>View on Google Images</span>
+                          <ExternalLink size={15} strokeWidth={2.4} aria-hidden="true" />
                         </a>
                         {visibleImages.length > 0 && (
                           <small>
