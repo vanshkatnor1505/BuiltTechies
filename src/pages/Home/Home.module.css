@@ -1310,6 +1310,70 @@
   opacity: 0.25;
 }
 
+.howTutorialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+
+  margin-top: 28px;
+
+  padding: 20px 22px;
+
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+
+  background: linear-gradient(
+    90deg,
+    rgba(50, 200, 192, 0.04),
+    rgba(92, 143, 247, 0.04)
+  );
+}
+
+.howTutorialLink > span {
+  color: var(--text-secondary);
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.howTutorialButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 44px;
+  padding: 0 16px;
+
+  border: 1px solid rgba(50, 200, 192, 0.28);
+  border-radius: 12px;
+
+  background: var(--surface-1);
+
+  color: var(--accent-primary);
+
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.howTutorialButton:hover {
+  transform: translateY(-2px);
+
+  border-color: rgba(50, 200, 192, 0.42);
+
+  background: rgba(50, 200, 192, 0.06);
+
+  box-shadow: 0 12px 25px rgba(50, 200, 192, 0.08);
+}
+
 /* =========================================================
    06 — VIRTUAL ASSISTANT
 ========================================================= */
@@ -2262,6 +2326,12 @@
 
   .stepCard h3 {
     margin-top: 48px;
+  }
+
+  .howTutorialLink {
+    flex-direction: column;
+
+    text-align: center;
   }
 
   .featuresGrid {

@@ -1,5 +1,14 @@
 # 🩺 CurePulse
 
+
+**URL OF SITE : https://built-techies.vercel.app/**
+
+**TUTORIAL CHANNEL LINK : https://www.youtube.com/channel/UCRLxQmWOeqUaF-BiYWLcbhA**
+
+**NOTE : Dear judges and evaluators are kindly requested to visit PROJECT INFORMATION folder and go through markdown files to get basic information about the artitecture.**
+**Thanks** 
+
+
 **A healthcare discovery and navigation platform for India** — helping people find, compare, and understand healthcare options through location-aware search, curated recommendations, maps, and an AI-assisted chatbot.
 
 ![Node](https://img.shields.io/badge/node-18%2B-339933?logo=node.js&logoColor=white)

@@ -660,6 +660,20 @@ function Home() {
               );
             })}
           </div>
+
+          <div className={styles.howTutorialLink}>
+            <span>Need a quick walkthrough?</span>
+
+            <a
+              href="https://www.youtube.com/channel/UCRLxQmWOeqUaF-BiYWLcbhA"
+              target="_blank"
+              rel="noreferrer"
+              className={styles.howTutorialButton}
+            >
+              Watch tutorial videos
+              <ArrowUpRight size={15} />
+            </a>
+          </div>
         </section>
 
         {/* ===================================================
