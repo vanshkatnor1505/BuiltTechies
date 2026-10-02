@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import multer from "multer";
+import rateLimit from "express-rate-limit";
 import Groq from "groq-sdk";
 import { PDFParse } from "pdf-parse";
 import { isMedicalQuery } from "../utils/medicalQuery.js";
@@ -23,6 +24,100 @@ const allowedOrigins = [
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+const AUTH_REQUIRED = process.env.REQUIRE_SUPABASE_SESSION === "true";
+
+const aiRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests. Please wait a minute before asking again.",
+  },
+});
+
+const audioRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many transcription requests. Please wait a minute before trying again.",
+  },
+});
+
+const reportRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many report analysis requests. Please wait a minute before trying again.",
+  },
+});
+
+async function requireSupabaseSession(req, res, next) {
+  if (!AUTH_REQUIRED || !SUPABASE_URL) {
+    return next();
+  }
+
+  const authorization = req.headers.authorization || "";
+  const token = authorization.startsWith("Bearer ")
+    ? authorization.replace(/^Bearer\s+/i, "").trim()
+    : "";
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required. Please sign in to use this feature.",
+    });
+  }
+
+  try {
+    const supabaseApiKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_ANON_KEY ||
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      "";
+
+    const userResponse = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1/user`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: supabaseApiKey,
+      },
+    });
+
+    if (!userResponse.ok) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired Supabase session.",
+      });
+    }
+
+    const userData = await userResponse.json();
+    if (!userData?.user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired Supabase session.",
+      });
+    }
+
+    req.user = userData.user;
+    return next();
+  } catch (error) {
+    console.error("SUPABASE SESSION CHECK ERROR:", error);
+    return res.status(401).json({
+      success: false,
+      message: "Authentication failed. Please sign in again.",
+    });
+  }
+}
 
 app.use(
   cors({
@@ -288,7 +383,7 @@ app.get("/api/health", (req, res) => {
    CHAT
 ========================================================= */
 
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", aiRateLimiter, requireSupabaseSession, async (req, res) => {
   try {
     const {
       messages,
@@ -393,6 +488,8 @@ app.post("/api/chat", async (req, res) => {
 
 app.post(
   "/api/transcribe",
+  audioRateLimiter,
+  requireSupabaseSession,
   audioUpload.single("audio"),
   async (req, res) => {
     try {
@@ -466,6 +563,8 @@ app.post(
 
 app.post(
   "/api/analyze-report",
+  reportRateLimiter,
+  requireSupabaseSession,
   upload.single("report"),
   async (req, res) => {
     try {
@@ -732,9 +831,11 @@ async function searchGooglePlaceImages(name, address = "") {
 
   return (place?.photos || [])
     .slice(0, 6)
+    .filter((photo) => photo?.photo_reference)
     .map((photo) => ({
       title: `${name} hospital`,
-      url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=900&photo_reference=${encodeURIComponent(photo.photo_reference)}&key=${encodeURIComponent(process.env.GOOGLE_MAPS_API_KEY)}`,
+      url: `/api/google-place-photo?photo_reference=${encodeURIComponent(photo.photo_reference)}`,
+      photoReference: photo.photo_reference,
       sourceUrl: placeUrl,
       artist: photo.html_attributions?.[0]?.replace(/<[^>]*>/g, "") || "",
       source: "Google Maps",
@@ -798,6 +899,72 @@ async function searchHospitalImages(name, address = "") {
   return commonsImages;
 }
 
+function getSourcedMetric(extracted, metricName, sources) {
+  const value = extracted?.metrics?.[metricName];
+  const sourceIndex = extracted?.metricSourceIndexes?.[metricName];
+  const hasExplicitRange =
+    metricName !== "treatmentCost" ||
+    (typeof value === "string" &&
+      (value.match(/\d[\d,]*(?:\.\d+)?/g) || []).length >= 2 &&
+      /(?:-|–|—|\bto\b|\bthrough\b)/i.test(value));
+
+  if (
+    typeof value !== "string" ||
+    !value.trim() ||
+    !hasExplicitRange ||
+    !Number.isInteger(sourceIndex) ||
+    sourceIndex < 1 ||
+    sourceIndex > sources.length
+  ) {
+    return { value: null, source: null };
+  }
+
+  const source = sources[sourceIndex - 1];
+  if (!source?.url || !/^https?:\/\//i.test(source.url)) {
+    return { value: null, source: null };
+  }
+
+  return {
+    value: value.trim(),
+    source: { title: source.title, url: source.url },
+  };
+}
+
+app.get("/api/google-place-photo", async (req, res) => {
+  try {
+    const photoReference = req.query.photo_reference;
+    const maxWidth = Number(req.query.maxwidth || 900);
+
+    if (!photoReference || typeof photoReference !== "string") {
+      return res.status(400).json({ success: false, message: "A Google Maps photo reference is required." });
+    }
+
+    if (!process.env.GOOGLE_MAPS_API_KEY) {
+      return res.status(500).json({ success: false, message: "Google Maps API key is not configured on the server." });
+    }
+
+    const googlePhotoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${Math.max(200, Math.min(1600, Number.isFinite(maxWidth) ? maxWidth : 900))}&photo_reference=${encodeURIComponent(photoReference)}&key=${encodeURIComponent(process.env.GOOGLE_MAPS_API_KEY)}`;
+
+    const googleResponse = await fetch(googlePhotoUrl, {
+      headers: {
+        "User-Agent": "BuiltTechies healthcare comparison app",
+      },
+    });
+
+    if (!googleResponse.ok) {
+      return res.status(502).json({ success: false, message: "Unable to fetch the requested hospital photo." });
+    }
+
+    const contentType = googleResponse.headers.get("content-type") || "image/jpeg";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "private, max-age=86400");
+    googleResponse.body.pipe(res);
+  } catch (error) {
+    console.error("GOOGLE PLACE PHOTO PROXY ERROR:", error);
+    res.status(500).json({ success: false, message: "Unable to proxy the hospital photo." });
+  }
+});
+
 app.post("/api/hospital-research", async (req, res) => {
   try {
     const { name, address = "", website = "" } = req.body;
@@ -823,7 +990,7 @@ app.post("/api/hospital-research", async (req, res) => {
       });
     }
 
-    const query = `${name} ${address} hospital reviews patient experience rating photos patients treated success rate treatment cost insurance`;
+    const query = `${name} ${address} hospital treatment cost price range waiting time appointment wait time surgery procedure insurance specialties patients treated success rate reviews facilities`;
     const searchResponse = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -836,6 +1003,7 @@ app.post("/api/hospital-research", async (req, res) => {
     const evidence = sources.map((source, index) => `[${index + 1}] ${source.title}\n${source.content}`).join("\n\n").slice(0, 24000);
     let extracted = {
       metrics: {},
+      metricSourceIndexes: {},
       summary: "No verified hospital-specific metrics were found.",
       reviews: [],
     };
@@ -845,9 +1013,19 @@ app.post("/api/hospital-research", async (req, res) => {
           model: FREE_TIER_CHAT_MODEL,
           temperature: 0,
           max_completion_tokens: 900,
-          messages: [{ role: "system", content: "Extract only explicit facts about this exact hospital from the supplied web-search excerpts. Never estimate, generalize, or invent clinical statistics or reviews. Return valid JSON only: {metrics:{patientsTreated:string|null,successRate:string|null,treatmentCost:string|null,insurance:string|null}, summary:string, reviews:[{text:string,rating:string|null,sourceIndex:number}]}. Include at most three short review excerpts or public patient-experience statements when the source explicitly contains them. Keep review text faithful to the source, do not invent quotations, and use sourceIndex to reference the supplied excerpt. Each metric and review must be null or omitted unless the source explicitly supports it." }, { role: "user", content: `Hospital: ${name}\nLocation: ${address}\n\nSearch evidence:\n${evidence}` }],
+          messages: [{
+            role: "system",
+            content: "Extract only explicit facts about this exact hospital from the supplied numbered search excerpts. Never estimate, generalize, calculate, or invent a cost or wait time. Return valid JSON only: {metrics:{patientsTreated:string|null,successRate:string|null,treatmentCost:string|null,waitTime:string|null,insurance:string|null},metricSourceIndexes:{treatmentCost:number|null,waitTime:number|null},summary:string,reviews:[{text:string,rating:string|null,sourceIndex:number}]}. For treatmentCost, copy a cost range exactly as stated by a source; if no explicit range is present, return null (do not derive a range from a single price). For waitTime, report only a specific explicitly stated wait or appointment time. Each treatmentCost and waitTime must have a 1-based metricSourceIndexes entry pointing to the exact numbered excerpt that supports it, otherwise set the metric to null. Include at most three short review excerpts or public patient-experience statements when the source explicitly contains them. Keep all text faithful to the source.",
+          }, {
+            role: "user",
+            content: `Hospital: ${name}\nLocation: ${address}\n\nSearch evidence:\n${evidence}`,
+          }],
         });
-        extracted = JSON.parse(completion.choices?.[0]?.message?.content || "{}");
+        const parsed = JSON.parse(completion.choices?.[0]?.message?.content || "{}");
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("Hospital research extraction returned invalid JSON data.");
+        }
+        extracted = parsed;
       } catch (extractionError) {
         console.error("HOSPITAL RESEARCH EXTRACTION ERROR:", extractionError);
         extracted.summary = "Search sources were found, but verified hospital information could not be extracted.";
@@ -875,10 +1053,21 @@ app.post("/api/hospital-research", async (req, res) => {
       }
     }
 
+    const treatmentCost = getSourcedMetric(extracted, "treatmentCost", sources);
+    const waitTime = getSourcedMetric(extracted, "waitTime", sources);
+
     res.json({
       success: true,
       searched: true,
-      metrics: extracted.metrics || {},
+      metrics: {
+        ...(extracted.metrics || {}),
+        treatmentCost: treatmentCost.value,
+        waitTime: waitTime.value,
+      },
+      metricSources: {
+        treatmentCost: treatmentCost.source,
+        waitTime: waitTime.source,
+      },
       summary: extracted.summary || "No verified hospital-specific metrics were found.",
       reviews: Array.isArray(extracted.reviews)
         ? extracted.reviews.filter((review) => review?.text).slice(0, 3)
