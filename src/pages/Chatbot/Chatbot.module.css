@@ -1326,6 +1326,16 @@
   font-size: 9px;
 }
 
+.matchCostWait {
+  display: grid;
+  gap: 4px;
+}
+
+.matchCostWait a {
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
 .insurance {
   display: inline-flex;
   align-items: center;
