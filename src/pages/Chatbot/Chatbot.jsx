@@ -110,6 +110,28 @@ const INITIAL_MESSAGES = [
   },
 ];
 
+function SourcedMetric({ research, metricKey, label }) {
+  const source = research?.metricSources?.[metricKey];
+  const value =
+    source?.url && /^https?:\/\//i.test(source.url)
+      ? research?.metrics?.[metricKey]
+      : null;
+
+  return (
+    <span>
+      {label}: {value || "Unverified"}
+      {value && (
+        <>
+          {" "}
+          <a href={source.url} target="_blank" rel="noreferrer">
+            Source
+          </a>
+        </>
+      )}
+    </span>
+  );
+}
+
 /* =========================================================
    CHATBOT
 ========================================================= */
@@ -1151,7 +1173,11 @@ function Chatbot() {
                           </div>
 
                           <div className={styles.matchScore}>
-                            <strong>{hospital.match}%</strong>
+                            <strong>
+                              {Number.isFinite(hospital.match)
+                                ? `${hospital.match}%`
+                                : "N/A"}
+                            </strong>
 
                             <span>match</span>
                           </div>
@@ -1166,7 +1192,9 @@ function Chatbot() {
                         <div className={styles.hospitalMeta}>
                           <span>
                             <MapPin size={14} />
-                            {hospital.distanceKm.toFixed(1)} km
+                            {Number.isFinite(hospital.distanceKm)
+                              ? `${hospital.distanceKm.toFixed(1)} km`
+                              : "Distance unavailable"}
                           </span>
 
                           <span>
@@ -1176,7 +1204,18 @@ function Chatbot() {
                         </div>
 
                         <div className={styles.matchFooter}>
-                          <span>Cost data not available</span>
+                          <div className={styles.matchCostWait}>
+                            <SourcedMetric
+                              research={searchState.researchById?.[hospital.id]}
+                              metricKey="treatmentCost"
+                              label="Cost range"
+                            />
+                            <SourcedMetric
+                              research={searchState.researchById?.[hospital.id]}
+                              metricKey="waitTime"
+                              label="Wait time"
+                            />
+                          </div>
 
                           <span className={styles.insurance}>
                             <CheckCircle2 size={13} />
