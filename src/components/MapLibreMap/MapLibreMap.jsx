@@ -199,6 +199,13 @@ export default function MapLibreMap({
 
     if (nationwideFacilities.length > 0) {
       const coordinates = nationwideFacilities
+        .filter(
+          (facility) =>
+            facility.lon != null &&
+            facility.lat != null &&
+            Number.isFinite(Number(facility.lon)) &&
+            Number.isFinite(Number(facility.lat)),
+        )
         .map((facility) => [Number(facility.lon), Number(facility.lat)])
         .filter(([longitude, latitude]) =>
           Number.isFinite(longitude) && Number.isFinite(latitude),
@@ -271,6 +278,10 @@ export default function MapLibreMap({
     markersRef.current = [];
 
     facilities.forEach((facility) => {
+      if (facility.lon == null || facility.lat == null) {
+        return;
+      }
+
       const longitude = Number(facility.lon);
       const latitude = Number(facility.lat);
 
