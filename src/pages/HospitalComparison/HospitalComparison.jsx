@@ -20,17 +20,37 @@ async function readApiResponse(response) {
   return response.json();
 }
 
+function SourcedMetric({ facility, metricKey }) {
+  const source = facility.research?.metricSources?.[metricKey];
+  const value =
+    source?.url && /^https?:\/\//i.test(source.url)
+      ? facility.research?.metrics?.[metricKey]
+      : null;
+
+  return (
+    <span className="comparison-sourced-metric">
+      {value || "Unverified"}
+      {value && (
+        <a href={source.url} target="_blank" rel="noreferrer">
+          Source
+        </a>
+      )}
+    </span>
+  );
+}
+
 const comparisonRows = [
-  ["Requirement match", (facility) => `${facility.match}%`],
+  ["Requirement match", (facility) => Number.isFinite(facility.match) ? `${facility.match}%` : "Data not available"],
   ["Facility type", (facility) => facility.type],
-  ["Distance", (facility) => `${facility.distanceKm.toFixed(1)} km`],
+  ["Distance", (facility) => Number.isFinite(facility.distanceKm) ? `${facility.distanceKm.toFixed(1)} km` : "Data not available"],
   ["Estimated drive", (facility) => facility.travelMinutes ? `~${facility.travelMinutes} min` : "Data not available"],
   ["Specialties", (facility) => facility.specialties || "Data not available"],
   ["Emergency care", (facility) => facility.emergency ? "Listed in map data" : "Not verified"],
   ["Phone", (facility) => facility.phone || "Data not available"],
   ["Patients treated", (facility) => facility.research?.metrics?.patientsTreated || "Data not available"],
   ["Success / outcome rate", (facility) => facility.research?.metrics?.successRate || "Data not available"],
-  ["Average treatment cost", (facility) => facility.research?.metrics?.treatmentCost || "Data not available"],
+  ["Treatment cost range", (facility) => <SourcedMetric facility={facility} metricKey="treatmentCost" />],
+  ["Wait time", (facility) => <SourcedMetric facility={facility} metricKey="waitTime" />],
   ["Insurance / schemes", (facility) => facility.research?.metrics?.insurance || "Data not available"],
 ];
 
@@ -137,7 +157,15 @@ function HospitalComparison() {
                   >
                     <span>{facility.type}</span>
                     <strong>{facility.name}</strong>
-                    <small>{facility.distanceKm.toFixed(1)} km · {facility.match}% match</small>
+                    <small>
+                      {Number.isFinite(facility.distanceKm)
+                        ? `${facility.distanceKm.toFixed(1)} km`
+                        : "Distance unavailable"}
+                      {" · "}
+                      {Number.isFinite(facility.match)
+                        ? `${facility.match}% calculated match`
+                        : "Match data unavailable"}
+                    </small>
                   </button>
                 ))}
               </div>
@@ -224,7 +252,6 @@ function HospitalComparison() {
                     </tbody>
                   </table>
                 </div>
-                <p className="comparison-note">Only source-backed information is displayed. “Data not available” means it could not be verified from the available sources.</p>
               </section>
             ) : (
               <section className="comparison-empty compact"><h2>Select hospitals above to compare</h2><p>Choose up to three facilities to see all available data together.</p></section>
