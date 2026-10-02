@@ -13,8 +13,6 @@
   .facility-actions a:focus-visible {
     outline: 3px solid var(--hf-primary-soft);
     outline-offset: 2px;
-
-    /* yoo */
   }
   --hf-secondary: var(--accent-secondary);
   --hf-text: var(--text-primary);
@@ -632,6 +630,48 @@
   color: var(--hf-muted);
   font-size: 9px;
   line-height: 1.5;
+}
+
+.sourced-cost-wait {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
+.sourced-cost-wait > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--hf-border);
+  border-radius: 10px;
+  background: var(--hf-surface-2);
+}
+
+.sourced-cost-wait dt {
+  color: var(--hf-muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.sourced-cost-wait dd {
+  margin: 5px 0 0;
+  color: var(--hf-text);
+  font-size: 12px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.sourced-metric {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.sourced-metric a {
+  color: var(--hf-primary);
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .facility-actions {
