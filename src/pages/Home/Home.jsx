@@ -12,6 +12,8 @@ import {
   Hospital,
   Languages,
   MapPin,
+  MessageCircle,
+  Phone,
   Search,
   ShieldCheck,
   Siren,
@@ -24,6 +26,20 @@ import styles from "./Home.module.css";
 
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
+import { searchNearbyHealthcare } from "../../services/geoapify";
+
+function distanceBetweenCoordinates(lat1, lon1, lat2, lon2) {
+  const radians = (degrees) => (degrees * Math.PI) / 180;
+  const deltaLat = radians(lat2 - lat1);
+  const deltaLon = radians(lon2 - lon1);
+  const arc =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(radians(lat1)) *
+      Math.cos(radians(lat2)) *
+      Math.sin(deltaLon / 2) ** 2;
+
+  return 6371 * 2 * Math.atan2(Math.sqrt(arc), Math.sqrt(1 - arc));
+}
 
 /* =========================================================
    FEATURES
@@ -169,6 +185,10 @@ function SlidersIcon({ size = 24, strokeWidth = 1.8 }) {
 function Home() {
   const navigate = useNavigate();
   const [requirement, setRequirement] = useState("");
+  const [emergencyLocation, setEmergencyLocation] = useState(null);
+  const [nearestEmergencyHospital, setNearestEmergencyHospital] = useState(null);
+  const [emergencySearchStatus, setEmergencySearchStatus] = useState("");
+  const [isEmergencySearching, setIsEmergencySearching] = useState(false);
   const openFinder = (
     query = requirement,
     emergency = false,
@@ -177,6 +197,7 @@ function Home() {
     const params = new URLSearchParams();
     if (query.trim()) params.set("query", query.trim());
     if (emergency) params.set("emergency", "true");
+    if (emergency) params.set("scope", "nearby");
     if (location) {
       params.set("lat", String(location.lat));
       params.set("lon", String(location.lon));
@@ -192,13 +213,118 @@ function Home() {
 
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
-        openFinder("Emergency", true, {
+        const location = {
           lat: coords.latitude,
           lon: coords.longitude,
           accuracy: coords.accuracy,
-        });
+        };
+        setEmergencyLocation(location);
+        openFinder("Emergency", true, location);
       },
       () => openFinder("Emergency", true),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+    );
+  };
+  const findNearestEmergencyHospital = () => {
+    if (!navigator.geolocation) {
+      setEmergencySearchStatus("Location services are not supported by this browser.");
+      return;
+    }
+
+    setIsEmergencySearching(true);
+    setNearestEmergencyHospital(null);
+    setEmergencySearchStatus("Getting your location and checking nearby listings...");
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const location = {
+          lat: coords.latitude,
+          lon: coords.longitude,
+          accuracy: coords.accuracy,
+        };
+        setEmergencyLocation(location);
+
+        try {
+          const response = await searchNearbyHealthcare({
+            latitude: location.lat,
+            longitude: location.lon,
+            radius: 100,
+            limit: 100,
+          });
+          const matches = (Array.isArray(response?.features) ? response.features : [])
+            .filter((feature) => {
+              const properties = feature?.properties || {};
+              const categories = Array.isArray(properties.categories)
+                ? properties.categories
+                : [];
+              const coordinates = feature?.geometry?.coordinates;
+              const hospitalListed = categories.includes("healthcare.hospital");
+              const emergencyEvidence = [
+                properties.name,
+                categories.join(" "),
+                properties.datasource?.raw?.emergency,
+                properties.datasource?.raw?.emergency_ward,
+              ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+              return (
+                hospitalListed &&
+                /emergency|trauma|casualty|accident and emergency|\ba&e\b/.test(
+                  emergencyEvidence,
+                ) &&
+                Array.isArray(coordinates) &&
+                coordinates[0] != null &&
+                coordinates[1] != null &&
+                Number.isFinite(Number(coordinates[0])) &&
+                Number.isFinite(Number(coordinates[1]))
+              );
+            })
+            .map((feature) => {
+              const properties = feature.properties;
+              const [longitude, latitude] = feature.geometry.coordinates.map(Number);
+
+              return {
+                id: properties.place_id || `${latitude},${longitude}`,
+                name: properties.name || "Emergency hospital",
+                address: properties.formatted || "Address unavailable",
+                lat: latitude,
+                lon: longitude,
+                distanceKm: distanceBetweenCoordinates(
+                  location.lat,
+                  location.lon,
+                  latitude,
+                  longitude,
+                ),
+              };
+            })
+            .sort((a, b) => a.distanceKm - b.distanceKm);
+
+          setNearestEmergencyHospital(matches[0] || null);
+          setEmergencySearchStatus(
+            matches.length
+              ? "Nearest explicitly emergency-listed hospital found."
+              : "No nearby hospital was explicitly marked for emergency care in the available map data. Call 108 or 112 for urgent help.",
+          );
+          setIsEmergencySearching(false);
+        } catch (error) {
+          console.error("Emergency hospital lookup failed:", error);
+          setNearestEmergencyHospital(null);
+          setEmergencySearchStatus(
+            error.message || "Nearby emergency listings could not be loaded. Call 108 or 112 for urgent help.",
+          );
+          setIsEmergencySearching(false);
+        }
+      },
+      (error) => {
+        console.error("Emergency location request failed:", error);
+        setEmergencySearchStatus(
+          error.code === 1
+            ? "Location permission was denied. You can still call 108 or 112."
+            : "Your location could not be determined. You can still call 108 or 112.",
+        );
+        setIsEmergencySearching(false);
+      },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
     );
   };
@@ -252,19 +378,20 @@ function Home() {
                 <button
                   type="button"
                   className={styles.emergencyPrimary}
-                  onClick={() => openEmergencyFinder(true)}
+                  onClick={findNearestEmergencyHospital}
+                  disabled={isEmergencySearching}
                 >
                   <MapPin size={18} />
-                  Use my location
+                  {isEmergencySearching ? "Searching nearby..." : "Find nearest emergency hospital"}
                 </button>
 
                 <button
                   type="button"
                   className={styles.emergencySecondary}
-                  onClick={() => openEmergencyFinder()}
+                  onClick={() => openEmergencyFinder(true)}
                 >
                   <Hospital size={18} />
-                  Find emergency hospital
+                  Open hospital finder
                 </button>
               </div>
 
@@ -289,10 +416,28 @@ function Home() {
                 <h2>What do you need right now?</h2>
               </div>
 
+              <div className={styles.emergencyCallButtons}>
+                <a href="tel:108" aria-label="Call 108 ambulance">
+                  <Phone size={19} />
+                  <span>
+                    <strong>108</strong>
+                    Ambulance
+                  </span>
+                </a>
+                <a href="tel:112" aria-label="Call 112 emergency services">
+                  <Siren size={19} />
+                  <span>
+                    <strong>112</strong>
+                    Emergency
+                  </span>
+                </a>
+              </div>
+
               <div className={styles.emergencyOptions}>
                 <button
                   type="button"
-                  onClick={() => openEmergencyFinder(true)}
+                  onClick={findNearestEmergencyHospital}
+                  disabled={isEmergencySearching}
                 >
                   <div>
                     <Hospital size={18} />
@@ -300,7 +445,7 @@ function Home() {
 
                   <span>
                     <strong>Nearest emergency hospital</strong>
-                    <small>Find nearby emergency care</small>
+                    <small>Check nearby listings using your location</small>
                   </span>
 
                   <ArrowUpRight size={17} />
@@ -308,17 +453,15 @@ function Home() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    window.location.href = "tel:112";
-                  }}
+                  onClick={findNearestEmergencyHospital}
                 >
                   <div>
-                    <Siren size={18} />
+                    <MapPin size={18} />
                   </div>
 
                   <span>
-                    <strong>Ambulance assistance</strong>
-                    <small>Access available emergency resources</small>
+                    <strong>Find and share live location</strong>
+                    <small>Check nearby listings and enable location sharing</small>
                   </span>
 
                   <ArrowUpRight size={17} />
@@ -340,6 +483,54 @@ function Home() {
                   <ArrowUpRight size={17} />
                 </button>
               </div>
+
+              {emergencySearchStatus && (
+                <p className={styles.emergencySearchStatus} role="status">
+                  {emergencySearchStatus}
+                </p>
+              )}
+
+              {nearestEmergencyHospital && (
+                <div className={styles.nearestEmergencyCard}>
+                  <span>NEAREST EMERGENCY-LISTED HOSPITAL</span>
+                  <strong>{nearestEmergencyHospital.name}</strong>
+                  <small>
+                    {nearestEmergencyHospital.distanceKm.toFixed(1)} km ·{" "}
+                    {nearestEmergencyHospital.address}
+                  </small>
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${nearestEmergencyHospital.lat},${nearestEmergencyHospital.lon}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open directions
+                  </a>
+                </div>
+              )}
+
+              {emergencyLocation && (
+                <div className={styles.emergencyShareActions}>
+                  <span>Location ready to share</span>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(
+                      `I may need emergency help. My location: https://maps.google.com/?q=${emergencyLocation.lat},${emergencyLocation.lon}`,
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <MessageCircle size={15} />
+                    WhatsApp
+                  </a>
+                  <a
+                    href={`sms:?body=${encodeURIComponent(
+                      `I may need emergency help. My location: https://maps.google.com/?q=${emergencyLocation.lat},${emergencyLocation.lon}`,
+                    )}`}
+                  >
+                    <MessageCircle size={15} />
+                    SMS
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -458,7 +649,55 @@ function Home() {
         </section>
 
         {/* ===================================================
-            03 — PRIMARY CTA
+            03 — AYUSHMAN BHARAT
+        =================================================== */}
+
+        <section
+          className={styles.pmjaySection}
+          id="ayushman-bharat"
+          aria-labelledby="pmjay-title"
+        >
+          <div className={styles.pmjayCopy}>
+            <span className={styles.sectionEyebrow}>GOVERNMENT HEALTH COVER</span>
+            <h2 id="pmjay-title">
+              Understand your
+              <span> PM-JAY options.</span>
+            </h2>
+            <p>
+              Ayushman Bharat Pradhan Mantri Jan Arogya Yojana (AB PM-JAY)
+              offers eligible families up to ₹5 lakh annual cover for
+              specified hospital treatments at empanelled hospitals.
+            </p>
+          </div>
+
+          <div className={styles.pmjayActions}>
+            <strong>Check through official channels</strong>
+            <a
+              href="https://beneficiary.nha.gov.in/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Check beneficiary eligibility
+              <ArrowUpRight size={16} />
+            </a>
+            <a
+              href="https://pmjay.gov.in/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              PM-JAY scheme information
+              <ArrowUpRight size={16} />
+            </a>
+            <a href="tel:14555">
+              Call PM-JAY helpline 14555
+              <Phone size={16} />
+            </a>
+            <small>Check current eligibility and coverage through PM-JAY.</small>
+          </div>
+        </section>
+
+        {/* ===================================================
+            04 — PRIMARY CTA
         =================================================== */}
 
         <section className={styles.homeCta}>
@@ -524,77 +763,31 @@ function Home() {
               <div />
             </div>
 
-            {[] /* Hospital rows are intentionally populated only from a live search. */.map((hospital, index) => (
-              <article
-                className={`${styles.comparisonRow} ${
-                  index === 0 ? styles.comparisonHighlighted : ""
-                }`}
-                key={hospital.name}
-              >
-                <div className={styles.comparisonHospital}>
-                  <div className={styles.hospitalLogo}>
-                    <Hospital size={19} />
-                  </div>
-
-                  <div>
-                    <strong>{hospital.name}</strong>
-
-                    <span>
-                      <MapPin size={13} />
-                      {hospital.location}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <span className={styles.mobileComparisonLabel}>
-                    Specialty
-                  </span>
-
-                  <strong>{hospital.specialty}</strong>
-                </div>
-
-                <div>
-                  <span className={styles.mobileComparisonLabel}>
-                    Distance
-                  </span>
-
-                  <strong>{hospital.distance}</strong>
-                </div>
-
-                <div>
-                  <span className={styles.mobileComparisonLabel}>Cost</span>
-
-                  <strong>{hospital.cost}</strong>
-                </div>
-
-                <div>
-                  <span className={styles.mobileComparisonLabel}>
-                    Coverage
-                  </span>
-
-                  <strong>{hospital.coverage}</strong>
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.comparisonAction}
-                  onClick={() => console.log(`View ${hospital.name}`)}
-                >
-                  <ArrowUpRight size={17} />
-                </button>
-              </article>
-            ))}
             <article className={styles.comparisonRow}>
               <div className={styles.comparisonHospital}>
-                <div className={styles.hospitalLogo}><Hospital size={19} /></div>
-                <div><strong>Start a nearby hospital search</strong><span><MapPin size={13} />No hospital information is pre-filled</span></div>
+                <div className={styles.hospitalLogo}>
+                  <Hospital size={19} />
+                </div>
+                <div>
+                  <strong>Compare hospitals from your search</strong>
+                  <span>
+                    <MapPin size={13} />
+                    Live results appear here after you search
+                  </span>
+                </div>
               </div>
-              <div><strong>Live data</strong></div>
-              <div><strong>Live distance</strong></div>
-              <div><strong>Data not available</strong></div>
-              <div><strong>Verify after search</strong></div>
-              <button type="button" className={styles.comparisonAction} onClick={() => openFinder()}><ArrowUpRight size={17} /></button>
+              <div />
+              <div />
+              <div />
+              <div />
+              <button
+                type="button"
+                className={styles.comparisonAction}
+                onClick={() => openFinder()}
+                aria-label="Search hospitals"
+              >
+                <ArrowUpRight size={17} />
+              </button>
             </article>
           </div>
 
@@ -854,7 +1047,7 @@ function Home() {
               <button
                 type="button"
                 className={styles.outlineButton}
-                onClick={() => console.log("Open team page")}
+                onClick={() => scrollTo("#team")}
               >
                 Meet the team
                 <ArrowUpRight size={17} />
