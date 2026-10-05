@@ -1,5 +1,6 @@
 const GEOAPIFY_API_URL = "https://api.geoapify.com/v2/places";
 const GEOAPIFY_GEOCODE_URL = "https://api.geoapify.com/v1/geocode/reverse";
+const GEOAPIFY_SEARCH_GEOCODE_URL = "https://api.geoapify.com/v1/geocode/search";
 
 const getApiKey = () => {
   const key = import.meta.env.VITE_GEOAPIFY_API_KEY;
@@ -41,7 +42,7 @@ export async function searchNearbyHealthcare({
   const response = await fetch(
     `${GEOAPIFY_API_URL}?${params.toString()}`,
     {
-      signal,
+      signal: signal || AbortSignal.timeout(12000),
       headers: {
         Accept: "application/json",
       },
@@ -73,4 +74,34 @@ export async function reverseGeocodeLocation({ latitude, longitude }) {
   }
   const data = await response.json();
   return data.features?.[0]?.properties || {};
+}
+
+export async function geocodeLocation(query) {
+  const normalizedQuery = typeof query === "string" ? query.trim() : "";
+  if (!normalizedQuery) {
+    throw new Error("Enter a city, address, or postal code.");
+  }
+
+  const params = new URLSearchParams({
+    text: normalizedQuery,
+    limit: "1",
+    format: "geojson",
+    apiKey: getApiKey(),
+  });
+  const response = await fetch(`${GEOAPIFY_SEARCH_GEOCODE_URL}?${params.toString()}`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Location search failed (${response.status}).`);
+  }
+
+  const data = await response.json();
+  const location = data.features?.[0]?.properties;
+  if (!Number.isFinite(location?.lat) || !Number.isFinite(location?.lon)) {
+    throw new Error("We couldn't find that location. Try a nearby city or a more specific address.");
+  }
+
+  return location;
 }
