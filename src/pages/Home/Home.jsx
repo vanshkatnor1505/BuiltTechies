@@ -213,6 +213,13 @@ function Home() {
 
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
+        if (!Number.isFinite(coords.accuracy) || coords.accuracy > 5000) {
+          setEmergencySearchStatus(
+            "Your device location is too imprecise to safely choose the nearest hospital. Choose a location in Find Hospitals or call 108/112 for urgent help.",
+          );
+          setIsEmergencySearching(false);
+          return;
+        }
         const location = {
           lat: coords.latitude,
           lon: coords.longitude,
@@ -236,6 +243,13 @@ function Home() {
     setEmergencySearchStatus("Getting your location and checking nearby listings...");
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
+        if (!Number.isFinite(coords.accuracy) || coords.accuracy > 5000) {
+          setEmergencySearchStatus(
+            "Your device location is too imprecise to safely choose the nearest hospital. Open Find Hospitals and enter your city or address.",
+          );
+          setIsEmergencySearching(false);
+          return;
+        }
         const location = {
           lat: coords.latitude,
           lon: coords.longitude,
