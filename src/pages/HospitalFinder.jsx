@@ -5,6 +5,7 @@ import "./HospitalFinder.css";
 import SiteNavbar from "../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../components/composed/Footer/Footer";
 import {
+  geocodeLocation,
   reverseGeocodeLocation,
   searchNearbyHealthcare,
 } from "../services/geoapify";
@@ -980,10 +981,15 @@ function SourcedMetric({ research, metricKey }) {
     source?.url && /^https?:\/\//i.test(source.url)
       ? research?.metrics?.[metricKey]
       : null;
+  const estimate = research?.metricEstimates?.[metricKey];
 
   return (
     <span className="sourced-metric">
-      {value || "Unverified"}
+      {value || (estimate
+        ? `Approx. ${estimate} (AI estimate · not verified)`
+        : research?.metricEstimatesError
+          ? "AI estimate unavailable"
+          : "Unverified")}
       {value && (
         <a href={source.url} target="_blank" rel="noreferrer">
           Source
@@ -1590,6 +1596,8 @@ export default function HospitalFinder() {
   const [researchLoadingId, setResearchLoadingId] = useState("");
 
   const autoSearchRequested = useRef(false);
+  const manualLocationSelected = useRef(false);
+  const metricEstimateRequests = useRef(new Set());
 
   const recommendationRequestId = useRef(0);
 
@@ -1735,6 +1743,7 @@ export default function HospitalFinder() {
    */
 
   const getUserLocation = useCallback(() => {
+    manualLocationSelected.current = false;
     if (!navigator.geolocation) {
       console.error("Geolocation API is not supported.");
       setError("Geolocation is not supported by this browser.");
@@ -1746,6 +1755,9 @@ export default function HospitalFinder() {
     setError("");
 
     const handleSuccess = (position) => {
+      if (manualLocationSelected.current) {
+        return;
+      }
       const { latitude, longitude, accuracy } = position.coords;
 
       setUserLocation({
@@ -1768,6 +1780,9 @@ export default function HospitalFinder() {
     };
 
     const handleError = (error) => {
+      if (manualLocationSelected.current) {
+        return;
+      }
       if (error.code === 1) {
         setError(
           "Location permission was denied. Please allow location access for localhost.",
@@ -1842,6 +1857,38 @@ export default function HospitalFinder() {
       maximumAge: 0,
     });
   }, [loadStateRecommendations, searchScope, searchQuery]);
+
+  const setManualLocation = useCallback(async (query) => {
+    manualLocationSelected.current = true;
+    setError("");
+    setLocationStatus("loading");
+    try {
+      const location = await geocodeLocation(query);
+      const nextLocation = {
+        lat: location.lat,
+        lon: location.lon,
+        accuracy: 0,
+      };
+      setUserLocation(nextLocation);
+      setUserState(location.state || location.county || "");
+      setSearchScope("nearby");
+      setLocationStatus("success");
+      autoSearchRequested.current = false;
+      setFacilities([]);
+      setSelectedFacility(null);
+      setRoute(null);
+      setSearchState((current) => ({
+        ...current,
+        facilities: [],
+        compareIds: [],
+        updatedAt: null,
+      }));
+    } catch (locationError) {
+      setError(locationError.message || "Unable to find that location.");
+      setLocationStatus("error");
+      manualLocationSelected.current = false;
+    }
+  }, [setSearchState]);
   /*
    * GEOAPIFY SEARCH
    */
@@ -1868,7 +1915,7 @@ export default function HospitalFinder() {
           latitude: userLocation.lat,
           longitude: userLocation.lon,
           radius,
-          limit: emergencyMode ? 100 : 20,
+          limit: emergencyMode ? 50 : 12,
         });
 
         const features = Array.isArray(data?.features) ? data.features : [];
@@ -1906,12 +1953,10 @@ export default function HospitalFinder() {
       } catch (searchError) {
         console.error("Geoapify search error:", searchError);
 
-        if (searchError?.name === "AbortError") {
-          return;
-        }
-
         setError(
-          searchError?.message ||
+          searchError?.name === "TimeoutError" || searchError?.name === "AbortError"
+            ? "Hospital search is taking too long. Please try again or choose a smaller search radius."
+            : searchError?.message ||
             "The healthcare search service is temporarily unavailable. Please try again.",
         );
       } finally {
@@ -1944,6 +1989,10 @@ export default function HospitalFinder() {
           name: facility.name,
           address: facility.address,
           website: facility.website,
+          context: {
+            facilityType: facility.type,
+            specialtyOrTreatment: searchQuery || facility.specialties,
+          },
         }),
       });
 
@@ -2097,6 +2146,62 @@ export default function HospitalFinder() {
     resultsPage * RESULTS_PER_PAGE,
     (resultsPage + 1) * RESULTS_PER_PAGE,
   );
+
+  useEffect(() => {
+    for (const facility of visibleFacilities) {
+      const existingResearch = researchById[facility.id];
+      if (
+        existingResearch?.metricEstimates ||
+        metricEstimateRequests.current.has(facility.id)
+      ) {
+        continue;
+      }
+
+      metricEstimateRequests.current.add(facility.id);
+      fetch(`${API_URL}/api/hospital-estimates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: facility.name,
+          address: facility.address,
+          context: {
+            facilityType: facility.type,
+            specialtyOrTreatment: searchQuery || facility.specialties,
+          },
+        }),
+      })
+        .then(readApiResponse)
+        .then((data) => {
+          if (!data.success || !data.metricEstimates) {
+            throw new Error(data.message || "Estimate service returned invalid data.");
+          }
+          setSearchState((current) => ({
+            ...current,
+            researchById: {
+              ...(current.researchById || {}),
+              [facility.id]: {
+                ...(current.researchById?.[facility.id] || {}),
+                metricEstimates: data.metricEstimates,
+                metricEstimatesError: Boolean(data.metricEstimatesError),
+              },
+            },
+          }));
+        })
+        .catch((estimateError) => {
+          console.error("Hospital estimate error:", estimateError);
+          setSearchState((current) => ({
+            ...current,
+            researchById: {
+              ...(current.researchById || {}),
+              [facility.id]: {
+                ...(current.researchById?.[facility.id] || {}),
+                metricEstimatesError: true,
+              },
+            },
+          }));
+        });
+    }
+  }, [visibleFacilities, researchById, searchQuery, setSearchState]);
 
   /*
    * MAP MARKERS
@@ -2334,6 +2439,7 @@ export default function HospitalFinder() {
         <HospitalFinderHeader
           getUserLocation={getUserLocation}
           locationStatus={locationStatus}
+          onSelectLocation={setManualLocation}
           userLocation={userLocation}
         />
 
