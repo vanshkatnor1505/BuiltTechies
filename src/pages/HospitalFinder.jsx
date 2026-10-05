@@ -1532,17 +1532,34 @@ export default function HospitalFinder() {
     useHospitalSearch();
 
   const locationFromRequest = useMemo(() => {
-    const lat = Number(searchParams.get("lat"));
-    const lon = Number(searchParams.get("lon"));
+    const latitudeParam = searchParams.get("lat");
+    const longitudeParam = searchParams.get("lon");
+    const accuracyParam = searchParams.get("accuracy");
+    if (latitudeParam === null || longitudeParam === null || accuracyParam === null) {
+      return null;
+    }
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    const lat = Number(latitudeParam);
+    const lon = Number(longitudeParam);
+    const accuracy = Number(accuracyParam);
+
+    if (
+      !Number.isFinite(lat) ||
+      lat < -90 ||
+      lat > 90 ||
+      !Number.isFinite(lon) ||
+      lon < -180 ||
+      lon > 180 ||
+      !Number.isFinite(accuracy) ||
+      accuracy > 5000
+    ) {
       return null;
     }
 
     return {
       lat,
       lon,
-      accuracy: Number(searchParams.get("accuracy")) || 0,
+      accuracy,
     };
   }, [searchParams]);
 
@@ -1566,6 +1583,7 @@ export default function HospitalFinder() {
     searchParams.get("scope") === "nearby" ? "nearby" : "india",
   );
   const [userState, setUserState] = useState("");
+  const [locationLabel, setLocationLabel] = useState("");
 
   const [facilityType, setFacilityType] = useState("all");
   const [schemeFilter, setSchemeFilter] = useState("all");
@@ -1759,6 +1777,23 @@ export default function HospitalFinder() {
         return;
       }
       const { latitude, longitude, accuracy } = position.coords;
+      if (
+        !Number.isFinite(latitude) ||
+        latitude < -90 ||
+        latitude > 90 ||
+        !Number.isFinite(longitude) ||
+        longitude < -180 ||
+        longitude > 180 ||
+        !Number.isFinite(accuracy) ||
+        accuracy > 5000
+      ) {
+        setError(
+          "Your device returned a location that may be too inaccurate. Enter your city or a nearby address in “Or choose a location” to search the correct area.",
+        );
+        setLocationStatus("error");
+        setLoading(false);
+        return;
+      }
 
       setUserLocation({
         lat: latitude,
@@ -1769,8 +1804,19 @@ export default function HospitalFinder() {
       reverseGeocodeLocation({ latitude, longitude })
         .then((location) => {
           setUserState(location.state || location.county || "");
+          setLocationLabel(
+            location.city ||
+              location.town ||
+              location.village ||
+              location.suburb ||
+              location.formatted ||
+              "",
+          );
         })
-        .catch(() => setUserState(""));
+        .catch(() => {
+          setUserState("");
+          setLocationLabel("");
+        });
 
       setLocationStatus("success");
       setLoading(false);
@@ -1792,61 +1838,11 @@ export default function HospitalFinder() {
         return;
       }
 
-      if (error.code === 2) {
-        console.warn(
-          "High accuracy location unavailable. Trying normal location...",
-        );
-
-        navigator.geolocation.getCurrentPosition(
-          handleSuccess,
-          (fallbackError) => {
-            console.error("Fallback location also failed:", fallbackError);
-
-            setError(
-              "Your device could not determine your current location. Make sure Windows Location Services is enabled.",
-            );
-
-            setLocationStatus("error");
-            setLoading(false);
-          },
-          {
-            enableHighAccuracy: false,
-            timeout: 20000,
-            maximumAge: 60000,
-          },
-        );
-
-        return;
-      }
-
-      if (error.code === 3) {
-        console.warn(
-          "High accuracy location timed out. Trying normal location...",
-        );
-
-        navigator.geolocation.getCurrentPosition(
-          handleSuccess,
-          (fallbackError) => {
-            console.error("Fallback location also failed:", fallbackError);
-
-            setError(
-              "Location request timed out. Please make sure Windows Location Services is enabled.",
-            );
-
-            setLocationStatus("error");
-            setLoading(false);
-          },
-          {
-            enableHighAccuracy: false,
-            timeout: 20000,
-            maximumAge: 60000,
-          },
-        );
-
-        return;
-      }
-
-      setError("Unable to determine your current location.");
+      setError(
+        error.code === 3
+          ? "Precise location timed out. Enter your city or address to choose the correct location."
+          : "Unable to determine a precise location. Enter your city or address to choose the correct location.",
+      );
       setLocationStatus("error");
       setLoading(false);
     };
@@ -1871,6 +1867,7 @@ export default function HospitalFinder() {
       };
       setUserLocation(nextLocation);
       setUserState(location.state || location.county || "");
+      setLocationLabel(location.formatted || query.trim());
       setSearchScope("nearby");
       setLocationStatus("success");
       autoSearchRequested.current = false;
@@ -2439,6 +2436,7 @@ export default function HospitalFinder() {
         <HospitalFinderHeader
           getUserLocation={getUserLocation}
           locationStatus={locationStatus}
+          locationLabel={locationLabel}
           onSelectLocation={setManualLocation}
           userLocation={userLocation}
         />
