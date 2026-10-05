@@ -133,6 +133,12 @@
   font-weight: 750;
 }
 
+.manual-location-current {
+  color: var(--hf-text);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 .manual-location-form > div {
   display: flex;
   gap: 7px;
