@@ -3,6 +3,7 @@
 function HospitalFinderHeader({
   getUserLocation,
   locationStatus,
+  locationLabel,
   onSelectLocation,
   userLocation,
 }) {
@@ -45,6 +46,11 @@ function HospitalFinderHeader({
         </button>
         <form className="manual-location-form" onSubmit={submitManualLocation}>
           <label htmlFor="manual-hospital-location">Or choose a location</label>
+          {locationLabel && (
+            <span className="manual-location-current" aria-live="polite">
+              Currently using: {locationLabel}
+            </span>
+          )}
           <div>
             <input
               id="manual-hospital-location"
