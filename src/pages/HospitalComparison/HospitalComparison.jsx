@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
@@ -26,10 +26,15 @@ function SourcedMetric({ facility, metricKey }) {
     source?.url && /^https?:\/\//i.test(source.url)
       ? facility.research?.metrics?.[metricKey]
       : null;
+  const estimate = facility.research?.metricEstimates?.[metricKey];
 
   return (
     <span className="comparison-sourced-metric">
-      {value || "Unverified"}
+      {value || (estimate
+        ? `Approx. ${estimate} (AI estimate · not verified)`
+        : facility.research?.metricEstimatesError
+          ? "AI estimate unavailable"
+          : "Unverified")}
       {value && (
         <a href={source.url} target="_blank" rel="noreferrer">
           Source
@@ -63,6 +68,7 @@ function HospitalComparison() {
   } = useHospitalSearch();
   const [loadingId, setLoadingId] = useState("");
   const [facilitiesPage, setFacilitiesPage] = useState(0);
+  const metricEstimateRequests = useRef(new Set());
   const FACILITIES_PER_PAGE = 5;
   const facilities = searchState.facilities || [];
   const compareIds = (searchState.compareIds || []).filter((id) =>
@@ -81,6 +87,61 @@ function HospitalComparison() {
     (facilitiesPage + 1) * FACILITIES_PER_PAGE,
   );
 
+  useEffect(() => {
+    for (const facility of selectedFacilities) {
+      if (
+        facility.research?.metricEstimates ||
+        metricEstimateRequests.current.has(facility.id)
+      ) {
+        continue;
+      }
+
+      metricEstimateRequests.current.add(facility.id);
+      fetch(`${API_URL}/api/hospital-estimates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: facility.name,
+          address: facility.address,
+          context: {
+            facilityType: facility.type,
+            specialtyOrTreatment: searchState.query || facility.specialties,
+          },
+        }),
+      })
+        .then(readApiResponse)
+        .then((data) => {
+          if (!data.success || !data.metricEstimates) {
+            throw new Error(data.message || "Estimate service returned invalid data.");
+          }
+          setSearchState((current) => ({
+            ...current,
+            researchById: {
+              ...(current.researchById || {}),
+              [facility.id]: {
+                ...(current.researchById?.[facility.id] || {}),
+                metricEstimates: data.metricEstimates,
+                metricEstimatesError: Boolean(data.metricEstimatesError),
+              },
+            },
+          }));
+        })
+        .catch((estimateError) => {
+          console.error("Hospital estimate error:", estimateError);
+          setSearchState((current) => ({
+            ...current,
+            researchById: {
+              ...(current.researchById || {}),
+              [facility.id]: {
+                ...(current.researchById?.[facility.id] || {}),
+                metricEstimatesError: true,
+              },
+            },
+          }));
+        });
+    }
+  }, [selectedFacilities, searchState.query, setSearchState]);
+
   const researchFacility = async (facility) => {
     if (researchById[facility.id] || loadingId) return;
     setLoadingId(facility.id);
@@ -92,6 +153,10 @@ function HospitalComparison() {
           name: facility.name,
           address: facility.address,
           website: facility.website,
+          context: {
+            facilityType: facility.type,
+            specialtyOrTreatment: searchState.query || facility.specialties,
+          },
         }),
       });
       const data = await readApiResponse(response);
