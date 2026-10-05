@@ -116,10 +116,15 @@ function SourcedMetric({ research, metricKey, label }) {
     source?.url && /^https?:\/\//i.test(source.url)
       ? research?.metrics?.[metricKey]
       : null;
+  const estimate = research?.metricEstimates?.[metricKey];
 
   return (
     <span>
-      {label}: {value || "Unverified"}
+      {label}: {value || (estimate
+        ? `Approx. ${estimate} (AI estimate · not verified)`
+        : research?.metricEstimatesError
+          ? "AI estimate unavailable"
+          : "Unverified")}
       {value && (
         <>
           {" "}
