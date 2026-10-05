@@ -9,6 +9,8 @@
   .view-switcher button:focus-visible,
   .primary-search-button:focus-visible,
   .location-button:focus-visible,
+  .manual-location-form input:focus-visible,
+  .manual-location-form button:focus-visible,
   .facility-actions button:focus-visible,
   .facility-actions a:focus-visible {
     outline: 3px solid var(--hf-primary-soft);
@@ -104,9 +106,66 @@
   transition: 0.2s ease;
 }
 
+.finder-location-controls {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 380px);
+  flex-shrink: 0;
+}
+
 .location-button:hover {
   transform: translateY(-1px);
   border-color: var(--hf-primary);
+}
+
+.manual-location-form {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid var(--hf-border);
+  border-radius: 14px;
+  background: var(--hf-surface);
+}
+
+.manual-location-form label {
+  color: var(--hf-text-2);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.manual-location-form > div {
+  display: flex;
+  gap: 7px;
+}
+
+.manual-location-form input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--hf-border);
+  border-radius: 9px;
+  padding: 10px 11px;
+  background: var(--hf-surface-2);
+  color: var(--hf-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.manual-location-form button {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 9px;
+  padding: 9px 12px;
+  background: var(--hf-primary);
+  color: white;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.manual-location-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .location-icon {
@@ -1206,9 +1265,12 @@
     flex-direction: column;
   }
 
-  .location-button {
+  .finder-location-controls {
     width: 100%;
-    justify-content: center;
+  }
+
+  .manual-location-form > div {
+    flex-direction: column;
   }
 
   .finder-search-panel {
