@@ -716,16 +716,29 @@ function estimateTravelTime(distanceKm) {
 }
 
 function getSpecialties(tags = {}) {
-  return [
+  const specialtyValues = [
     tags["healthcare:speciality"],
     tags["healthcare:specialties"],
     tags["medical:specialty"],
     tags["medical_specialty"],
     tags.specialties,
-    tags.description,
     tags["healthcare:speciality:en"],
-  ]
-    .filter(Boolean)
+  ].filter(Boolean);
+
+  const genericSpecialties = new Set([
+    "healthcare",
+    "hospital",
+    "clinic",
+    "clinic or praxis",
+    "dentist",
+    "doctor",
+    "medical",
+  ]);
+
+  return specialtyValues
+    .flatMap((value) => String(value).split(/[,;]/))
+    .map((value) => value.trim())
+    .filter((value) => value && !genericSpecialties.has(normalize(value)))
     .join(", ");
 }
 
@@ -751,16 +764,25 @@ function calculateRequirementMatch(
         group.aliases.some((alias) => specialtyText.includes(normalize(alias))),
       )
     : queryWords.some((word) => specialtyText.includes(word));
+  const hasSpecialtyEvidence = Boolean(specialtyText);
+  const isHealthcareFacility = Boolean(
+    tags.healthcare && tags.healthcare !== "no",
+  );
   const genericFacilityMatch =
     (normalizedQuery === "hospital" || normalizedQuery === "hospitals") &&
     (tags.amenity === "hospital" || tags.healthcare === "hospital");
 
-  if (!specialtyText && !genericFacilityMatch) {
+  if (!hasSpecialtyEvidence && !genericFacilityMatch && !isHealthcareFacility) {
     return null;
   }
 
+  const specialtyScore = specialtyMatches || genericFacilityMatch
+    ? 100
+    : hasSpecialtyEvidence
+      ? 0
+      : 50;
   const dimensions = [
-    { score: specialtyMatches || genericFacilityMatch ? 100 : 0, weight: 70 },
+    { score: specialtyScore, weight: 70 },
   ];
 
   if (Number.isFinite(distanceKm)) {
@@ -1190,8 +1212,9 @@ function HospitalFinderResultsPanel({
                     Match uses listed specialty keywords, available distance,
                     and emergency status for emergency searches. Specialty fit
                     is weighted 70%, distance 20% (half-score at 10 km), and
-                    emergency evidence 10% for emergency searches. Missing
-                    signals are omitted rather than estimated.
+                    emergency evidence 10% for emergency searches. If a
+                    facility has no specialty details, its specialty fit starts
+                    at 50% and is marked as an estimate, not a verified match.
                   </div>
                   <SourcedCostAndWait research={researchById[facility.id]} />
 
@@ -2634,8 +2657,9 @@ export default function HospitalFinder() {
                         distance, and emergency status for emergency searches.
                         Specialty fit is weighted 70%, distance 20%
                         (half-score at 10 km), and emergency evidence 10% for
-                        emergency searches. Missing signals are omitted rather
-                        than estimated.
+                        emergency searches. If a facility has no specialty
+                        details, its specialty fit starts at 50% and is an
+                        estimate, not a verified match.
                       </div>
                       <SourcedCostAndWait research={researchById[facility.id]} />
 
