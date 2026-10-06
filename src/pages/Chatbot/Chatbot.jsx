@@ -29,7 +29,10 @@ import {
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 import { useHospitalSearch } from "../../context/HospitalSearchContext";
-import { isMedicalQuery } from "../../utils/medicalQuery";
+import {
+  isMedicalQuery,
+  normalizeMedicalQuery,
+} from "../../utils/medicalQuery";
 
 import styles from "./Chatbot.module.css";
 
@@ -63,6 +66,31 @@ const LANGUAGES = [
     speech: "pa-IN",
   },
 ];
+
+const AUDIO_MIME_TYPES = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/mp4",
+  "audio/ogg;codecs=opus",
+];
+
+const getAudioExtension = (mimeType) => {
+  const type = mimeType.split(";")[0].toLowerCase();
+
+  if (type === "audio/mp4" || type === "audio/m4a") {
+    return "mp4";
+  }
+
+  if (type === "audio/ogg") {
+    return "ogg";
+  }
+
+  if (type === "audio/wav" || type === "audio/x-wav") {
+    return "wav";
+  }
+
+  return "webm";
+};
 
 /* =========================================================
    QUICK ACTIONS
@@ -217,9 +245,14 @@ function Chatbot() {
 
     utterance.lang = currentLanguage.speech;
 
-    const matchingVoice = window.speechSynthesis
-      .getVoices()
-      .find((voice) => voice.lang.toLowerCase().startsWith(language));
+    const voices = window.speechSynthesis.getVoices();
+    const requestedLocale = currentLanguage.speech.toLowerCase();
+    const matchingVoice =
+      voices.find((voice) => voice.lang.toLowerCase() === requestedLocale) ||
+      voices.find((voice) =>
+        voice.lang.toLowerCase().startsWith(`${language}-`),
+      ) ||
+      voices.find((voice) => voice.default);
 
     if (matchingVoice) {
       utterance.voice = matchingVoice;
@@ -237,8 +270,12 @@ function Chatbot() {
       setIsSpeaking(false);
     };
 
-    utterance.onerror = () => {
+    utterance.onerror = (event) => {
       setIsSpeaking(false);
+
+      if (event.error !== "canceled" && event.error !== "interrupted") {
+        console.error("SPEECH SYNTHESIS ERROR:", event.error);
+      }
     };
 
     window.speechSynthesis.speak(utterance);
@@ -259,6 +296,11 @@ function Chatbot() {
       return;
     }
 
+    if (!("speechSynthesis" in window)) {
+      alert("Text-to-speech is not supported by this browser.");
+      return;
+    }
+
     setIsAudioEnabled(true);
   };
 
@@ -266,7 +308,9 @@ function Chatbot() {
     /\b(compare|comparison|compare hospitals|side[- ]by[- ]side|versus|vs\.?)\b/i.test(value);
 
   const isHospitalSearchRequest = (value) =>
-    /\b(find|locate|nearby|nearest|hospital|clinic|kidney|dialysis|cardiac|cancer|doctor|treatment|emergency|healthcare|budget|₹|rs\.?)\b/i.test(value);
+    /\b(find|locate|nearby|nearest|hospital|clinic|kidney|dialysis|cardiac|cancer|doctor|treatment|emergency|healthcare|budget|₹|rs\.?)\b/i.test(
+      normalizeMedicalQuery(value),
+    );
 
   const NON_MEDICAL_MESSAGE =
     "I’m Vital, a healthcare assistant. I can only help with health, medical reports, treatments, symptoms, hospitals, doctors, and healthcare navigation. Please ask a healthcare-related question.";
@@ -452,6 +496,8 @@ function Chatbot() {
       return;
     }
 
+    let stream;
+
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert("Your browser does not support microphone access.");
@@ -459,17 +505,28 @@ function Chatbot() {
         return;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+      if (typeof MediaRecorder === "undefined") {
+        alert("Your browser does not support voice recording.");
+        return;
+      }
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
 
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/mp4")
-          ? "audio/mp4"
-          : "audio/webm";
-
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const mimeType =
+        typeof MediaRecorder.isTypeSupported === "function"
+          ? AUDIO_MIME_TYPES.find((type) =>
+              MediaRecorder.isTypeSupported(type),
+            )
+          : undefined;
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
 
       audioChunksRef.current = [];
 
@@ -499,7 +556,13 @@ function Chatbot() {
     } catch (error) {
       console.error("MIC ERROR:", error);
 
-      alert("Microphone permission is required for voice input.");
+      stream?.getTracks().forEach((track) => track.stop());
+
+      alert(
+        error.name === "NotAllowedError"
+          ? "Microphone permission is required for voice input."
+          : "Unable to start voice recording in this browser.",
+      );
     }
   };
 
@@ -531,7 +594,7 @@ function Chatbot() {
     try {
       const formData = new FormData();
 
-      const extension = mimeType.includes("mp4") ? "mp4" : "webm";
+      const extension = getAudioExtension(mimeType);
       formData.append("audio", audioBlob, `voice.${extension}`);
 
       formData.append("language", language);
@@ -551,6 +614,8 @@ function Chatbot() {
         setInput((current) =>
           current ? `${current} ${data.text}` : data.text,
         );
+      } else {
+        alert("I couldn't clearly hear speech. Please speak closer to the microphone and try again.");
       }
     } catch (error) {
       console.error("TRANSCRIPTION ERROR:", error);
