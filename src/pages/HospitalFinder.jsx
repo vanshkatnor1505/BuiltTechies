@@ -10,7 +10,10 @@ import {
   searchNearbyHealthcare,
 } from "../services/geoapify";
 import { useHospitalSearch } from "../context/HospitalSearchContext";
-import { isMedicalQuery } from "../utils/medicalQuery";
+import {
+  isMedicalQuery,
+  normalizeMedicalQuery,
+} from "../utils/medicalQuery";
 import HospitalFinderHeader from "../components/HospitalFinder/HospitalFinderHeader";
 import HospitalFinderSearchPanel from "../components/HospitalFinder/HospitalFinderSearchPanel";
 import HospitalFinderToolbar from "../components/HospitalFinder/HospitalFinderToolbar";
@@ -484,6 +487,7 @@ const SEARCH_GROUPS = [
     key: "heart",
     aliases: [
       "heart",
+      "chest pain",
       "cardiac",
       "cardiology",
       "cardiologist",
@@ -507,6 +511,8 @@ const SEARCH_GROUPS = [
     key: "brain",
     aliases: [
       "brain",
+      "headache",
+      "migraine",
       "neurology",
       "neurologist",
       "neurosurgery",
@@ -661,12 +667,7 @@ const SEARCH_GROUPS = [
   },
 ];
 
-const normalize = (value = "") =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9\s:-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+const normalize = (value = "") => normalizeMedicalQuery(value);
 
 function getSearchGroups(query) {
   const normalizedQuery = normalize(query);
@@ -1648,6 +1649,7 @@ export default function HospitalFinder() {
         return;
       }
 
+      const searchTerm = normalizeMedicalQuery(disease) || disease;
       const requestId = ++recommendationRequestId.current;
       setStateRecommendationsLoading(true);
 
@@ -1684,7 +1686,7 @@ export default function HospitalFinder() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              disease,
+              disease: searchTerm,
               state: scope === "state" ? userState : undefined,
             }),
           },
