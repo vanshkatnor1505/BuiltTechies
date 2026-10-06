@@ -80,7 +80,7 @@ mindmap
 | ⭐ **Curated recommendations** | India-wide researched picks, Punjab state-level picks, specialty matching (kidney, cardiology, cancer, neurology, ortho, eye, pediatrics, women's health, general medicine), graceful fallback when live research is unavailable |
 | 🗺️ **Maps and navigation** | Interactive facility map, select from list or map, route requests, Google Maps turn-by-turn handoff, split/list/map views |
 | 🏥 **Research and comparison** | Backend-driven hospital research, session-persisted results, multi-facility comparison across specialties, distance, emergency availability, and research data |
-| 🤖 **Healthcare chatbot** | AI-assisted guidance, PDF/report upload where configured, speech services when credentials are available, explicit error states instead of silent failures |
+| 🤖 **Healthcare chatbot** | AI-assisted guidance, PDF/report upload where configured, Groq speech-to-text for English, Hindi, and Punjabi, and browser-native speech playback using installed voices |
 | 👤 **Account & pages** | Supabase-backed auth and profiles, Home, FAQ, Contact (with local confirmation feedback), Team, Analytics, Terms & Conditions |
 
 ---
