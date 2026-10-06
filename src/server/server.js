@@ -364,9 +364,15 @@ const LANGUAGE_NAMES = {
   pa: "Punjabi",
 };
 
+const STT_LANGUAGES = {
+  en: "en",
+  hi: "hi",
+  pa: "pa",
+};
+
 // These Groq-hosted models are available on the Groq free tier.
 const FREE_TIER_CHAT_MODEL = "openai/gpt-oss-20b";
-const FREE_TIER_STT_MODEL = "whisper-large-v3-turbo";
+const STT_MODEL = process.env.GROQ_STT_MODEL || "whisper-large-v3";
 
 /* =========================================================
    HEALTH CHECK
@@ -500,46 +506,58 @@ app.post(
         });
       }
 
-      const language = req.body.language || "en";
+      const requestedLanguage = String(req.body.language || "en")
+        .trim()
+        .toLowerCase()
+        .split("-")[0];
+      const language = STT_LANGUAGES[requestedLanguage] ? requestedLanguage : "en";
+      const mimeType = req.file.mimetype.split(";")[0].toLowerCase();
+      const audioExtensions = {
+        "audio/webm": "webm",
+        "audio/mp4": "mp4",
+        "audio/m4a": "m4a",
+        "audio/ogg": "ogg",
+        "audio/wav": "wav",
+        "audio/x-wav": "wav",
+        "audio/mpeg": "mp3",
+        "audio/mp3": "mp3",
+      };
+      const extension = audioExtensions[mimeType];
 
-      const extension =
-        req.file.mimetype === "audio/webm"
-          ? "webm"
-          : req.file.mimetype === "audio/mp4"
-            ? "mp4"
-            : req.file.mimetype === "audio/wav"
-              ? "wav"
-              : "webm";
+      if (!extension) {
+        return res.status(400).json({
+          success: false,
+          message: "This audio format is not supported.",
+        });
+      }
 
       const audioFile = new File(
         [req.file.buffer],
         `voice.${extension}`,
         {
-          type: req.file.mimetype,
+          type: mimeType,
         },
       );
 
-      const transcription =
-        await groq.audio.transcriptions.create({
-          file: audioFile,
-
-          model: FREE_TIER_STT_MODEL,
-
-          language:
-            language === "en"
-              ? "en"
-              : language === "hi"
-                ? "hi"
-                : language === "pa"
-                  ? "pa"
-                  : undefined,
-
-          response_format: "json",
-        });
+      const transcription = await groq.audio.transcriptions.create({
+        file: audioFile,
+        model: STT_MODEL,
+        language: STT_LANGUAGES[language],
+        response_format: "verbose_json",
+        temperature: 0,
+      });
+      const segments = transcription.segments || [];
+      const scoredSegments = segments.filter((segment) =>
+        Number.isFinite(segment.no_speech_prob),
+      );
+      const containsSpeech =
+        !scoredSegments.length ||
+        scoredSegments.some((segment) => segment.no_speech_prob < 0.6);
+      const text = containsSpeech ? transcription.text?.trim() || "" : "";
 
       res.json({
         success: true,
-        text: transcription.text || "",
+        text,
         language,
       });
     } catch (error) {
