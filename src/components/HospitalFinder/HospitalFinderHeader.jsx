@@ -24,10 +24,9 @@ function HospitalFinderHeader({
     <header className="hospital-finder-header">
       <div>
         <div className="eyebrow">HEALTHCARE DISCOVERY</div>
-        <h1>Find the right healthcare facility</h1>
+        <h1>Find healthcare near you</h1>
         <p>
-          Search by health problem, treatment, or specialty. We match your
-          requirement with mapped healthcare data around your location.
+          Search hospitals by specialty, treatment, or condition.
         </p>
       </div>
 
