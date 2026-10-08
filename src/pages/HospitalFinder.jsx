@@ -19,6 +19,7 @@ import HospitalFinderSearchPanel from "../components/HospitalFinder/HospitalFind
 import HospitalFinderToolbar from "../components/HospitalFinder/HospitalFinderToolbar";
 
 const DEFAULT_CENTER = [30.7333, 76.7794];
+const MAX_LOCATION_ACCURACY_METERS = 20_000;
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -1575,7 +1576,7 @@ export default function HospitalFinder() {
       lon < -180 ||
       lon > 180 ||
       !Number.isFinite(accuracy) ||
-      accuracy > 5000
+      accuracy > MAX_LOCATION_ACCURACY_METERS
     ) {
       return null;
     }
@@ -1810,7 +1811,7 @@ export default function HospitalFinder() {
         longitude < -180 ||
         longitude > 180 ||
         !Number.isFinite(accuracy) ||
-        accuracy > 5000
+        accuracy > MAX_LOCATION_ACCURACY_METERS
       ) {
         setError(
           "Your device returned a location that may be too inaccurate. Enter your city or a nearby address in “Or choose a location” to search the correct area.",
