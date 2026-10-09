@@ -8,7 +8,6 @@ import Chatbot from "./pages/Chatbot/Chatbot";
 import HospitalComparison from "./pages/HospitalComparison/HospitalComparison";
 import FAQ from "./pages/FAQ/FAQ";
 import Contact from "./pages/Contact/Contact";
-import Analytics from "./pages/Analytics/Analytics";
 
 function App() {
   return (
@@ -21,7 +20,6 @@ function App() {
         <Route path="/compare" element={<HospitalComparison />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/analytics" element={<Analytics />} />
 
         <Route path="/chatbot" element={<Chatbot />} />
 
