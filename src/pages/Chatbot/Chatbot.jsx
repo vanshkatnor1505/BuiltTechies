@@ -29,6 +29,7 @@ import {
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 import { useHospitalSearch } from "../../context/HospitalSearchContext";
+import { useLanguage } from "../../i18n";
 import {
   isMedicalQuery,
   normalizeMedicalQuery,
@@ -172,6 +173,7 @@ function SourcedMetric({ research, metricKey, label }) {
 function Chatbot() {
   const navigate = useNavigate();
   const { searchState } = useHospitalSearch();
+  const { language, setLanguage } = useLanguage();
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
 
   const [input, setInput] = useState("");
@@ -181,8 +183,6 @@ function Chatbot() {
   const [isTyping, setIsTyping] = useState(false);
 
   const [showMatches, setShowMatches] = useState(false);
-
-  const [language, setLanguage] = useState("en");
 
   const [showLanguages, setShowLanguages] = useState(false);
 
