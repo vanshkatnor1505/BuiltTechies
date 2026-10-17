@@ -7,6 +7,7 @@ import IconButton from "../../common/IconButton/IconButton";
 import ThemeToggle from "../../common/ThemeToggle/ThemeToggle";
 import AuthControls from "../../auth/AuthControls/AuthControls";
 import { useTheme } from "../../../context/ThemeContext";
+import { LANGUAGES, useLanguage } from "../../../i18n";
 
 import styles from "./Navbar.module.css";
 
@@ -34,6 +35,7 @@ function Navbar({
   className = "",
 }) {
   const { mode } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("");
 
@@ -234,6 +236,21 @@ function Navbar({
           ================================= */}
 
           <div className={styles.desktopActions}>
+            <label className={styles.languageControl}>
+              <span className={styles.languageLabel}>Language</span>
+              <select
+                className={styles.languageSelect}
+                value={language}
+                onChange={(event) => setLanguage(event.target.value)}
+              >
+                {LANGUAGES.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.nativeLabel}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <AuthControls />
 
             <ThemeToggle />
@@ -367,6 +384,22 @@ function Navbar({
                 <ThemeToggle />
               </div>
             </div>
+
+            <label className={styles.mobileLanguage}>
+              <span className={styles.languageLabel}>Language</span>
+              <select
+                className={styles.languageSelect}
+                value={language}
+                onChange={(event) => setLanguage(event.target.value)}
+                tabIndex={menuOpen ? 0 : -1}
+              >
+                {LANGUAGES.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.nativeLabel}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             {/* ================================
                 MOBILE CTA
