@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
+import ResearchSources from "../../components/HospitalFinder/ResearchSources";
 import { useHospitalSearch } from "../../context/HospitalSearchContext";
 import "./HospitalComparison.css";
 
@@ -57,6 +58,12 @@ const comparisonRows = [
   ["Treatment cost range", (facility) => <SourcedMetric facility={facility} metricKey="treatmentCost" />],
   ["Wait time", (facility) => <SourcedMetric facility={facility} metricKey="waitTime" />],
   ["Insurance / schemes", (facility) => facility.research?.metrics?.insurance || "Data not available"],
+  ["Research sources", (facility) => (
+    <ResearchSources
+      sources={facility.research?.sources}
+      emptyMessage="Research this hospital to load source links."
+    />
+  )],
 ];
 
 function HospitalComparison() {
@@ -143,7 +150,12 @@ function HospitalComparison() {
   }, [selectedFacilities, searchState.query, setSearchState]);
 
   const researchFacility = async (facility) => {
-    if (researchById[facility.id] || loadingId) return;
+    if (
+      researchById[facility.id]?.researchComplete ||
+      researchById[facility.id]?.searched ||
+      researchById[facility.id]?.sources?.length > 0 ||
+      loadingId
+    ) return;
     setLoadingId(facility.id);
     try {
       const response = await fetch(`${API_URL}/api/hospital-research`, {
@@ -163,7 +175,10 @@ function HospitalComparison() {
       if (!response.ok) throw new Error(data.message || "Research failed.");
       setSearchState((current) => ({
         ...current,
-        researchById: { ...(current.researchById || {}), [facility.id]: data },
+        researchById: {
+          ...(current.researchById || {}),
+          [facility.id]: { ...data, researchComplete: true },
+        },
       }));
     } catch (error) {
       const message = error instanceof TypeError
@@ -302,15 +317,15 @@ function HospitalComparison() {
                         {selectedFacilities.map((facility) => (
                           <td key={facility.id}>
                             <button className="research-button" onClick={() => researchFacility(facility)}>
-                              {loadingId === facility.id ? "Researching..." : facility.research ? "Research checked" : "Research hospital"}
+                              {loadingId === facility.id
+                                ? "Researching..."
+                                : facility.research?.researchComplete || facility.research?.searched
+                                  || facility.research?.sources?.length > 0
+                                  ? "Research checked"
+                                  : "Research hospital"}
                             </button>
                             {facility.research?.error && <small className="research-error">{facility.research.error}</small>}
                             {facility.research?.summary && <p className="research-summary">{facility.research.summary}</p>}
-                            {facility.research?.sources?.length > 0 && (
-                              <div className="research-sources">
-                                {facility.research.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title || "Source"}</a>)}
-                              </div>
-                            )}
                           </td>
                         ))}
                       </tr>
