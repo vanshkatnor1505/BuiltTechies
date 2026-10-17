@@ -660,6 +660,58 @@
   font-weight: 750;
 }
 
+.facility-metrics .match-info {
+  position: relative;
+  display: inline-flex;
+  margin-left: 4px;
+  padding: 0;
+  background: transparent;
+  vertical-align: middle;
+}
+
+.match-info-button {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--hf-muted);
+  cursor: help;
+}
+
+.match-info-button:hover,
+.match-info-button:focus-visible {
+  color: var(--hf-primary);
+  outline: 2px solid var(--hf-primary);
+  outline-offset: 2px;
+}
+
+.match-info-tooltip {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  bottom: calc(100% + 9px);
+  display: none;
+  width: min(300px, calc(100vw - 48px));
+  padding: 11px 13px;
+  border: 1px solid var(--hf-border);
+  border-radius: 10px;
+  background: var(--hf-surface);
+  box-shadow: 0 8px 24px rgba(20, 50, 55, 0.18);
+  color: var(--hf-text);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+.match-info:hover .match-info-tooltip,
+.match-info:focus-within .match-info-tooltip {
+  display: block;
+}
+
 .match-circle {
   flex-shrink: 0;
   display: flex;
@@ -686,15 +738,6 @@
 
 .match-circle span {
   font-size: 9px;
-}
-
-.facility-data-note {
-  margin-top: 11px;
-  padding-top: 9px;
-  border-top: 1px solid var(--hf-border);
-  color: var(--hf-muted);
-  font-size: 9px;
-  line-height: 1.5;
 }
 
 .sourced-cost-wait {
@@ -1068,6 +1111,47 @@
 .facility-research-status.is-error {
   background: #fef2f2;
   color: #b91c1c;
+}
+
+.facility-research-sources {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--hf-border);
+  border-radius: 10px;
+  background: var(--hf-surface-2);
+}
+
+.facility-research-sources h3 {
+  margin: 0;
+  color: var(--hf-text);
+  font-size: 12px;
+}
+
+.research-source-list {
+  display: grid;
+  gap: 7px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.research-source-list a {
+  color: var(--hf-primary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.research-source-list a:hover {
+  text-decoration: underline;
+}
+
+.research-source-empty {
+  margin: 8px 0 0;
+  color: var(--hf-muted);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .state-recommendations {
@@ -1566,11 +1650,6 @@
 
 .facility-metrics span {
   font-size: 10px;
-}
-
-.facility-data-note {
-  color: var(--hf-muted);
-  font-size: 9px;
 }
 
 @media (max-width: 700px) {
