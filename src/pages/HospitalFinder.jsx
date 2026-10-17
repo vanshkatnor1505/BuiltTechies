@@ -14,14 +14,18 @@ import {
   isMedicalQuery,
   normalizeMedicalQuery,
 } from "../utils/medicalQuery";
+import { Info } from "lucide-react";
 import HospitalFinderHeader from "../components/HospitalFinder/HospitalFinderHeader";
 import HospitalFinderSearchPanel from "../components/HospitalFinder/HospitalFinderSearchPanel";
 import HospitalFinderToolbar from "../components/HospitalFinder/HospitalFinderToolbar";
+import ResearchSources from "../components/HospitalFinder/ResearchSources";
 
 const DEFAULT_CENTER = [30.7333, 76.7794];
 const MAX_LOCATION_ACCURACY_METERS = 20_000;
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const MATCH_SCORE_HELP =
+  "Match uses listed specialty keywords and emergency status for emergency searches; distance is shown separately and does not affect compatibility. Specialty fit is weighted 70%, and emergency evidence 10% for emergency searches. If a facility has no specialty details, its specialty fit starts at 50% and is an estimate, not a verified match.";
 
 const INDIA_SPECIALIST_HOSPITALS = {
   kidney: [
@@ -455,7 +459,7 @@ function getIndiaHospitalFacilities(
       address: hospital.address || (location ? `${location}, India` : "Location not provided"),
       specialties,
       emergency,
-      match: calculateRequirementMatch(tags, disease, distanceKm, emergency),
+      match: calculateRequirementMatch(tags, disease, emergency),
       distanceKm,
       travelMinutes: null,
       website: hospital.sourceUrl,
@@ -747,7 +751,6 @@ function getSpecialties(tags = {}) {
 function calculateRequirementMatch(
   tags = {},
   query = "",
-  distanceKm = null,
   emergency = false,
 ) {
   const normalizedQuery = normalize(query);
@@ -771,7 +774,7 @@ function calculateRequirementMatch(
     tags.healthcare && tags.healthcare !== "no",
   );
   const genericFacilityMatch =
-    (normalizedQuery === "hospital" || normalizedQuery === "hospitals") &&
+    groups.some((group) => group.key === "general") &&
     (tags.amenity === "hospital" || tags.healthcare === "hospital");
 
   if (!hasSpecialtyEvidence && !genericFacilityMatch && !isHealthcareFacility) {
@@ -783,16 +786,7 @@ function calculateRequirementMatch(
     : hasSpecialtyEvidence
       ? 0
       : 50;
-  const dimensions = [
-    { score: specialtyScore, weight: 70 },
-  ];
-
-  if (Number.isFinite(distanceKm)) {
-    dimensions.push({
-      score: 100 / (1 + distanceKm / 10),
-      weight: 20,
-    });
-  }
+  const dimensions = [{ score: specialtyScore, weight: 70 }];
 
   if (groups.some((group) => group.key === "emergency")) {
     dimensions.push({ score: emergency ? 100 : 0, weight: 10 });
@@ -955,7 +949,7 @@ function transformGeoapifyFacility(feature, userLocation, searchQuery) {
 
     travelMinutes: estimateTravelTime(distanceKm),
 
-    match: calculateRequirementMatch(tags, searchQuery, distanceKm, emergency),
+    match: calculateRequirementMatch(tags, searchQuery, emergency),
   };
 }
 
@@ -1195,29 +1189,47 @@ function HospitalFinderResultsPanel({
                           <span>~{facility.travelMinutes} min drive</span>
                         )}
                         <span>
-                          {Number.isFinite(facility.match)
+                          {Number.isFinite(facility.match) && facility.match > 0
                             ? `${facility.match}% calculated match`
-                            : "Match data unavailable"}
+                            : facility.match === 0
+                              ? "No specialty keyword match"
+                              : "Match data unavailable"}
+                          <span className="match-info">
+                            <button
+                              type="button"
+                              className="match-info-button"
+                              aria-label="How is match calculated?"
+                              aria-describedby={`match-info-${facility.id}`}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <Info size={13} aria-hidden="true" />
+                            </button>
+                            <span
+                              className="match-info-tooltip"
+                              id={`match-info-${facility.id}`}
+                              role="tooltip"
+                            >
+                              {MATCH_SCORE_HELP}
+                            </span>
+                          </span>
                         </span>
                       </div>
                     </div>
 
                     <div className="match-circle">
                       <strong>
-                        {Number.isFinite(facility.match) ? facility.match : "—"}
+                        {Number.isFinite(facility.match) && facility.match > 0
+                          ? facility.match
+                          : "—"}
                       </strong>
-                      <span>{Number.isFinite(facility.match) ? "%" : ""}</span>
+                      <span>
+                        {Number.isFinite(facility.match) && facility.match > 0
+                          ? "%"
+                          : ""}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="facility-data-note">
-                    Match uses listed specialty keywords, available distance,
-                    and emergency status for emergency searches. Specialty fit
-                    is weighted 70%, distance 20% (half-score at 10 km), and
-                    emergency evidence 10% for emergency searches. If a
-                    facility has no specialty details, its specialty fit starts
-                    at 50% and is marked as an estimate, not a verified match.
-                  </div>
                   <SourcedCostAndWait research={researchById[facility.id]} />
 
                   <div
@@ -1298,6 +1310,18 @@ function HospitalFinderResultsPanel({
                         </>
                       )}
                     </div>
+                  )}
+                  {(researchById[facility.id]?.researchComplete ||
+                    researchById[facility.id]?.searched ||
+                    researchById[facility.id]?.sources?.length > 0) &&
+                    !researchById[facility.id]?.error && (
+                    <section className="facility-research-sources" aria-label="Research sources">
+                      <h3>Research sources</h3>
+                      <ResearchSources
+                        sources={researchById[facility.id].sources}
+                        emptyMessage="No source links were returned for this research."
+                      />
+                    </section>
                   )}
                   {schemeFilter === "pmjay-candidates" && (
                     <p className="scheme-research-status">
@@ -1521,19 +1545,12 @@ function HospitalComparisonPanel({ compareFacilities, clearComparison }) {
               ],
               [
                 "Research sources",
-                (facility) =>
-                  facility.research?.sources?.length
-                    ? facility.research.sources.map((source, index) => (
-                        <a
-                          key={source.url || index}
-                          href={source.url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Source {index + 1}
-                        </a>
-                      ))
-                    : "Data not available",
+                (facility) => (
+                  <ResearchSources
+                    sources={facility.research?.sources}
+                    emptyMessage="Verify data to load research sources."
+                  />
+                ),
               ],
             ].map(([label, value]) => (
               <tr key={label}>
@@ -1996,7 +2013,10 @@ export default function HospitalFinder() {
   const researchFacility = async (facility) => {
     const existingResearch = researchById[facility.id];
 
-    if ((existingResearch && !existingResearch.error) || researchLoadingId) {
+    if (
+      (existingResearch?.researchComplete || existingResearch?.searched) ||
+      researchLoadingId
+    ) {
       return;
     }
 
@@ -2029,7 +2049,7 @@ export default function HospitalFinder() {
         ...current,
         researchById: {
           ...(current.researchById || {}),
-          [facility.id]: data,
+          [facility.id]: { ...data, researchComplete: true },
         },
       }));
     } catch (researchError) {
@@ -2639,31 +2659,48 @@ export default function HospitalFinder() {
                             )}
 
                             <span>
-                              {Number.isFinite(facility.match)
+                              {Number.isFinite(facility.match) && facility.match > 0
                                 ? `${facility.match}% calculated match`
-                                : "Match data unavailable"}
+                                : facility.match === 0
+                                  ? "No specialty keyword match"
+                                  : "Match data unavailable"}
+                              <span className="match-info">
+                                <button
+                                  type="button"
+                                  className="match-info-button"
+                                  aria-label="How is match calculated?"
+                                  aria-describedby={`match-info-${facility.id}`}
+                                  onClick={(event) => event.stopPropagation()}
+                                >
+                                  <Info size={13} aria-hidden="true" />
+                                </button>
+                                <span
+                                  className="match-info-tooltip"
+                                  id={`match-info-${facility.id}`}
+                                  role="tooltip"
+                                >
+                                  {MATCH_SCORE_HELP}
+                                </span>
+                              </span>
                             </span>
                           </div>
                         </div>
 
                         <div className="match-circle">
                           <strong>
-                            {Number.isFinite(facility.match) ? facility.match : "—"}
+                            {Number.isFinite(facility.match) && facility.match > 0
+                              ? facility.match
+                              : "—"}
                           </strong>
 
-                          <span>{Number.isFinite(facility.match) ? "%" : ""}</span>
+                          <span>
+                            {Number.isFinite(facility.match) && facility.match > 0
+                              ? "%"
+                              : ""}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="facility-data-note">
-                        Match uses listed specialty keywords, available
-                        distance, and emergency status for emergency searches.
-                        Specialty fit is weighted 70%, distance 20%
-                        (half-score at 10 km), and emergency evidence 10% for
-                        emergency searches. If a facility has no specialty
-                        details, its specialty fit starts at 50% and is an
-                        estimate, not a verified match.
-                      </div>
                       <SourcedCostAndWait research={researchById[facility.id]} />
 
                       <div
@@ -3015,19 +3052,12 @@ export default function HospitalFinder() {
 
                     [
                       "Research sources",
-                      (facility) =>
-                        facility.research?.sources?.length
-                          ? facility.research.sources.map((source, index) => (
-                              <a
-                                key={source.url || index}
-                                href={source.url}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Source {index + 1}
-                              </a>
-                            ))
-                          : "Data not available",
+                      (facility) => (
+                        <ResearchSources
+                          sources={facility.research?.sources}
+                          emptyMessage="Verify data to load research sources."
+                        />
+                      ),
                     ],
                   ].map(([label, value]) => (
                     <tr key={label}>
