@@ -330,6 +330,9 @@ flowchart TB
 - Default navigation is sticky and glass-styled.
 - Desktop navigation uses muted text and a teal underline for hover/active state.
 - The primary CTA uses the accent gradient or primary accent.
+- Keep the English, Hindi, and Punjabi language selectors reachable in desktop
+  navigation and the mobile menu. Changing language uses the bundled catalog
+  and must not require a translation-service request.
 - Preserve a clear mobile menu and do not hide essential navigation behind hover-only interactions.
 
 ### Buttons
@@ -363,6 +366,11 @@ flowchart TB
 - Loading states should appear before empty states while requests are active.
 - Result counts and data-source labels should use compact metadata styling.
 - Facility cards should prioritize name, location, specialty, match, distance, and actionable controls.
+- Keep distance distinct from the specialty compatibility score. Put score
+  methodology in an info control on the card rather than adding a long
+  explanation to the card body.
+- Show available research source titles as links on facility cards and
+  comparison views; do not render non-HTTP(S) URLs.
 - Map and list views should preserve the same selected-facility state.
 
 ### Alerts and status messages
@@ -425,6 +433,8 @@ Visual design must support accessible interaction:
 - Use semantic headings in order.
 - Associate labels with form controls.
 - Give icon-only controls accessible names.
+- Make compatibility help available on keyboard focus as well as pointer
+  hover; tooltips must not be hover-only.
 - Ensure interactive targets are comfortably sized.
 - Preserve readable text when ambient gradients or images are present.
 - Respect reduced motion preferences.
