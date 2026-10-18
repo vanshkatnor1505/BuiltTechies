@@ -10,8 +10,10 @@ The product combines:
 
 - Location-aware nearby healthcare discovery.
 - Curated India-wide and Punjab state-level recommendations.
-- Facility comparison and hospital research.
+- Facility comparison and hospital research with source links.
 - Interactive maps and route support.
+- English, Hindi, and Punjabi interface translations from a bundled catalog.
+- Specialty-based compatibility scoring that does not use distance.
 - An AI-assisted healthcare chatbot.
 - Authentication, profile, FAQ, contact, team, and analytics experiences.
 
@@ -32,6 +34,7 @@ flowchart LR
     G --> I[View map and route]
     G --> J[Contact provider]
     A --> K[Healthcare assistant]
+    A --> L[Choose English Hindi or Punjabi]
 ```
 
 The primary value chain is from a plain-language healthcare need to a
@@ -80,11 +83,13 @@ flowchart TB
 ## Product goals
 
 1. Reduce the effort required to discover relevant healthcare facilities.
-2. Make location and distance part of the decision process.
+2. Show location and distance separately from specialty compatibility.
 3. Present recommendations in a clear, comparable format.
-4. Give users a practical way to research and navigate to a facility.
-5. Make AI assistance useful while clearly communicating its limitations.
-6. Keep the codebase modular enough for long-term feature development.
+4. Give users a practical way to research facilities and inspect sources.
+5. Make the interface available in English, Hindi, and Punjabi without relying
+   on a translation service.
+6. Make AI assistance useful while clearly communicating its limitations.
+7. Keep the codebase modular enough for long-term feature development.
 
 ## Feature areas
 
@@ -95,7 +100,9 @@ flowchart TB
 | India research | Provides curated specialist starting points |
 | Punjab state search | Shows a focused list of top Punjab hospitals |
 | Comparison | Helps users compare selected facilities |
-| Research | Enriches hospital cards with additional information |
+| Research | Enriches hospital cards and comparison views with information and source links |
+| Compatibility | Specialty fit has weight 70; emergency evidence has weight 10 for emergency searches, with included dimensions normalized; distance is separate |
+| Language | Provides bundled English, Hindi, and Punjabi UI translations and remembers the selection locally |
 | Maps | Shows facilities and supports route discovery |
 | Chatbot | Provides guided healthcare information and report assistance |
 | Accounts | Supports authentication and profile-related flows |
@@ -121,6 +128,14 @@ CurePulse is not:
 Recommendations and external data should be treated as discovery aids. Users
 must confirm medical, availability, pricing, and emergency details directly
 with the facility.
+
+The language catalog is bundled with the frontend, so switching the interface
+language does not require a translation API or network request once the app
+has loaded. The selected language is stored locally in the browser. This does
+not make live searches, hospital research, AI responses, or speech
+transcription available offline; these still depend on their configured
+services. Research sources appear when valid links are returned by the
+research flow.
 
 ## Application routes
 
@@ -163,8 +178,8 @@ sequenceDiagram
     UI-->>User: Show facilities, map, and actions
     User->>UI: Compare or research facility
     UI->>API: Request hospital research
-    API-->>UI: Research result or clear error
-    UI-->>User: Show decision-support information
+    API-->>UI: Research result, source links, or clear error
+    UI-->>User: Show decision-support information and citations
 ```
 
 ## Success indicators
