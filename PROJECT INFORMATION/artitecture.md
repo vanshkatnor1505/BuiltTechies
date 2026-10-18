@@ -84,7 +84,8 @@ flowchart LR
 | --- | --- |
 | `src/pages` | Route-level screens and feature composition |
 | `src/components` | Reusable UI and composed layout components |
-| `src/context` | Shared authentication, theme, and search state |
+| `src/context` | Shared authentication, theme, search, and language state |
+| `src/i18n.js` | Bundled English, Hindi, and Punjabi translations with a locally persisted language selection |
 | `src/services` | External service clients such as Geoapify |
 | `src/utils` | Focused reusable helpers and domain logic |
 | `src/server` | Express routes, provider calls, and file processing |
@@ -134,6 +135,7 @@ flowchart TB
         AUTH["AuthContext\nAuthentication & profile"]
         THEME["ThemeContext\nActive theme & display mode"]
         HSC["HospitalSearchContext\nFacility results, comparison IDs, research"]
+        LANG["LanguageProvider\nBundled EN / HI / PA catalog"]
     end
 
     subgraph Local["📍 Page-local state"]
@@ -155,6 +157,7 @@ flowchart TB
 - **`AuthContext`** manages authentication and profile state.
 - **`ThemeContext`** manages the active visual theme and display mode.
 - **`HospitalSearchContext`** shares facility results, comparison IDs, and research results between the finder and comparison pages.
+- **`LanguageProvider`** applies the bundled English, Hindi, and Punjabi interface translations and persists the selected language in browser `localStorage`; translation does not call an external service.
 - **Page-local state** controls filters, selected facilities, loading indicators, errors, map view, routes, and form status.
 
 > This keeps global state limited to information that genuinely crosses page boundaries.
@@ -172,7 +175,7 @@ flowchart LR
 
     BE["Backend response"] -->|"Validate before use"| CONSUME["Consumed by frontend"]
 
-    RSCH["Hospital research result"] -->|"Stored by facility ID"| CTX2["Shared context"]
+    RSCH["Hospital research result + sources"] -->|"Stored by facility ID"| CTX2["Shared context"]
     CTX2 --> CARD["Facility card"]
     CTX2 --> COMP2["Comparison page"]
 
@@ -185,7 +188,7 @@ flowchart LR
 - Geoapify data is transformed into a **normalized facility object** before it is rendered.
 - Backend responses are **checked before their data is consumed**.
 - Curated Punjab hospitals use the **same facility model** as live results.
-- Hospital research is **stored by facility ID** so cards and comparison can reuse it.
+- Hospital research and its source titles/links are **stored by facility ID** so cards and comparison can reuse them.
 - Provider credentials **remain on the backend**.
 
 ---
