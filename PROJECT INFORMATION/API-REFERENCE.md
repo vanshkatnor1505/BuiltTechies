@@ -162,7 +162,21 @@ sequenceDiagram
 }
 ```
 
-The result is stored by facility ID in the shared hospital-search context so the facility card and comparison page can use it.
+The response includes a `sources` array of `{ title, url }` objects when
+research sources are available. With configured research, these are the
+title/link pairs returned by the provider. Without a research provider, the
+response may instead include the hospital website supplied in the request as a
+source; if neither is available, `sources` is empty. The frontend validates
+source URLs and displays valid HTTP(S) links on the facility card and
+comparison views.
+
+The complete response can also include `metrics`, `metricSources`,
+`metricEstimates`, `summary`, `reviews`, and `images`. Estimates are separate
+from source-backed metrics. A successful response with `searched: false`
+indicates that live web research was not run.
+
+The research result is stored by facility ID in the shared hospital-search
+context so the facility card and comparison page can use it.
 
 ---
 
@@ -185,4 +199,6 @@ The result is stored by facility ID in the shared hospital-search context so the
 - ✅ Request and response data is validated before rendering.
 - ⏳ Async operations expose loading, empty, success, and error states.
 - ⚠️ Provider failures produce explicit user-facing errors or clearly labeled curated fallbacks.
+- 🚦 All backend routes, including health checks, are limited to 100 requests per IP per minute. Provider-heavy chat, recommendation, research, and estimate endpoints have an additional shared limit of 20 requests per IP per minute; transcription is limited to 10 and report analysis to 5 per IP per minute. Responses include standard rate-limit headers.
+- ℹ️ Limits use the default in-memory store and are per server process. Multi-instance deployments should configure a shared rate-limit store so limits apply consistently across instances.
 - 📄 The full implementation is in [`src/server/server.js`](../src/server/server.js).
