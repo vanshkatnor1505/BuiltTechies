@@ -52,6 +52,7 @@ flowchart TB
         AUTH["AuthContext\nAuth & profile state"]
         THEME["ThemeContext\ndata-theme / data-mode\nattributes → CSS tokens"]
         HSC["HospitalSearchContext\nSurvives finder ↔ comparison"]
+        LANG["LanguageProvider\nEnglish / Hindi / Punjabi"]
     end
 
     subgraph HSCDetail["HospitalSearchContext holds"]
@@ -83,6 +84,7 @@ flowchart TB
 | **`AuthContext`** | Authentication and profile-related state. Shared navigation controls use this to render the correct signed-in / signed-out experience. |
 | **`ThemeContext`** | The active visual theme and mode. Applied via `data-theme` and `data-mode` attributes consumed by the CSS token system. |
 | **`HospitalSearchContext`** | Search state that needs to survive between the finder and comparison experiences — query, facility results, comparison IDs, research results by facility ID, and last-update metadata. |
+| **`LanguageProvider`** | The selected English, Hindi, or Punjabi interface language. Uses the bundled translation catalog and stores the selection in browser `localStorage`; switching languages does not call a translation API. |
 | **Local page state** | Transient concerns: loading/error state, filters/sorting, selected facility, current view, route geometry, form status. |
 
 ---
@@ -116,6 +118,14 @@ sequenceDiagram
 6. Results are filtered by radius and user-selected criteria.
 7. The search context is updated for comparison and later navigation.
 8. The list and map render the same normalized facility objects.
+
+### Compatibility and distance
+
+Compatibility uses listed specialty keyword evidence (weight 70) and
+emergency evidence (weight 10) for emergency searches; included dimensions
+are normalized. Distance is not an input to the score and remains available
+separately for display, filtering, and sorting. When specialty details are
+absent, specialty fit starts at 50% and is an estimate, not a verified match.
 
 ---
 
@@ -180,7 +190,7 @@ sequenceDiagram
     FE->>BE: Send name, address, website
     BE->>P: Call configured research providers
     P-->>BE: Research data
-    BE-->>FE: Normalized data or explicit error
+    BE-->>FE: Normalized data, source links, or explicit error
     FE->>CTX: Store result by facility ID
     CTX-->>FE: Facility card & comparison view render stored result
 ```
@@ -190,7 +200,12 @@ sequenceDiagram
 3. The backend calls configured research providers.
 4. The backend returns normalized research data or an explicit error.
 5. The frontend stores the result by facility ID in search context.
-6. The facility card and comparison view can render the stored result.
+6. The facility card and comparison view can render the stored result and its
+   source titles/links. Only valid HTTP(S) links are rendered.
+
+The research request requires the backend and any configured provider. The
+bundled interface translations do not; language selection is independent of
+the research flow.
 
 ---
 
