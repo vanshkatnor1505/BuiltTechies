@@ -28,6 +28,17 @@ const groq = new Groq({
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const AUTH_REQUIRED = process.env.REQUIRE_SUPABASE_SESSION === "true";
 
+const apiRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many API requests. Please wait a minute before trying again.",
+  },
+});
+
 const aiRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
@@ -136,6 +147,7 @@ app.use(
   }),
 );
 
+app.use(apiRateLimiter);
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/health", (req, res) => {
@@ -145,7 +157,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.post("/api/state-hospital-recommendations", async (req, res) => {
+app.post("/api/state-hospital-recommendations", aiRateLimiter, async (req, res) => {
     try {
       const { disease, state } = req.body;
       if (!disease || typeof disease !== "string") {
@@ -1048,7 +1060,7 @@ app.get("/api/google-place-photo", async (req, res) => {
   }
 });
 
-app.post("/api/hospital-research", async (req, res) => {
+app.post("/api/hospital-research", aiRateLimiter, async (req, res) => {
   try {
     const { name, address = "", website = "", context = {} } = req.body;
     if (!name || typeof name !== "string") {
