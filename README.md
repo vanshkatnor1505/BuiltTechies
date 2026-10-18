@@ -48,6 +48,7 @@ mindmap
       Nearby search via geolocation
       Filter by radius, type, emergency
       Sort by match, distance, name
+      Specialty compatibility score excludes distance
     Curated recommendations
       India-wide hospital picks
       Punjab state-level picks
@@ -60,8 +61,13 @@ mindmap
       List / map / split views
     Research and comparison
       Backend hospital research
-      Session-saved results
+      Saved research sources and citations
+      Research shared with comparison
       Side-by-side comparison
+    Language support
+      English, Hindi, Punjabi
+      Offline UI translations
+      Language saved across reloads
     Healthcare chatbot
       AI-assisted guidance
       PDF / report upload
@@ -79,9 +85,33 @@ mindmap
 | 🔎 **Healthcare discovery** | Search by condition, treatment, specialty, or care type; nearby search via browser geolocation; filter by radius, facility type, emergency availability; sort by match, distance, or name; explicit loading/empty/error/success states |
 | ⭐ **Curated recommendations** | India-wide researched picks, Punjab state-level picks, specialty matching (kidney, cardiology, cancer, neurology, ortho, eye, pediatrics, women's health, general medicine), graceful fallback when live research is unavailable |
 | 🗺️ **Maps and navigation** | Interactive facility map, select from list or map, route requests, Google Maps turn-by-turn handoff, split/list/map views |
-| 🏥 **Research and comparison** | Backend-driven hospital research, session-persisted results, multi-facility comparison across specialties, distance, emergency availability, and research data |
+| 🏥 **Research and comparison** | Backend-driven hospital research, source links shown on facility cards and comparison views, saved research shared across pages, multi-facility comparisons |
+| 📊 **Compatibility scoring** | Specialty keyword compatibility; emergency evidence participates in emergency searches; distance remains a separate filter/sort/display value and does not affect the match score |
+| 🌐 **Language support** | English, Hindi, and Punjabi UI translations are bundled locally, available without a translation service, selectable on desktop/mobile, and remembered across reloads |
 | 🤖 **Healthcare chatbot** | AI-assisted guidance, PDF/report upload where configured, Groq speech-to-text for English, Hindi, and Punjabi, and browser-native speech playback using installed voices |
 | 👤 **Account & pages** | Supabase-backed auth and profiles, Home, FAQ, Contact (with local confirmation feedback), Team, Analytics, Terms & Conditions |
+
+### Language and connectivity behavior
+
+The English, Hindi, and Punjabi interface catalog is bundled in the frontend.
+Changing the site language does not call a translation service, and the
+selection is stored in browser `localStorage`. Once the frontend has loaded,
+language selection and UI translation run locally without a network request.
+This does not make network-dependent features available offline: AI answers,
+live hospital research, Geoapify searches, and speech transcription still
+depend on their configured services and network access.
+
+### Match score and research sources
+
+The hospital compatibility score is based on listed specialty keyword
+evidence (weight 70) and, for emergency searches, emergency evidence (weight
+10; the included dimensions are normalized). Distance is shown independently
+and can be used for filtering or sorting, but it is not an input to
+compatibility. If the facility has no specialty details, its specialty fit
+starts at 50% and is an estimate rather than a verified match. Research
+sources are linked by their returned titles on facility cards and in
+comparison views; sources are displayed only when research returns valid
+HTTP(S) links.
 
 ---
 
@@ -198,6 +228,7 @@ flowchart LR
 ├── src/
 │   ├── components/          # Reusable and composed UI components
 │   ├── context/              # Shared React state and providers
+│   ├── i18n.js               # Offline language catalog and persisted selection
 │   ├── pages/                 # Route-level screens and feature flows
 │   ├── services/              # External API/service clients
 │   ├── utils/                  # Focused reusable helpers
