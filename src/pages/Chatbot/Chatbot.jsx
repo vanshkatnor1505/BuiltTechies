@@ -166,6 +166,137 @@ function SourcedMetric({ research, metricKey, label }) {
   );
 }
 
+function parseReportSections(content) {
+  const sections = [];
+  let currentSection = null;
+
+  String(content || "")
+    .split(/\r?\n/)
+    .forEach((line) => {
+      const headingMatch = line.match(
+        /^\s*(?:#{1,3}\s*)?(?:\*\*)?([1-7])[.)]\s+(.+?)(?:\*\*)?\s*$/,
+      );
+      const headingNumber = Number(headingMatch?.[1]);
+
+      if (headingMatch && headingNumber === sections.length + 1) {
+        currentSection = {
+          title: headingMatch[2]
+            .replace(/^\*+|\*+$/g, "")
+            .replace(/:\s*$/, "")
+            .trim(),
+          content: [],
+        };
+        sections.push(currentSection);
+        return;
+      }
+
+      if (!currentSection) {
+        currentSection = { title: "Report analysis", content: [] };
+        sections.push(currentSection);
+      }
+
+      currentSection.content.push(line);
+    });
+
+  return sections.map((section) => ({
+    ...section,
+    content: section.content.join("\n").trim(),
+  }));
+}
+
+function ReportInlineText({ text }) {
+  return String(text)
+    .split(/(\*\*.+?\*\*)/g)
+    .map((part, index) =>
+      part.startsWith("**") && part.endsWith("**") ? (
+        <strong key={index}>{part.slice(2, -2)}</strong>
+      ) : (
+        part
+      ),
+    );
+}
+
+function ReportSectionContent({ content }) {
+  const blocks = [];
+  let paragraphLines = [];
+  let listItems = [];
+  let listType = null;
+
+  const flushParagraph = () => {
+    if (paragraphLines.length) {
+      blocks.push({
+        type: "paragraph",
+        content: paragraphLines.join(" "),
+      });
+      paragraphLines = [];
+    }
+  };
+
+  const flushList = () => {
+    if (listItems.length) {
+      blocks.push({ type: listType, items: listItems });
+      listItems = [];
+      listType = null;
+    }
+  };
+
+  String(content || "")
+    .split(/\r?\n/)
+    .forEach((line) => {
+      const trimmedLine = line.trim();
+      const listMatch = trimmedLine.match(/^(?:[-*•]\s+|\d+[.)]\s+)(.+)$/);
+
+      if (!trimmedLine) {
+        flushParagraph();
+        flushList();
+        return;
+      }
+
+      if (listMatch) {
+        flushParagraph();
+        const nextListType = /^\d+[.)]\s+/.test(trimmedLine)
+          ? "ordered"
+          : "unordered";
+
+        if (listType && listType !== nextListType) {
+          flushList();
+        }
+
+        listType = nextListType;
+        listItems.push(listMatch[1]);
+        return;
+      }
+
+      flushList();
+      paragraphLines.push(trimmedLine);
+    });
+
+  flushParagraph();
+  flushList();
+
+  return blocks.map((block, index) => {
+    if (block.type === "paragraph") {
+      return (
+        <p key={index}>
+          <ReportInlineText text={block.content} />
+        </p>
+      );
+    }
+
+    const List = block.type === "ordered" ? "ol" : "ul";
+
+    return (
+      <List key={index}>
+        {block.items.map((item, itemIndex) => (
+          <li key={itemIndex}>
+            <ReportInlineText text={item} />
+          </li>
+        ))}
+      </List>
+    );
+  });
+}
+
 /* =========================================================
    CHATBOT
 ========================================================= */
@@ -1173,14 +1304,49 @@ function Chatbot() {
                       className={
                         message.type === "user"
                           ? styles.userBubble
-                          : styles.assistantBubble
+                          : message.isReport
+                            ? `${styles.assistantBubble} ${styles.reportBubble}`
+                            : styles.assistantBubble
                       }
                     >
-                      <p
-                        className={message.isReport ? styles.reportContent : ""}
-                      >
-                        {message.content}
-                      </p>
+                      {message.isReport ? (
+                        <div className={styles.reportAnalysis}>
+                          <div className={styles.reportHeader}>
+                            <div className={styles.reportHeaderIcon}>
+                              <FileText size={17} />
+                            </div>
+                            <div>
+                              <strong>Medical report analysis</strong>
+                              {message.filename && (
+                                <span>{message.filename}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className={styles.reportSections}>
+                            {parseReportSections(message.content).map(
+                              (section, index) => (
+                                <section
+                                  className={styles.reportSection}
+                                  key={`${section.title}-${index}`}
+                                >
+                                  <h3>
+                                    <span>{index + 1}</span>
+                                    {section.title}
+                                  </h3>
+                                  <div className={styles.reportSectionContent}>
+                                    <ReportSectionContent
+                                      content={section.content}
+                                    />
+                                  </div>
+                                </section>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p>{message.content}</p>
+                      )}
 
                       <span>{message.time}</span>
                     </div>
