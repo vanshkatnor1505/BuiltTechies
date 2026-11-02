@@ -25,7 +25,16 @@ const MAX_LOCATION_ACCURACY_METERS = 20_000;
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const MATCH_SCORE_HELP =
-  "Match uses listed specialty keywords and emergency status for emergency searches; distance is shown separately and does not affect compatibility. Specialty fit is weighted 70%, and emergency evidence 10% for emergency searches. If a facility has no specialty details, its specialty fit starts at 50% and is an estimate, not a verified match.";
+  "Match is an estimate based on listed specialty keywords and emergency status for emergency searches; distance is shown separately. Exact specialty matches score highest, partial evidence scores in between, and facilities without specialty data receive a neutral baseline rather than being treated as an exact match.";
+
+function getPublicHealthcareReportPath(facility) {
+  const params = new URLSearchParams({
+    hospital: facility.name,
+    location: facility.city || facility.address,
+  });
+
+  return `/public-healthcare?${params.toString()}`;
+}
 
 const INDIA_SPECIALIST_HOSPITALS = {
   kidney: [
@@ -728,6 +737,7 @@ function getSpecialties(tags = {}) {
     tags["medical:specialty"],
     tags["medical_specialty"],
     tags.specialties,
+    tags.speciality,
     tags["healthcare:speciality:en"],
   ].filter(Boolean);
 
@@ -761,15 +771,10 @@ function calculateRequirementMatch(
 
   const groups = getSearchGroups(query);
   const specialtyText = normalize(getSpecialties(tags));
+  const facilityName = normalize(tags.name || tags["name:en"] || "");
   const queryWords = normalizedQuery
     .split(" ")
     .filter((word) => word.length > 2);
-  const specialtyMatches = groups.length > 0
-    ? groups.some((group) =>
-        group.aliases.some((alias) => specialtyText.includes(normalize(alias))),
-      )
-    : queryWords.some((word) => specialtyText.includes(word));
-  const hasSpecialtyEvidence = Boolean(specialtyText);
   const isHealthcareFacility = Boolean(
     tags.healthcare && tags.healthcare !== "no",
   );
@@ -777,15 +782,45 @@ function calculateRequirementMatch(
     groups.some((group) => group.key === "general") &&
     (tags.amenity === "hospital" || tags.healthcare === "hospital");
 
-  if (!hasSpecialtyEvidence && !genericFacilityMatch && !isHealthcareFacility) {
+  if (!isHealthcareFacility) {
     return null;
   }
 
-  const specialtyScore = specialtyMatches || genericFacilityMatch
-    ? 100
-    : hasSpecialtyEvidence
-      ? 0
-      : 50;
+  let specialtyScore = 50;
+
+  if (genericFacilityMatch) {
+    specialtyScore = 75;
+  } else if (specialtyText) {
+    const matchedGroupAlias = groups.some((group) =>
+      group.aliases.some((alias) =>
+        specialtyText.includes(normalize(alias)),
+      ),
+    );
+    const matchedQueryWords = queryWords.filter((word) =>
+      specialtyText.includes(word),
+    ).length;
+    const matchedNameAlias = groups.some((group) =>
+      group.aliases.some((alias) =>
+        facilityName.includes(normalize(alias)),
+      ),
+    );
+
+    if (specialtyText.includes(normalizedQuery)) {
+      specialtyScore = 100;
+    } else if (matchedGroupAlias) {
+      specialtyScore = 85;
+    } else if (matchedQueryWords > 0) {
+      specialtyScore = Math.min(
+        80,
+        50 + Math.round((30 * matchedQueryWords) / queryWords.length),
+      );
+    } else if (matchedNameAlias) {
+      specialtyScore = 70;
+    } else {
+      specialtyScore = 35;
+    }
+  }
+
   const dimensions = [{ score: specialtyScore, weight: 70 }];
 
   if (groups.some((group) => group.key === "emergency")) {
@@ -803,6 +838,7 @@ function calculateRequirementMatch(
 
 function transformGeoapifyFacility(feature, userLocation, searchQuery) {
   const properties = feature?.properties || {};
+  const rawProperties = properties.datasource?.raw || {};
   const coordinates = feature?.geometry?.coordinates;
 
   if (
@@ -936,6 +972,14 @@ function transformGeoapifyFacility(feature, userLocation, searchQuery) {
     openingHours: properties.opening_hours || "",
 
     operator: properties.operator || "",
+    operatorType:
+      rawProperties["operator:type"] ||
+      rawProperties.ownership ||
+      "",
+    owner:
+      rawProperties.owner ||
+      rawProperties["operator"] ||
+      "",
 
     emergency,
 
@@ -967,6 +1011,38 @@ async function readApiResponse(response) {
   }
 
   return response.json();
+}
+
+function isGovernmentOrAidedHospital(facility) {
+  if (facility.type !== "Hospital") {
+    return false;
+  }
+
+  const normalizeOwnershipText = (...values) =>
+    values
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  const ownershipDetails = normalizeOwnershipText(
+    facility.operatorType,
+    facility.operator,
+    facility.owner,
+  );
+  const facilityName = normalizeOwnershipText(facility.name);
+
+  return (
+    /\b(government|govt|sarkari|public|municipal|state government|central government|aided)\b/.test(
+      ownershipDetails,
+    ) ||
+    /\b(government|govt|sarkari|aided|civil hospital|district hospital|sadar hospital|sub district hospital|sub divisional hospital|municipal hospital|community health centre|community health center|primary health centre|primary health center|rural hospital|taluk hospital|tehsil hospital)\b/.test(
+      facilityName,
+    ) ||
+    /\b(aiims|pgimer|jipmer|gmch(?:\s*\d{1,2})?|gmsh(?:\s*\d{1,2})?|esic hospital|esi hospital|safdarjung hospital|lady hardinge medical college|maulana azad medical college|lok nayak hospital|gtb hospital|guru teg bahadur hospital)\b/.test(
+      facilityName,
+    )
+  );
 }
 
 function HospitalFinderResultsMeta({ filteredFacilities, lastUpdated }) {
@@ -1236,6 +1312,9 @@ function HospitalFinderResultsPanel({
                     className="facility-actions"
                     onClick={(event) => event.stopPropagation()}
                   >
+                    <Link to={getPublicHealthcareReportPath(facility)}>
+                      Report issue
+                    </Link>
                     <button
                       onClick={() => startRoute(facility)}
                       disabled={
@@ -1613,9 +1692,21 @@ export default function HospitalFinder() {
 
   const [locationStatus, setLocationStatus] = useState("idle");
 
-  const [facilities, setFacilities] = useState(
-    searchParams.get("scope") === "nearby" ? searchState.facilities || [] : [],
-  );
+  const [facilities, setFacilities] = useState(() => {
+    if (searchParams.get("scope") !== "nearby") {
+      return [];
+    }
+
+    const savedQuery = searchParams.get("query") || searchState.query || "";
+    return (searchState.facilities || []).map((facility) => ({
+      ...facility,
+      match: calculateRequirementMatch(
+        facility.tags || {},
+        savedQuery,
+        facility.emergency,
+      ),
+    }));
+  });
 
   const [selectedFacility, setSelectedFacility] = useState(null);
 
@@ -1628,6 +1719,7 @@ export default function HospitalFinder() {
   const [locationLabel, setLocationLabel] = useState("");
 
   const [facilityType, setFacilityType] = useState("all");
+  const [ownershipFilter, setOwnershipFilter] = useState("all");
   const [schemeFilter, setSchemeFilter] = useState("all");
 
   const [emergencyOnly, setEmergencyOnly] = useState(
@@ -1934,7 +2026,7 @@ export default function HospitalFinder() {
    */
 
   const fetchNearbyFacilities = useCallback(
-    async (queryOverride = null, emergencyMode = emergencyOnly) => {
+    async (queryOverride = null) => {
       if (!userLocation) {
         setError(
           "Please allow location access before searching nearby facilities.",
@@ -1955,7 +2047,7 @@ export default function HospitalFinder() {
           latitude: userLocation.lat,
           longitude: userLocation.lon,
           radius,
-          limit: emergencyMode ? 50 : 12,
+          limit: 100,
         });
 
         const features = Array.isArray(data?.features) ? data.features : [];
@@ -2003,7 +2095,7 @@ export default function HospitalFinder() {
         setLoading(false);
       }
     },
-    [radius, searchQuery, emergencyOnly, setSearchState, userLocation],
+    [radius, searchQuery, setSearchState, userLocation],
   );
 
   /*
@@ -2141,6 +2233,10 @@ export default function HospitalFinder() {
       result = result.filter((facility) => facility.type === facilityType);
     }
 
+    if (ownershipFilter === "government") {
+      result = result.filter(isGovernmentOrAidedHospital);
+    }
+
     if (emergencyOnly) {
       result = result.filter((facility) => facility.emergency);
     }
@@ -2178,7 +2274,15 @@ export default function HospitalFinder() {
     });
 
     return result;
-  }, [facilities, facilityType, emergencyOnly, researchById, schemeFilter, sortBy]);
+  }, [
+    facilities,
+    facilityType,
+    ownershipFilter,
+    emergencyOnly,
+    researchById,
+    schemeFilter,
+    sortBy,
+  ]);
 
   const totalResultsPages = Math.max(
     1,
@@ -2278,7 +2382,15 @@ export default function HospitalFinder() {
 
   useEffect(() => {
     setResultsPage(0);
-  }, [facilityType, emergencyOnly, schemeFilter, sortBy, radius, searchQuery]);
+  }, [
+    facilityType,
+    ownershipFilter,
+    emergencyOnly,
+    schemeFilter,
+    sortBy,
+    radius,
+    searchQuery,
+  ]);
 
   useEffect(() => {
     setResultsPage((currentPage) =>
@@ -2357,6 +2469,7 @@ export default function HospitalFinder() {
 
   const clearFilters = () => {
     setFacilityType("all");
+    setOwnershipFilter("all");
     setSchemeFilter("all");
     setEmergencyOnly(false);
     setSortBy("match");
@@ -2520,12 +2633,14 @@ export default function HospitalFinder() {
           fetchNearbyFacilities={fetchNearbyFacilities}
           isHealthcareSearch={isHealthcareSearch}
           loadStateRecommendations={loadStateRecommendations}
+          ownershipFilter={ownershipFilter}
           radius={radius}
           searchQuery={searchQuery}
           searchScope={searchScope}
           schemeFilter={schemeFilter}
           setEmergencyOnly={setEmergencyOnly}
           setFacilityType={setFacilityType}
+          setOwnershipFilter={setOwnershipFilter}
           setRadius={setRadius}
           setSchemeFilter={setSchemeFilter}
           setSortBy={setSortBy}
@@ -2707,6 +2822,9 @@ export default function HospitalFinder() {
                         className="facility-actions"
                         onClick={(event) => event.stopPropagation()}
                       >
+                        <Link to={getPublicHealthcareReportPath(facility)}>
+                          Report issue
+                        </Link>
                         <button
                           onClick={() => startRoute(facility)}
                           disabled={

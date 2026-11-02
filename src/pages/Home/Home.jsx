@@ -134,9 +134,9 @@ const TEAM = [
     initial: "V",
   },
   {
-    name: "Eshav Chumber",
+    name: "Bupinderjit Singh",
     role: "Data Base / AI Engineer",
-    initial: "E",
+    initial: "B",
   },
   {
     name: "Sakshi Choudhary",
@@ -144,9 +144,9 @@ const TEAM = [
     initial: "S",
   },
   {
-    name: "Manjot Sandhu",
+    name: "Tania",
     role: "Tech Presentator / Team Organizer",
-    initial: "M",
+    initial: "T",
   },
 ];
 
@@ -708,6 +708,96 @@ function Home() {
             </a>
             <small>Check current eligibility and coverage through PM-JAY.</small>
           </div>
+        </section>
+
+        <section
+          className={styles.publicHealthcareSection}
+          aria-labelledby="public-healthcare-title"
+        >
+          <div className={styles.publicHealthcareHeader}>
+            <div>
+              <span className={styles.sectionEyebrow}>
+                CARE FOR EVERY COMMUNITY
+              </span>
+              <h2 id="public-healthcare-title">
+                CurePulse for
+                <span> Public Healthcare.</span>
+              </h2>
+            </div>
+            <p>
+              Find government and government-aided hospitals, explore
+              affordable care options, and understand relevant scheme
+              information—all in one place.
+            </p>
+          </div>
+
+          <div className={styles.publicHealthcareGrid}>
+            <article className={styles.publicHealthcareCard}>
+              <div className={styles.publicHealthcareIcon}>
+                <Hospital size={19} />
+              </div>
+              <div>
+                <h3>Discover public hospitals</h3>
+                <p>
+                  Filter hospital search results to focus on government and
+                  government-aided care.
+                </p>
+              </div>
+            </article>
+
+            <article className={styles.publicHealthcareCard}>
+              <div className={styles.publicHealthcareIcon}>
+                <ShieldCheck size={19} />
+              </div>
+              <div>
+                <h3>Explore affordable care</h3>
+                <p>
+                  Compare available cost information and review government
+                  scheme details to plan your next step.
+                </p>
+              </div>
+            </article>
+
+            <article className={styles.publicHealthcareCard}>
+              <div className={styles.publicHealthcareIcon}>
+                <MapPin size={19} />
+              </div>
+              <div>
+                <h3>Find your way</h3>
+                <p>
+                  Use hospital location details and Google Maps directions to
+                  plan a visit.
+                </p>
+              </div>
+            </article>
+          </div>
+
+          <div className={styles.publicHealthcareActions}>
+            <button
+              type="button"
+              className={styles.publicHealthcareLink}
+              onClick={() => openFinder()}
+            >
+              Explore hospital options
+              <ArrowRight size={16} />
+            </button>
+            <a href="#ayushman-bharat">
+              View scheme information
+              <ArrowUpRight size={15} />
+            </a>
+            <button
+              type="button"
+              className={styles.publicHealthcareLink}
+              onClick={() => navigate("/public-healthcare")}
+            >
+              Report a public hospital issue
+              <ArrowRight size={16} />
+            </button>
+          </div>
+          <p className={styles.publicHealthcareNote}>
+            Costs, hospital services, and scheme eligibility can vary. Confirm
+            details with the hospital or official scheme sources.
+          </p>
         </section>
 
         {/* ===================================================

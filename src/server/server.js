@@ -6,6 +6,7 @@ import rateLimit from "express-rate-limit";
 import Groq from "groq-sdk";
 import { PDFParse } from "pdf-parse";
 import { isMedicalQuery } from "../utils/medicalQuery.js";
+import { PUBLIC_HEALTHCARE_ISSUES } from "../data/publicHealthcareIssues.js";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
@@ -69,6 +70,17 @@ const reportRateLimiter = rateLimit({
   message: {
     success: false,
     message: "Too many report analysis requests. Please wait a minute before trying again.",
+  },
+});
+
+const publicHealthcareReportRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many reports submitted. Please try again later.",
   },
 });
 
@@ -156,6 +168,165 @@ app.get("/health", (req, res) => {
     service: "BuiltTechies API",
   });
 });
+
+app.get("/api/public-healthcare/issue-trends", async (_req, res) => {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!SUPABASE_URL || !serviceRoleKey) {
+    return res.status(503).json({
+      success: false,
+      message: "Public healthcare reports are not configured on this server.",
+    });
+  }
+
+  try {
+    const baseUrl = SUPABASE_URL.replace(/\/$/, "");
+    const issues = await Promise.all(
+      PUBLIC_HEALTHCARE_ISSUES.map(async ({ id }) => {
+        const params = new URLSearchParams({
+          select: "id",
+          status: "eq.approved",
+          issue_category: `eq.${id}`,
+        });
+        const response = await fetch(
+          `${baseUrl}/rest/v1/public_healthcare_reports?${params.toString()}`,
+          {
+            method: "HEAD",
+            headers: {
+              apikey: serviceRoleKey,
+              Authorization: `Bearer ${serviceRoleKey}`,
+              Prefer: "count=exact",
+              Range: "0-0",
+            },
+            signal: AbortSignal.timeout(10000),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Supabase report count query failed (${response.status}).`,
+          );
+        }
+
+        const countMatch = response.headers
+          .get("content-range")
+          ?.match(/\/(\d+|\*)$/);
+        if (!countMatch) {
+          throw new Error("Supabase did not return an exact report count.");
+        }
+
+        return {
+          category: id,
+          count: countMatch[1] === "*" ? 0 : Number(countMatch[1]),
+        };
+      }),
+    );
+
+    return res.json({
+      success: true,
+      issues: issues.filter((issue) => issue.count > 0),
+    });
+  } catch (error) {
+    console.error("PUBLIC HEALTHCARE TRENDS ERROR:", error);
+    return res.status(502).json({
+      success: false,
+      message: "Reviewed public healthcare trends could not be loaded.",
+    });
+  }
+});
+
+app.post(
+  "/api/public-healthcare/reports",
+  publicHealthcareReportRateLimiter,
+  async (req, res) => {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!SUPABASE_URL || !serviceRoleKey) {
+      return res.status(503).json({
+        success: false,
+        message: "Public healthcare reports are not configured on this server.",
+      });
+    }
+
+    const body =
+      req.body && typeof req.body === "object" && !Array.isArray(req.body)
+        ? req.body
+        : {};
+    const hospitalName =
+      typeof body.hospitalName === "string" ? body.hospitalName.trim() : "";
+    const hospitalLocation =
+      typeof body.hospitalLocation === "string"
+        ? body.hospitalLocation.trim()
+        : "";
+    const category =
+      typeof body.category === "string" ? body.category : "";
+    const details =
+      typeof body.details === "string" ? body.details.trim() : "";
+
+    if (!hospitalName || hospitalName.length > 160) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a hospital name up to 160 characters.",
+      });
+    }
+    if (!hospitalLocation || hospitalLocation.length > 160) {
+      return res.status(400).json({
+        success: false,
+        message: "Enter a city or area up to 160 characters.",
+      });
+    }
+    if (!PUBLIC_HEALTHCARE_ISSUES.some((issue) => issue.id === category)) {
+      return res.status(400).json({
+        success: false,
+        message: "Choose one of the listed service issue categories.",
+      });
+    }
+    if (details.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "Additional details must be 1000 characters or fewer.",
+      });
+    }
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/public_healthcare_reports`,
+        {
+          method: "POST",
+          headers: {
+            apikey: serviceRoleKey,
+            Authorization: `Bearer ${serviceRoleKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            hospital_name: hospitalName,
+            hospital_location: hospitalLocation,
+            issue_category: category,
+            details,
+          }),
+          signal: AbortSignal.timeout(10000),
+        },
+      );
+
+      if (!response.ok) {
+        const errorDetails = await response.text();
+        throw new Error(
+          `Supabase report submission failed (${response.status}): ${errorDetails}`,
+        );
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: "Your report was received and is pending review.",
+      });
+    } catch (error) {
+      console.error("PUBLIC HEALTHCARE REPORT SUBMISSION ERROR:", error);
+      return res.status(502).json({
+        success: false,
+        message: "Your report could not be submitted. Please try again later.",
+      });
+    }
+  },
+);
 
 app.post("/api/state-hospital-recommendations", aiRateLimiter, async (req, res) => {
     try {
