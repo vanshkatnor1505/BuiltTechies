@@ -65,6 +65,7 @@ const standardColumns = [
     links: [
       { label: "Home", href: "/" },
       { label: "Find Hospitals", href: "/find-hospitals" },
+      { label: "Public Healthcare Reports", href: "/public-healthcare" },
       { label: "Compare & Research", href: "/compare" },
       { label: "AI Assistant", href: "/chatbot" },
     ],
