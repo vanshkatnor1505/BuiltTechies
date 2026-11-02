@@ -28,8 +28,8 @@ function SiteNavbar() {
           href: "/chatbot",
         },
         {
-          label: "Team",
-          href: "/team",
+          label: "About Us",
+          href: "/about",
         },
       ]}
       cta={{

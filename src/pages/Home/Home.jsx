@@ -1245,7 +1245,7 @@ function Home() {
           {
             title: "Vital",
             links: [
-              { label: "Team", href: "#team" },
+              { label: "About Us", href: "/about" },
               { label: "Contact", href: "#contact" },
               { label: "Privacy", href: "#" },
               { label: "Terms", href: "#" },

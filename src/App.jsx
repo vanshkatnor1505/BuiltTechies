@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home/Home";
-import Team from "./pages/Team/Team";
+import About from "./pages/Team/About";
 import "leaflet/dist/leaflet.css";
 import HospitalFinder from "./pages/HospitalFinder";
 import Chatbot from "./pages/Chatbot/Chatbot";
@@ -16,7 +16,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
 
-        <Route path="/team" element={<Team />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/team" element={<About />} />
         <Route path="/find-hospitals" element={<HospitalFinder />} />
         <Route path="/compare" element={<HospitalComparison />} />
         <Route path="/faq" element={<FAQ />} />

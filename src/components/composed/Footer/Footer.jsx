@@ -76,7 +76,7 @@ const standardColumns = [
       { label: "How It Works", href: "/#how-it-works" },
       { label: "Medical Reports", href: "/chatbot" },
       { label: "Emergency Help", href: "/#emergency" },
-      { label: "Team", href: "/team" },
+      { label: "About Us", href: "/about" },
     ],
   },
   {
