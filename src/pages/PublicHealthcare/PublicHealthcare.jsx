@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, ShieldCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  CheckCircle2,
+  ClipboardList,
+  Eye,
+  FileCheck2,
+  MapPin,
+  ShieldCheck,
+} from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
@@ -79,22 +89,46 @@ function PublicHealthcare() {
         <section className={styles.hero}>
           <div className={styles.heroGlow} aria-hidden="true" />
           <div className={styles.heroInner}>
-            <Link to="/" className={styles.backLink}>
-              <ArrowLeft size={15} />
-              Back to home
-            </Link>
-            <span className={styles.eyebrow}>PUBLIC HEALTHCARE VOICE</span>
-            <h1>Help make hospital service issues visible.</h1>
-            <p>
-              Report a service problem at a public hospital, such as a doctor
-              being unavailable, missing medicines, or a long wait. Reports
-              help surface recurring issues; they do not replace official
-              grievance channels.
-            </p>
+            <div className={styles.heroCopy}>
+              <Link to="/" className={styles.backLink}>
+                <ArrowLeft size={15} />
+                Back to home
+              </Link>
+              <span className={styles.eyebrow}>PUBLIC HEALTHCARE VOICE</span>
+              <h1>Help make hospital service issues visible.</h1>
+              <p>
+                Share what you experienced at a public hospital—such as a
+                doctor being unavailable, missing medicines, or a long wait.
+                Your report can help highlight recurring service gaps.
+              </p>
+              <div className={styles.heroActions}>
+                <a href="#report-form">
+                  Share an experience
+                  <ArrowRight size={16} />
+                </a>
+                <a className={styles.secondaryHeroAction} href="#how-reports-work">
+                  How reports are used
+                </a>
+              </div>
+            </div>
+
+            <aside className={styles.heroCallout}>
+              <div className={styles.heroCalloutIcon}>
+                <Eye size={21} />
+              </div>
+              <span className={styles.eyebrow}>COMMUNITY-LED VISIBILITY</span>
+              <h2>Small reports can reveal recurring issues.</h2>
+              <ul>
+                <li><ShieldCheck size={15} /> Anonymous submissions</li>
+                <li><FileCheck2 size={15} /> Review before approval</li>
+                <li><MapPin size={15} /> Hospital and area context</li>
+              </ul>
+              <p>Reports are not emergency requests or official complaints.</p>
+            </aside>
           </div>
         </section>
 
-        <section className={styles.content}>
+        <section className={styles.content} id="report-form">
           <div className={styles.formColumn}>
             <div className={styles.sectionHeading}>
               <span className={styles.eyebrow}>SHARE A SERVICE ISSUE</span>
@@ -238,6 +272,64 @@ function PublicHealthcare() {
               <ArrowRight size={15} />
             </a>
           </aside>
+        </section>
+
+        <section
+          className={styles.guide}
+          id="how-reports-work"
+          aria-labelledby="guide-title"
+        >
+          <div className={styles.guideHeader}>
+            <span className={styles.eyebrow}>FROM EXPERIENCE TO INSIGHT</span>
+            <h2 id="guide-title">How community reports work.</h2>
+            <p>
+              The goal is to make common service challenges easier to notice,
+              without exposing the people who report them.
+            </p>
+          </div>
+
+          <div className={styles.guideGrid}>
+            <article className={styles.guideCard}>
+              <span className={styles.guideNumber}>01</span>
+              <div className={styles.guideIcon}><ClipboardList size={19} /></div>
+              <h3>Describe what you experienced</h3>
+              <p>
+                Choose an issue, name the hospital and area, and add only
+                non-identifying details that help explain the service gap.
+              </p>
+            </article>
+            <article className={styles.guideCard}>
+              <span className={styles.guideNumber}>02</span>
+              <div className={styles.guideIcon}><FileCheck2 size={19} /></div>
+              <h3>Report is reviewed</h3>
+              <p>
+                New submissions stay private while pending. A reviewer checks
+                them before deciding whether they can contribute to trends.
+              </p>
+            </article>
+            <article className={styles.guideCard}>
+              <span className={styles.guideNumber}>03</span>
+              <div className={styles.guideIcon}><Eye size={19} /></div>
+              <h3>Approved totals inform the picture</h3>
+              <p>
+                Only approved issue-category totals are shown. They are
+                community signals—not proof, rankings, or a measure of care
+                quality.
+              </p>
+            </article>
+          </div>
+
+          <div className={styles.guideFooter}>
+            <ShieldCheck size={18} />
+            <p>
+              Keep reports respectful and factual. Do not include patient or
+              staff names, phone numbers, records, or private medical details.
+            </p>
+            <a href="https://pgportal.gov.in/" target="_blank" rel="noreferrer">
+              For official grievances, visit CPGRAMS
+              <ArrowUpRight size={15} />
+            </a>
+          </div>
         </section>
       </main>
 
