@@ -86,6 +86,7 @@ mindmap
 | ⭐ **Curated recommendations** | India-wide researched picks, Punjab state-level picks, specialty matching (kidney, cardiology, cancer, neurology, ortho, eye, pediatrics, women's health, general medicine), graceful fallback when live research is unavailable |
 | 🗺️ **Maps and navigation** | Interactive facility map, select from list or map, route requests, Google Maps turn-by-turn handoff, split/list/map views |
 | 🏥 **Research and comparison** | Backend-driven hospital research, source links shown on facility cards and comparison views, saved research shared across pages, multi-facility comparisons |
+| 🗣️ **Public healthcare reports** | Anonymous reports for service issues at public hospitals; submissions remain private until reviewed, with approved category totals shown as community trends |
 | 📊 **Compatibility scoring** | Specialty keyword compatibility; emergency evidence participates in emergency searches; distance remains a separate filter/sort/display value and does not affect the match score |
 | 🌐 **Language support** | English, Hindi, and Punjabi UI translations are bundled locally, available without a translation service, selectable on desktop/mobile, and remembered across reloads |
 | 🤖 **Healthcare chatbot** | AI-assisted guidance, PDF/report upload where configured, Groq speech-to-text for English, Hindi, and Punjabi, and browser-native speech playback using installed voices |
@@ -291,6 +292,8 @@ cp .env.example .env.local
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend | Supabase publishable key |
 | `VITE_GEOAPIFY_API_KEY` | Frontend | Geoapify search/geolocation key |
 | `VITE_API_URL` | Frontend | Express API URL (`http://localhost:5000` locally) |
+| `SUPABASE_URL` | Backend | Supabase project URL for public healthcare reports |
+| `SUPABASE_SERVICE_ROLE_KEY` | Backend | Server-only key used to store and count reviewed reports |
 | `PORT` | Backend | Express listening port (`5000` locally) |
 | `CORS_ORIGINS` | Backend | Comma-separated allowed frontend origins |
 | `FRONTEND_URL` | Backend | Public frontend URL used by the backend |
@@ -303,6 +306,15 @@ cp .env.example .env.local
 | `GOOGLE_SEARCH_ENGINE_ID` | Backend | Optional Google Search engine ID |
 
 > The complete variable template is in [`.env.example`](./.env.example). **Never commit** `.env.local`, API keys, service-role keys, or other credentials.
+
+### Public healthcare reports setup and review
+
+1. Apply [`supabase/migrations/202611020001_public_healthcare_reports.sql`](./supabase/migrations/202611020001_public_healthcare_reports.sql) to the Supabase project.
+2. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` on the backend only. Never use a `VITE_` variable for the service-role key.
+3. Deploy/restart the backend. The report form and reviewed issue totals use its `/api/public-healthcare/*` endpoints.
+4. Review pending rows in the Supabase `public_healthcare_reports` table. Change `status` to `approved` or `rejected`; only approved category totals are exposed publicly. Do not approve reports containing personal or medical identifying information.
+
+The report form collects no reporter name or contact details. Its optional description is private to reviewers. Public trends are counts by issue category, without hospital names or report text. This community reporting feature is not an official grievance channel; users can also access CPGRAMS from the reports page.
 
 ### Start the development environment
 
