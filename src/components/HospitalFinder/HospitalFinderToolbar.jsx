@@ -6,12 +6,14 @@
   fetchNearbyFacilities,
   isHealthcareSearch,
   loadStateRecommendations,
+  ownershipFilter,
   radius,
   searchQuery,
   searchScope,
   schemeFilter,
   setEmergencyOnly,
   setFacilityType,
+  setOwnershipFilter,
   setRadius,
   setSchemeFilter,
   setSortBy,
@@ -56,6 +58,20 @@
         </div>
 
         <div className="filter-group">
+          <label htmlFor="ownership-filter">Ownership</label>
+          <select
+            id="ownership-filter"
+            value={ownershipFilter}
+            onChange={(event) => setOwnershipFilter(event.target.value)}
+          >
+            <option value="all">All facilities</option>
+            <option value="government">
+              Government &amp; government-aided hospitals
+            </option>
+          </select>
+        </div>
+
+        <div className="filter-group">
           <label htmlFor="scheme-filter">Insurance / scheme</label>
           <select
             id="scheme-filter"
@@ -90,7 +106,7 @@
               setEmergencyOnly(nextEmergencyMode);
 
               if (searchScope === "nearby" && userLocation) {
-                fetchNearbyFacilities(searchQuery, nextEmergencyMode);
+                fetchNearbyFacilities(searchQuery);
               } else if (searchScope === "india" && isHealthcareSearch(searchQuery)) {
                 loadStateRecommendations(searchQuery, "india");
               }

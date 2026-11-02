@@ -16,6 +16,10 @@ function SiteNavbar() {
           href: "/find-hospitals",
         },
         {
+          label: "Public Healthcare",
+          href: "/public-healthcare",
+        },
+        {
           label: "Compare & Research",
           href: "/compare",
         },

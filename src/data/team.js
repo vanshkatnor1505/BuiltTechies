@@ -21,12 +21,12 @@ export const teamMembers = [
 
   {
     id: "member-2",
-    name: "Eshav Chumber",
+    name: "Bupinderjit Singh",
     role: "Data Base / AI Engineer",
     shortBio:
       "Designs intelligent data systems and AI-powered solutions that turn raw information into smart actions.",
     bio:
-      "Eshav specializes in data-driven engineering and artificial intelligence, combining backend data architecture with machine learning workflows to build smarter digital products. He focuses on collecting, organizing, and analyzing data effectively while creating AI-enabled features that improve decisions, automation, and product intelligence. His work strengthens the technical backbone of the project by ensuring that insights are accurate, scalable, and usable in real-world scenarios.",
+      "Bhupinderjit specializes in data-driven engineering and artificial intelligence, combining backend data architecture with machine learning workflows to build smarter digital products. He focuses on collecting, organizing, and analyzing data effectively while creating AI-enabled features that improve decisions, automation, and product intelligence. His work strengthens the technical backbone of the project by ensuring that insights are accurate, scalable, and usable in real-world scenarios.",
     skills: [
       "Python",
       "Machine Learning",
@@ -35,7 +35,7 @@ export const teamMembers = [
       "Data Engineering",
       "Model Integration",
     ],
-    github: "https://github.com/eshav3323-cyber",
+    github: "https://github.com/BhupinderjitSingh00",
     linkedin: "#",
     portfolio: "#",
   },
@@ -63,12 +63,12 @@ export const teamMembers = [
 
   {
     id: "member-4",
-    name: "Manjot Sandhu",
+    name: "Tania",
     role: "Tech Presentator / Team Organizer",
     shortBio:
       "Coordinates the team, aligns technical efforts, and communicates the project vision with clarity.",
     bio:
-      "Manjot plays a key role in keeping the team aligned, organized, and focused on execution. He helps bridge communication between technical and non-technical stakeholders, ensuring that ideas are translated into actionable plans. With a strong emphasis on collaboration, project flow, and technical presentation, he supports the team in maintaining momentum while making complex concepts easy to understand. His contribution helps the project stay structured, coordinated, and ready to present with confidence.",
+      "Tania plays a key role in keeping the team aligned, organized, and focused on execution. He helps bridge communication between technical and non-technical stakeholders, ensuring that ideas are translated into actionable plans. With a strong emphasis on collaboration, project flow, and technical presentation, he supports the team in maintaining momentum while making complex concepts easy to understand. His contribution helps the project stay structured, coordinated, and ready to present with confidence.",
     skills: [
       "Project Coordination",
       "Team Leadership",
@@ -77,7 +77,7 @@ export const teamMembers = [
       "Documentation",
       "Collaboration",
     ],
-    github: "https://github.com/manjotsandhuyt-07",
+    github: "#",
     linkedin: "#",
     portfolio: "#",
   },
