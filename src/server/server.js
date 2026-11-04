@@ -27,7 +27,6 @@ const groq = new Groq({
 });
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
-const AUTH_REQUIRED = process.env.REQUIRE_SUPABASE_SESSION === "true";
 
 const apiRateLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -85,8 +84,11 @@ const publicHealthcareReportRateLimiter = rateLimit({
 });
 
 async function requireSupabaseSession(req, res, next) {
-  if (!AUTH_REQUIRED || !SUPABASE_URL) {
-    return next();
+  if (!SUPABASE_URL) {
+    return res.status(503).json({
+      success: false,
+      message: "Authentication is not configured on this server.",
+    });
   }
 
   const authorization = req.headers.authorization || "";
@@ -103,10 +105,16 @@ async function requireSupabaseSession(req, res, next) {
 
   try {
     const supabaseApiKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
       process.env.SUPABASE_ANON_KEY ||
       process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
       "";
+    if (!supabaseApiKey) {
+      return res.status(503).json({
+        success: false,
+        message: "Authentication is not configured on this server.",
+      });
+    }
 
     const userResponse = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1/user`, {
       method: "GET",
@@ -328,7 +336,7 @@ app.post(
   },
 );
 
-app.post("/api/state-hospital-recommendations", aiRateLimiter, async (req, res) => {
+app.post("/api/state-hospital-recommendations", requireSupabaseSession, aiRateLimiter, async (req, res) => {
     try {
       const { disease, state } = req.body;
       if (!disease || typeof disease !== "string") {
@@ -572,7 +580,7 @@ app.get("/api/health", (req, res) => {
    CHAT
 ========================================================= */
 
-app.post("/api/chat", aiRateLimiter, requireSupabaseSession, async (req, res) => {
+app.post("/api/chat", requireSupabaseSession, aiRateLimiter, async (req, res) => {
   try {
     const {
       messages,
@@ -677,8 +685,8 @@ app.post("/api/chat", aiRateLimiter, requireSupabaseSession, async (req, res) =>
 
 app.post(
   "/api/transcribe",
-  audioRateLimiter,
   requireSupabaseSession,
+  audioRateLimiter,
   audioUpload.single("audio"),
   async (req, res) => {
     try {
@@ -764,8 +772,8 @@ app.post(
 
 app.post(
   "/api/analyze-report",
-  reportRateLimiter,
   requireSupabaseSession,
+  reportRateLimiter,
   upload.single("report"),
   async (req, res) => {
     try {
@@ -1172,7 +1180,7 @@ async function estimateHospitalMetrics({ name, address, context }) {
   }
 }
 
-app.post("/api/hospital-estimates", aiRateLimiter, async (req, res) => {
+app.post("/api/hospital-estimates", requireSupabaseSession, aiRateLimiter, async (req, res) => {
   const { name, address = "", context = {} } = req.body || {};
   if (typeof name !== "string" || !name.trim()) {
     return res.status(400).json({ success: false, message: "Hospital name is required." });
@@ -1231,7 +1239,7 @@ app.get("/api/google-place-photo", async (req, res) => {
   }
 });
 
-app.post("/api/hospital-research", aiRateLimiter, async (req, res) => {
+app.post("/api/hospital-research", requireSupabaseSession, aiRateLimiter, async (req, res) => {
   try {
     const { name, address = "", website = "", context = {} } = req.body;
     if (!name || typeof name !== "string") {

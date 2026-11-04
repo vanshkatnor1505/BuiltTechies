@@ -29,6 +29,7 @@ import {
 import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 import { useHospitalSearch } from "../../context/HospitalSearchContext";
+import { fetchWithSupabaseSession } from "../../lib/api";
 import { useLanguage } from "../../i18n";
 import {
   isMedicalQuery,
@@ -482,7 +483,7 @@ function Chatbot() {
 
   const sendToAI = async (conversationMessages) => {
     try {
-      const response = await fetch(`${API_URL}/api/chat`, {
+      const response = await fetchWithSupabaseSession(`${API_URL}/api/chat`, {
         method: "POST",
 
         headers: {
@@ -730,7 +731,7 @@ function Chatbot() {
 
       formData.append("language", language);
 
-      const response = await fetch(`${API_URL}/api/transcribe`, {
+      const response = await fetchWithSupabaseSession(`${API_URL}/api/transcribe`, {
         method: "POST",
         body: formData,
       });
@@ -818,7 +819,7 @@ function Chatbot() {
 
       formData.append("language", language);
 
-      const response = await fetch(`${API_URL}/api/analyze-report`, {
+      const response = await fetchWithSupabaseSession(`${API_URL}/api/analyze-report`, {
         method: "POST",
         body: formData,
       });

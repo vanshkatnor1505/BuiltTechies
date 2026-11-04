@@ -4,6 +4,7 @@ import SiteNavbar from "../../components/composed/SiteNavbar/SiteNavbar";
 import Footer from "../../components/composed/Footer/Footer";
 import ResearchSources from "../../components/HospitalFinder/ResearchSources";
 import { useHospitalSearch } from "../../context/HospitalSearchContext";
+import { fetchWithSupabaseSession } from "../../lib/api";
 import "./HospitalComparison.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -104,7 +105,7 @@ function HospitalComparison() {
       }
 
       metricEstimateRequests.current.add(facility.id);
-      fetch(`${API_URL}/api/hospital-estimates`, {
+      fetchWithSupabaseSession(`${API_URL}/api/hospital-estimates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -158,7 +159,7 @@ function HospitalComparison() {
     ) return;
     setLoadingId(facility.id);
     try {
-      const response = await fetch(`${API_URL}/api/hospital-research`, {
+      const response = await fetchWithSupabaseSession(`${API_URL}/api/hospital-research`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

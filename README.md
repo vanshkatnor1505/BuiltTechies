@@ -292,8 +292,9 @@ cp .env.example .env.local
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend | Supabase publishable key |
 | `VITE_GEOAPIFY_API_KEY` | Frontend | Geoapify search/geolocation key |
 | `VITE_API_URL` | Frontend | Express API URL (`http://localhost:5000` locally) |
-| `SUPABASE_URL` | Backend | Supabase project URL for public healthcare reports |
+| `SUPABASE_URL` | Backend | Supabase project URL for auth validation and public healthcare reports |
 | `SUPABASE_SERVICE_ROLE_KEY` | Backend | Server-only key used to store and count reviewed reports |
+| `SUPABASE_ANON_KEY` | Backend | Supabase public key used to validate authenticated AI requests |
 | `PORT` | Backend | Express listening port (`5000` locally) |
 | `CORS_ORIGINS` | Backend | Comma-separated allowed frontend origins |
 | `FRONTEND_URL` | Backend | Public frontend URL used by the backend |
@@ -306,6 +307,12 @@ cp .env.example .env.local
 | `GOOGLE_SEARCH_ENGINE_ID` | Backend | Optional Google Search engine ID |
 
 > The complete variable template is in [`.env.example`](./.env.example). **Never commit** `.env.local`, API keys, service-role keys, or other credentials.
+
+All AI-backed API endpoints require a signed-in Supabase session. The frontend
+automatically sends the current session access token, and the backend validates
+it with Supabase before using Groq or Tavily. Configure `SUPABASE_URL` and a
+Supabase public key (`SUPABASE_ANON_KEY` or `VITE_SUPABASE_PUBLISHABLE_KEY`) on
+the backend; missing auth configuration fails closed.
 
 ### Public healthcare reports setup and review
 

@@ -10,6 +10,7 @@ import {
   searchNearbyHealthcare,
 } from "../services/geoapify";
 import { useHospitalSearch } from "../context/HospitalSearchContext";
+import { fetchWithSupabaseSession } from "../lib/api";
 import {
   isMedicalQuery,
   normalizeMedicalQuery,
@@ -1790,7 +1791,7 @@ export default function HospitalFinder() {
       }
 
       try {
-        const response = await fetch(
+        const response = await fetchWithSupabaseSession(
           `${API_URL}/api/state-hospital-recommendations`,
           {
             method: "POST",
@@ -2115,7 +2116,7 @@ export default function HospitalFinder() {
     setResearchLoadingId(facility.id);
 
     try {
-      const response = await fetch(`${API_URL}/api/hospital-research`, {
+      const response = await fetchWithSupabaseSession(`${API_URL}/api/hospital-research`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2305,7 +2306,7 @@ export default function HospitalFinder() {
       }
 
       metricEstimateRequests.current.add(facility.id);
-      fetch(`${API_URL}/api/hospital-estimates`, {
+      fetchWithSupabaseSession(`${API_URL}/api/hospital-estimates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
