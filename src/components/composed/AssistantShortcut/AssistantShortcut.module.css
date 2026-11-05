@@ -1,0 +1,60 @@
+.shortcut {
+  position: fixed;
+  z-index: 80;
+  right: clamp(16px, 3vw, 32px);
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 7px 20px 7px 8px;
+  border: 1px solid rgba(50, 200, 192, 0.3);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  box-shadow: 0 12px 32px rgba(8, 29, 38, 0.2);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.shortcut:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-primary);
+  box-shadow: 0 16px 36px rgba(8, 29, 38, 0.26);
+}
+
+.shortcut:focus-visible {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 4px;
+}
+
+.icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .shortcut {
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    min-height: 52px;
+    padding-right: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shortcut {
+    transition: none;
+  }
+}
