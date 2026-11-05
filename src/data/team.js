@@ -63,7 +63,7 @@ export const teamMembers = [
 
   {
     id: "member-4",
-    name: "Tania",
+    name: "Tania Kaur",
     role: "Tech Presentator / Team Organizer",
     shortBio:
       "Coordinates the team, aligns technical efforts, and communicates the project vision with clarity.",
