@@ -144,7 +144,7 @@ const TEAM = [
     initial: "S",
   },
   {
-    name: "Tania",
+    name: "Tania Kaur",
     role: "Tech Presentator / Team Organizer",
     initial: "T",
   },
