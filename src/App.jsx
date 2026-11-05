@@ -9,6 +9,7 @@ import HospitalComparison from "./pages/HospitalComparison/HospitalComparison";
 import FAQ from "./pages/FAQ/FAQ";
 import Contact from "./pages/Contact/Contact";
 import PublicHealthcare from "./pages/PublicHealthcare/PublicHealthcare";
+import AssistantShortcut from "./components/composed/AssistantShortcut/AssistantShortcut";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
 
         <Route path="*" element={<Home />} />
       </Routes>
+      <AssistantShortcut />
     </BrowserRouter>
   );
 }
