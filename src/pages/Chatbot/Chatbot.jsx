@@ -15,6 +15,7 @@ import {
   Mic,
   MoreHorizontal,
   Paperclip,
+  PhoneCall,
   Plus,
   ShieldCheck,
   Siren,
@@ -68,6 +69,148 @@ const LANGUAGES = [
     speech: "pa-IN",
   },
 ];
+
+const EMERGENCY_PHRASES = [
+  {
+    selfHarm: true,
+    phrases: [
+      "suicide",
+      "suicidal",
+      "sucide",
+      "kill myself",
+      "want to die",
+      "self harm",
+      "self-harm",
+      "hurt myself",
+      "आत्महत्या",
+      "खुदकुशी",
+      "खुद को मार",
+      "खुद को मारना",
+      "खुद को मारने",
+      "खुद को नुकसान",
+      "खुद को नुकसान पहुँचाना",
+      "खुद को नुकसान पहुंचाना",
+      "खुद को चोट",
+      "aatmahatya",
+      "khudkushi",
+      "khud ko nuksan",
+      "ਖੁਦਕੁਸ਼ੀ",
+      "ਆਤਮਹੱਤਿਆ",
+      "ਆਪਣੇ ਆਪ ਨੂੰ ਨੁਕਸਾਨ",
+      "ਆਪਣੇ ਆਪ ਨੂੰ ਨੁਕਸਾਨ ਪਹੁੰਚਾਉਣਾ",
+    ],
+  },
+  {
+    selfHarm: false,
+    phrases: [
+      "chest pain",
+      "chestpain",
+      "heart attack",
+      "heartattack",
+      "stroke",
+      "difficulty breathing",
+      "trouble breathing",
+      "shortness of breath",
+      "can't breathe",
+      "cannot breathe",
+      "unconscious",
+      "severe bleeding",
+      "seizure",
+      "overdose",
+      "poisoning",
+      "emergency",
+      "ambulance",
+      "सीने में दर्द",
+      "छाती में दर्द",
+      "दिल का दौरा",
+      "हार्ट अटैक",
+      "स्ट्रोक",
+      "लकवा",
+      "सांस नहीं आ रही",
+      "साँस नहीं आ रही",
+      "सांस लेने में कठिनाई",
+      "साँस लेने में कठिनाई",
+      "सांस लेने में दिक्कत",
+      "साँस लेने में दिक्कत",
+      "बेहोश",
+      "बेहोशी",
+      "खून बह रहा",
+      "बहुत खून बह रहा",
+      "दौरा पड़ा",
+      "ज़हर",
+      "जहर",
+      "ओवरडोज़",
+      "seene me dard",
+      "chhati me dard",
+      "dil ka daura",
+      "saans nahi aa rahi",
+      "saans lene me dikkat",
+      "seene ch dard",
+      "saah nahi aa reha",
+      "saah lain vich dikkat",
+      "ਛਾਤੀ ਵਿੱਚ ਦਰਦ",
+      "ਸੀਨੇ ਵਿੱਚ ਦਰਦ",
+      "ਦਿਲ ਦਾ ਦੌਰਾ",
+      "ਸਟ੍ਰੋਕ",
+      "ਸਾਹ ਲੈਣ ਵਿੱਚ ਦਿੱਕਤ",
+      "ਸਾਹ ਨਹੀਂ ਆ ਰਿਹਾ",
+      "ਬੇਹੋਸ਼",
+      "ਖੂਨ ਵਗਣਾ",
+      "ਜ਼ਹਿਰ",
+      "ਦੌਰਾ",
+    ],
+  },
+];
+
+const EMERGENCY_COPY = {
+  en: {
+    message:
+      "This may be a medical emergency. Call 112 in India now using the button below. Do not wait for this chatbot.",
+    selfHarmMessage:
+      "You deserve immediate support. Call 112 in India now using the button below, and go to a trusted person and ask them to stay with you. Do not stay alone or wait for this chatbot.",
+    call: "Call an ambulance / emergency services · 112",
+  },
+  hi: {
+    message:
+      "यह चिकित्सा आपातकाल हो सकता है। भारत में अभी 112 पर कॉल करने के लिए नीचे दिया बटन दबाएँ। इस चैटबॉट के जवाब का इंतज़ार न करें।",
+    selfHarmMessage:
+      "आपको तुरंत सहायता मिलनी चाहिए। भारत में अभी 112 पर कॉल करने के लिए नीचे दिया बटन दबाएँ और किसी भरोसेमंद व्यक्ति के पास जाकर उनसे आपके साथ रहने को कहें। अकेले न रहें और इस चैटबॉट के जवाब का इंतज़ार न करें।",
+    call: "एम्बुलेंस/आपातकालीन सेवा को कॉल करें · 112",
+  },
+  pa: {
+    message:
+      "ਇਹ ਮੈਡੀਕਲ ਐਮਰਜੈਂਸੀ ਹੋ ਸਕਦੀ ਹੈ। ਭਾਰਤ ਵਿੱਚ ਹੁਣੇ 112 ਤੇ ਕਾਲ ਕਰਨ ਲਈ ਹੇਠਾਂ ਦਿੱਤਾ ਬਟਨ ਦਬਾਓ। ਇਸ ਚੈਟਬੋਟ ਦੇ ਜਵਾਬ ਦੀ ਉਡੀਕ ਨਾ ਕਰੋ।",
+    selfHarmMessage:
+      "ਤੁਹਾਨੂੰ ਤੁਰੰਤ ਮਦਦ ਮਿਲਣੀ ਚਾਹੀਦੀ ਹੈ। ਭਾਰਤ ਵਿੱਚ ਹੁਣੇ 112 ਤੇ ਕਾਲ ਕਰਨ ਲਈ ਹੇਠਾਂ ਦਿੱਤਾ ਬਟਨ ਦਬਾਓ ਅਤੇ ਕਿਸੇ ਭਰੋਸੇਯੋਗ ਵਿਅਕਤੀ ਕੋਲ ਜਾ ਕੇ ਉਨ੍ਹਾਂ ਨੂੰ ਆਪਣੇ ਨਾਲ ਰਹਿਣ ਲਈ ਕਹੋ। ਇਕੱਲੇ ਨਾ ਰਹੋ ਅਤੇ ਇਸ ਚੈਟਬੋਟ ਦੇ ਜਵਾਬ ਦੀ ਉਡੀਕ ਨਾ ਕਰੋ।",
+    call: "ਐਂਬੂਲੈਂਸ/ਐਮਰਜੈਂਸੀ ਸੇਵਾ ਨੂੰ ਕਾਲ ਕਰੋ · 112",
+  },
+};
+
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const matchesEmergencyPhrase = (text, phrase) =>
+  new RegExp(
+    `(^|[^\\p{L}\\p{N}])${escapeRegExp(phrase)}(?=$|[^\\p{L}\\p{N}])`,
+    "iu",
+  ).test(text);
+
+const getEmergencyType = (value) => {
+  const text = value.normalize("NFKC").toLocaleLowerCase();
+  const match = EMERGENCY_PHRASES.find((category) =>
+    category.phrases.some((phrase) => matchesEmergencyPhrase(text, phrase)),
+  );
+
+  return match ? { isEmergency: true, isSelfHarm: match.selfHarm } : null;
+};
+
+const getEmergencyCopy = (language, isSelfHarm) => {
+  const copy = EMERGENCY_COPY[language] || EMERGENCY_COPY.en;
+
+  return {
+    message: isSelfHarm ? copy.selfHarmMessage : copy.message,
+    call: copy.call,
+  };
+};
 
 const AUDIO_MIME_TYPES = [
   "audio/webm;codecs=opus",
@@ -542,6 +685,25 @@ function Chatbot() {
 
     setMessages(updatedMessages);
 
+    const emergency = getEmergencyType(trimmedInput);
+
+    if (emergency) {
+      const emergencyCopy = getEmergencyCopy(language, emergency.isSelfHarm);
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: Date.now() + 1,
+          type: "assistant",
+          time: "Now",
+          content: emergencyCopy.message,
+          emergencyCallLabel: emergencyCopy.call,
+          isEmergency: true,
+        },
+      ]);
+      return;
+    }
+
     const hasMedicalContext = updatedMessages.some(
       (message) =>
         message.type === "user" && isMedicalQuery(message.content),
@@ -914,8 +1076,9 @@ function Chatbot() {
           id: Date.now() + 1,
           type: "assistant",
           time: "Now",
-          content:
-            "If this may be a medical emergency, please contact local emergency services or go to the nearest emergency department. I can also help you locate nearby emergency hospitals.",
+          content: getEmergencyCopy(language, false).message,
+          emergencyCallLabel: getEmergencyCopy(language, false).call,
+          isEmergency: true,
         },
       ]);
 
@@ -1309,6 +1472,7 @@ function Chatbot() {
                             ? `${styles.assistantBubble} ${styles.reportBubble}`
                             : styles.assistantBubble
                       }
+                      role={message.isEmergency ? "alert" : undefined}
                     >
                       {message.isReport ? (
                         <div className={styles.reportAnalysis}>
@@ -1347,6 +1511,17 @@ function Chatbot() {
                         </div>
                       ) : (
                         <p>{message.content}</p>
+                      )}
+
+                      {message.isEmergency && (
+                        <a
+                          className={styles.emergencyCallButton}
+                          href="tel:112"
+                          aria-label={message.emergencyCallLabel}
+                        >
+                          <PhoneCall size={16} />
+                          {message.emergencyCallLabel}
+                        </a>
                       )}
 
                       <span>{message.time}</span>
