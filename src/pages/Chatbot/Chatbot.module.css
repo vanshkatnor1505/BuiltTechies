@@ -1052,6 +1052,32 @@
   margin: 0;
 }
 
+.emergencyCallButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  margin-top: 12px;
+  padding: 9px 12px;
+
+  border: 0;
+  border-radius: 9px;
+
+  color: #ffffff;
+  background: #c62828;
+
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+.emergencyCallButton:hover {
+  background: #a61f1f;
+}
+
 .assistantBubble > span,
 .userBubble > span {
   display: block;
@@ -1984,6 +2010,7 @@
 .closeSidebar:focus-visible,
 .composerIcon:focus-visible,
 .sendButton:focus-visible,
+.emergencyCallButton:focus-visible,
 .composerFooter button:focus-visible,
 .languageOption:focus-visible {
   outline: 2px solid var(--accent-primary);
