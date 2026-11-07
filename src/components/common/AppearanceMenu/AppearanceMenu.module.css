@@ -1,0 +1,127 @@
+.root {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.trigger:hover,
+.trigger[aria-expanded="true"] {
+  background: var(--surface-2);
+}
+
+.trigger:focus-visible,
+.textSizeButton:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.trigger svg {
+  width: 16px;
+  height: 16px;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1100;
+  width: 248px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 18%);
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+}
+
+.setting + .setting {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.settingLabel,
+.settingValue {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settingControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.textSizeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.textSizeButton:hover,
+.textSizeButton.selected {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.textSizeButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.status {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.mobile {
+  width: 100%;
+}
+
+.mobile .trigger {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mobile .panel {
+  position: static;
+  width: 100%;
+  margin: 0 0 8px;
+  box-shadow: none;
+}
