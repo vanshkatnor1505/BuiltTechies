@@ -29,6 +29,10 @@ body {
     color var(--transition-normal);
 }
 
+html[data-text-size="large"] {
+  font-size: 112.5%;
+}
+
 button,
 input,
 textarea,
@@ -55,4 +59,3 @@ a {
 #root {
   min-height: 100vh;
 }
-
