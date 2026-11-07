@@ -290,7 +290,8 @@
 }
 
 .mobileMenuOpen {
-  max-height: 600px;
+  max-height: calc(100dvh - 64px);
+  overflow-y: auto;
 
   opacity: 1;
 
