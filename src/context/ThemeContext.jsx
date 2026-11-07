@@ -19,6 +19,7 @@ const DEFAULT_THEME = "vital";
 const DEFAULT_MODE = "dark";
 const THEME_STORAGE_KEY = "curepulse-theme";
 const MODE_STORAGE_KEY = "curepulse-mode";
+const TEXT_SIZE_STORAGE_KEY = "curepulse-text-size";
 
 /* =================================
    DEVELOPMENT THEME
@@ -59,6 +60,7 @@ const VALID_THEMES = [
 ];
 
 const VALID_MODES = ["dark", "light"];
+const VALID_TEXT_SIZES = ["normal", "large"];
 
 /* =================================
    INITIAL THEME
@@ -108,6 +110,15 @@ function getInitialMode() {
   return VALID_MODES.includes(savedMode) ? savedMode : DEFAULT_MODE;
 }
 
+function getInitialTextSize() {
+  if (typeof window === "undefined") {
+    return "normal";
+  }
+
+  const savedTextSize = localStorage.getItem(TEXT_SIZE_STORAGE_KEY);
+  return VALID_TEXT_SIZES.includes(savedTextSize) ? savedTextSize : "normal";
+}
+
 /* =================================
    PROVIDER
 ================================= */
@@ -118,6 +129,8 @@ function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(getInitialTheme);
 
   const [mode, setMode] = useState(getInitialMode);
+
+  const [textSize, setTextSize] = useState(getInitialTextSize);
 
   const [profileSynced, setProfileSynced] = useState(false);
 
@@ -130,6 +143,8 @@ function ThemeProvider({ children }) {
 
     document.documentElement.dataset.mode = mode;
 
+    document.documentElement.dataset.textSize = textSize;
+
     /*
       Only persist preferences when
       development override is disabled.
@@ -139,8 +154,10 @@ function ThemeProvider({ children }) {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
 
       localStorage.setItem(MODE_STORAGE_KEY, mode);
+
+      localStorage.setItem(TEXT_SIZE_STORAGE_KEY, textSize);
     }
-  }, [theme, mode]);
+  }, [theme, mode, textSize]);
 
   /* =================================
      LOAD PROFILE PREFERENCES
@@ -213,6 +230,14 @@ function ThemeProvider({ children }) {
     [user, updateProfile],
   );
 
+  const changeTextSize = useCallback((nextTextSize) => {
+    if (!VALID_TEXT_SIZES.includes(nextTextSize)) {
+      return;
+    }
+
+    setTextSize(nextTextSize);
+  }, []);
+
   /* =================================
      TOGGLE MODE
      ---------------------------------
@@ -276,12 +301,14 @@ function ThemeProvider({ children }) {
 
       theme,
       mode,
+      textSize,
 
       /* Theme controls */
 
       setTheme: changeTheme,
       setMode: changeMode,
       toggleMode,
+      setTextSize: changeTextSize,
 
       /* Available values */
 
@@ -292,7 +319,7 @@ function ThemeProvider({ children }) {
 
       isDevelopmentOverride: USE_DEV_THEME,
     }),
-    [theme, mode, changeTheme, changeMode, toggleMode],
+    [theme, mode, textSize, changeTheme, changeMode, toggleMode, changeTextSize],
   );
 
   return (
