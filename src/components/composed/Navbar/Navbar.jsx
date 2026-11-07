@@ -4,7 +4,7 @@ import { Menu, X } from "lucide-react";
 import Container from "../../layout/Container/Container";
 import Button from "../../common/Button/Button";
 import IconButton from "../../common/IconButton/IconButton";
-import ThemeToggle from "../../common/ThemeToggle/ThemeToggle";
+import AppearanceMenu from "../../common/AppearanceMenu/AppearanceMenu";
 import AuthControls from "../../auth/AuthControls/AuthControls";
 import { useTheme } from "../../../context/ThemeContext";
 import { LANGUAGES, useLanguage } from "../../../i18n";
@@ -253,7 +253,7 @@ function Navbar({
 
             <AuthControls />
 
-            <ThemeToggle />
+            <AppearanceMenu />
 
             {cta && (
               <Button
@@ -372,17 +372,7 @@ function Navbar({
                 styles.mobileTheme
               }
             >
-              <span>
-                Appearance
-              </span>
-
-              <div
-                tabIndex={
-                  menuOpen ? 0 : -1
-                }
-              >
-                <ThemeToggle />
-              </div>
+              <AppearanceMenu mobile />
             </div>
 
             <label className={styles.mobileLanguage}>
