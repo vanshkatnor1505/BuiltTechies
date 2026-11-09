@@ -1,6 +1,6 @@
 # 🔌 API and Integration Summary
 
-The Express backend connects the React application to AI, research, upload, and health-check services. The frontend uses **Geoapify directly** for nearby healthcare search, and uses the **backend** for provider integrations that require server-side credentials.
+The Express backend provides authenticated AI and hospital-research operations, file processing, public healthcare-report endpoints, and health checks. The browser calls **Geoapify directly** for nearby healthcare search and **Supabase directly** for authentication and profiles. Provider-backed operations and private report storage remain on the backend.
 
 ---
 
@@ -23,51 +23,69 @@ flowchart LR
 
     subgraph BE["🔧 Express Backend"]
         H["/health\n/api/health"]
-        REC["/api/state-hospital-\nrecommendations"]
+        REC["/api/state-hospital-recommendations"]
         CHAT["/api/chat"]
-        UP["Upload route\n(server.js)"]
+        TRANS["/api/transcribe"]
+        REPORT["/api/analyze-report"]
         RSCH["/api/hospital-research"]
+        EST["/api/hospital-estimates"]
+        PUB["/api/public-healthcare/*"]
+        PHOTO["/api/google-place-photo"]
     end
 
     GEO[("Geoapify")]
     GRQ[("Groq")]
     TAV[("Tavily")]
-    GS[("Google Search")]
-    SB[("Supabase")]
+    GOOGLE[("Google Maps /\nCustom Search")]
+    SB[("Supabase Auth & profiles")]
+    DB[("Supabase report storage")]
 
     FE -->|"Direct call"| GEO
     FE -->|"Direct call"| SB
     FE -->|"HTTP"| H
-    FE -->|"HTTP"| REC
-    FE -->|"HTTP"| CHAT
-    FE -->|"HTTP\n(report/audio)"| UP
-    FE -->|"HTTP"| RSCH
+    FE -->|"HTTP + Supabase session"| REC
+    FE -->|"HTTP + Supabase session"| CHAT
+    FE -->|"Multipart + session"| TRANS
+    FE -->|"Multipart + session"| REPORT
+    FE -->|"HTTP + session"| RSCH
+    FE -->|"HTTP + session"| EST
+    FE -->|"HTTP"| PUB
+    FE -->|"Image proxy"| PHOTO
 
     REC --> TAV
-    REC --> GS
     CHAT --> GRQ
-    UP --> GRQ
+    TRANS --> GRQ
+    REPORT --> GRQ
     RSCH --> TAV
-    RSCH --> GS
+    RSCH --> GRQ
+    RSCH --> GOOGLE
+    EST --> GRQ
+    PHOTO --> GOOGLE
+    PUB --> DB
 
     style FE fill:#e8f4fd,stroke:#2196F3,color:#111111
     style BE fill:#fef3e0,stroke:#FB8C00,color:#111111
 ```
 
-**Key principle:** every route that needs a secret provider key sits behind the backend; the frontend only talks directly to services that use publishable/client-safe keys (Geoapify, Supabase).
+**Key principle:** AI, research-provider credentials, report storage, and the Google photo key stay server-side. The frontend talks directly to Supabase for auth/profile operations and Geoapify for client-side facility search.
 
 ---
 
 ## 🧭 Backend endpoints
 
-| Method | Endpoint | Purpose |
+| Method | Endpoint | Auth | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | Confirms that the backend is running |
-| `GET` | `/api/health` | API health check |
-| `POST` | `/api/state-hospital-recommendations` | Returns researched or fallback hospital recommendations |
-| `POST` | `/api/chat` | Sends a message to the healthcare assistant |
-| `POST` | Upload route in `src/server/server.js` | Processes report/audio assistant inputs |
-| `POST` | `/api/hospital-research` | Researches a selected hospital |
+| `GET` | `/health` | No | Confirms that the backend is running |
+| `GET` | `/api/health` | No | API health check |
+| `POST` | `/api/state-hospital-recommendations` | Supabase session | Returns source-backed results or fallback recommendations |
+| `POST` | `/api/chat` | Supabase session | Generates a healthcare-focused assistant reply |
+| `POST` | `/api/transcribe` | Supabase session | Transcribes an audio upload |
+| `POST` | `/api/analyze-report` | Supabase session | Extracts and explains a PDF medical report |
+| `POST` | `/api/hospital-research` | Supabase session | Researches a selected hospital and returns sources and available data |
+| `POST` | `/api/hospital-estimates` | Supabase session | Generates approximate cost and wait-time estimates |
+| `GET` | `/api/google-place-photo` | No | Proxies a Google Place photo |
+| `POST` | `/api/public-healthcare/reports` | No | Submits an anonymous report for review |
+| `GET` | `/api/public-healthcare/issue-trends` | No | Returns counts for approved report categories |
 
 ---
 
@@ -80,18 +98,18 @@ flowchart LR
 sequenceDiagram
     participant FE as React Frontend
     participant API as /api/state-hospital-recommendations
-    participant R as Tavily / Google Search
-    participant DB as Curated fallback data
+    participant R as Tavily
+    participant DB as In-process curated data
 
-    FE->>API: POST { disease, state }
-    API->>R: Query live research provider
-    alt Provider available
+    FE->>API: POST { disease, state? } + Supabase session
+    alt Tavily configured
+        API->>R: Query live research provider
         R-->>API: Research results
-        API-->>FE: { hospitals, resources, recommendations }
-    else Provider unavailable
-        API->>DB: Load curated data
+        API-->>FE: { success, searched, hospitals, resources, recommendations? }
+    else Tavily not configured
+        API->>DB: Select curated data
         DB-->>API: Fallback dataset
-        API-->>FE: Clearly labeled fallback response
+        API-->>FE: { success, searched: false, hospitals, resources }
     end
     FE->>FE: Validate response before rendering
 ```
@@ -105,7 +123,11 @@ sequenceDiagram
 }
 ```
 
-The response may contain `hospitals`, `resources`, or `recommendations`. The frontend validates the response and falls back to curated data when live research is unavailable.
+`state` is optional. The endpoint requires a signed-in session. Without
+`TAVILY_API_KEY`, the backend returns curated India-wide hospitals and
+resources with `searched: false`; when a live provider request fails, the
+frontend shows curated hospitals and an error message. The state-level
+recommendation list is derived from live `recommendations` when present.
 
 ---
 
@@ -118,10 +140,11 @@ sequenceDiagram
     participant API as /api/chat
     participant GRQ as Groq
 
-    FE->>API: POST { message }
-    API->>GRQ: Forward prompt with server credential
+    FE->>API: POST { messages, language } + Supabase session
+    API->>API: Validate healthcare-related messages
+    API->>GRQ: Generate selected-language response
     GRQ-->>API: Assistant response
-    API-->>FE: { response }
+    API-->>FE: { success, message, language }
     FE->>FE: Render reply / show error state on failure
 ```
 
@@ -129,15 +152,37 @@ sequenceDiagram
 
 ```json
 {
-  "message": "What should I consider when comparing hospitals?"
+  "language": "en",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What should I consider when comparing hospitals?"
+    }
+  ]
 }
 ```
 
-The assistant uses the configured Groq integration and returns a response handled by the chatbot page.
+`language` accepts `en`, `hi`, or `pa`. The endpoint accepts a conversation
+array and only sends healthcare-related user conversations to the model.
+Non-healthcare messages receive a healthcare-scope response without a model
+call.
 
 ---
 
-### 3. Hospital research
+### 3. Speech transcription and report analysis
+
+Both endpoints use `multipart/form-data` and require a Supabase session:
+
+| Endpoint | Form fields | Result |
+| --- | --- | --- |
+| `POST /api/transcribe` | `audio` (supported audio file), `language` (`en`, `hi`, or `pa`) | `{ success, text, language }` |
+| `POST /api/analyze-report` | `report` (PDF, max 10 MB), `language` | `{ success, filename, pages, analysis, extractedCharacters, language }` |
+
+PDF text extraction is performed with `pdf-parse`; image-only/scanned PDFs
+without extractable text return an error because OCR is not implemented.
+Report analysis is informational and does not provide a diagnosis.
+
+### 4. Hospital research
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#111111','primaryBorderColor':'#555555','lineColor':'#555555','secondaryColor':'#f5f5f5','tertiaryColor':'#ffffff','fontSize':'15px','darkMode':false,'background':'#ffffff'}}}%%
@@ -146,8 +191,10 @@ sequenceDiagram
     participant API as /api/hospital-research
     participant CTX as Hospital-search Context
 
-    FE->>API: POST { name, address, website }
-    API-->>FE: Research result
+    FE->>API: POST { name, address, website, context } + Supabase session
+    API->>API: Estimate cost / wait-time separately
+    API->>API: Search sources when Tavily is configured
+    API-->>FE: Research result, estimate, sources or searched=false
     FE->>CTX: Store result by facility ID
     CTX-->>FE: Available to facility card & comparison page
 ```
@@ -158,7 +205,11 @@ sequenceDiagram
 {
   "name": "Example Hospital",
   "address": "Example address, India",
-  "website": "https://example.org"
+  "website": "https://example.org",
+  "context": {
+    "facilityType": "hospital",
+    "specialtyOrTreatment": "kidney treatment"
+  }
 }
 ```
 
@@ -178,6 +229,24 @@ indicates that live web research was not run.
 The research result is stored by facility ID in the shared hospital-search
 context so the facility card and comparison page can use it.
 
+### 5. Public healthcare reports
+
+- `POST /api/public-healthcare/reports` accepts JSON fields `hospitalName`,
+  `hospitalLocation`, `category`, and optional `details`; no account is
+  required. Reports are stored as pending review and the response confirms
+  receipt only.
+- `GET /api/public-healthcare/issue-trends` returns
+  `{ success, issues: [{ category, count }] }` for approved reports only.
+  Public results do not include hospital names or report details.
+
+### 6. Other endpoints
+
+- `POST /api/hospital-estimates` accepts `{ name, address, context }` and
+  returns approximate `metricEstimates` for treatment cost and wait time.
+  These estimates are not source-verified facts.
+- `GET /api/google-place-photo?photo_reference=...&maxwidth=...` returns image
+  bytes from the Google Maps photo service through the backend proxy.
+
 ---
 
 ## 🧩 Integration responsibilities
@@ -186,9 +255,10 @@ context so the facility card and comparison page can use it.
 | --- | --- |
 | **Geoapify** | Nearby healthcare facilities and location search |
 | **Express** | Backend API boundary and provider orchestration |
-| **Groq** | AI assistant and speech-related processing |
-| **Tavily / Google** | Optional hospital research providers |
-| **Supabase** | Authentication and profile-related services |
+| **Groq** | Chat, speech transcription, report explanation, research extraction, and estimates |
+| **Tavily** | Optional hospital recommendation and source-backed research provider |
+| **Google Maps / Custom Search** | Optional Place photo and facility image lookups |
+| **Supabase** | Authentication, profiles, and private public-report storage |
 | **Map / route providers** | Facility maps and navigation support |
 
 ---
@@ -199,6 +269,6 @@ context so the facility card and comparison page can use it.
 - ✅ Request and response data is validated before rendering.
 - ⏳ Async operations expose loading, empty, success, and error states.
 - ⚠️ Provider failures produce explicit user-facing errors or clearly labeled curated fallbacks.
-- 🚦 All backend routes, including health checks, are limited to 100 requests per IP per minute. Provider-heavy chat, recommendation, research, and estimate endpoints have an additional shared limit of 20 requests per IP per minute; transcription is limited to 10 and report analysis to 5 per IP per minute. Responses include standard rate-limit headers.
+- 🚦 All backend routes are limited to 100 requests per IP per minute. Chat, recommendations, hospital research, and estimates have an additional 20-per-minute limit; transcription is limited to 10 per minute, PDF analysis to 5 per minute, and public report submissions to 5 per hour. Responses include standard rate-limit headers.
 - ℹ️ Limits use the default in-memory store and are per server process. Multi-instance deployments should configure a shared rate-limit store so limits apply consistently across instances.
 - 📄 The full implementation is in [`src/server/server.js`](../src/server/server.js).
