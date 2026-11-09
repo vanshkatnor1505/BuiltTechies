@@ -11,11 +11,11 @@
 
 **A healthcare discovery and navigation platform for India** — helping people find, compare, and understand healthcare options through location-aware search, curated recommendations, maps, and an AI-assisted chatbot.
 
-![Node](https://img.shields.io/badge/node-18%2B-339933?logo=node.js&logoColor=white)
+![Node](https://img.shields.io/badge/node-20.19%2B%20or%2022.12%2B-339933?logo=node.js&logoColor=white)
 ![React](https://img.shields.io/badge/react-19.2.0-61DAFB?logo=react&logoColor=black)
 ![Express](https://img.shields.io/badge/express-5.2.1-000000?logo=express&logoColor=white)
 ![Vite](https://img.shields.io/badge/vite-7.2.4-646CFF?logo=vite&logoColor=white)
-![License](https://img.shields.io/badge/license-TBD-lightgrey)
+![License](https://img.shields.io/badge/license-ISC-blue)
 
 > ⚠️ **Medical safety notice:** CurePulse is an information and discovery tool. It does **not** replace a qualified medical professional. Always verify hospital availability, departments, doctors, schedules, and emergency services directly with the provider. **Do not use this application for urgent medical emergencies.**
 
@@ -70,14 +70,13 @@ mindmap
       Language saved across reloads
     Healthcare chatbot
       AI-assisted guidance
-      PDF / report upload
-      Speech services
+      PDF medical-report analysis
+      Voice transcription
       Explicit error feedback
     Account and pages
       Supabase auth and profile
-      Home, FAQ, Contact, Team
-      Analytics page
-      Terms and conditions
+      Home, FAQ, Contact, About / Team
+      Public healthcare reports
 ```
 
 | Area | Highlights |
@@ -90,7 +89,7 @@ mindmap
 | 📊 **Compatibility scoring** | Specialty keyword compatibility; emergency evidence participates in emergency searches; distance remains a separate filter/sort/display value and does not affect the match score |
 | 🌐 **Language support** | English, Hindi, and Punjabi UI translations are bundled locally, available without a translation service, selectable on desktop/mobile, and remembered across reloads |
 | 🤖 **Healthcare chatbot** | AI-assisted guidance, PDF/report upload where configured, Groq speech-to-text for English, Hindi, and Punjabi, and browser-native speech playback using installed voices |
-| 👤 **Account & pages** | Supabase-backed auth and profiles, Home, FAQ, Contact (with local confirmation feedback), Team, Analytics, Terms & Conditions |
+| 👤 **Account & pages** | Supabase-backed auth and profiles, Home, FAQ, Contact (with local confirmation feedback), About / Team, and public healthcare reports |
 
 ### Language and connectivity behavior
 
@@ -128,19 +127,20 @@ flowchart LR
     end
 
     subgraph Server["🔧 Express Backend"]
-        API["API Routes"]
-        RSCH["Research Endpoint"]
-        CHAT["Chatbot Endpoint"]
-        UPL["Upload Handler (Multer + PDF Parse)"]
+        API["Express API"]
+        RSCH["Recommendations &\nhospital research"]
+        CHAT["Chat, transcription,\nreport analysis & estimates"]
+        PUB["Public healthcare\nreport endpoints"]
+        PHOTO["Google Place photo proxy"]
     end
 
     subgraph External["☁️ External Services"]
-        SB[("Supabase\nAuth + Data")]
+        SB[("Supabase\nAuth + profiles + reports")]
         GEO[("Geoapify\nNearby Search")]
-        GRQ[("Groq\nChat + Speech")]
-        TAV[("Tavily\nWeb Research")]
-        GMAP[("Google Maps\nNavigation")]
-        GSRCH[("Google Custom Search\nHospital Research")]
+        GRQ[("Groq\nChat, speech & analysis")]
+        TAV[("Tavily\nRecommendations & research")]
+        GMAP[("Google Maps\nPlaces & photos")]
+        GSRCH[("Google Custom Search\nFacility images")]
     end
 
     UI --> CTX
@@ -150,12 +150,15 @@ flowchart LR
 
     API --> RSCH
     API --> CHAT
-    API --> UPL
+    API --> PUB
+    API --> PHOTO
 
     RSCH --> TAV
-    RSCH --> GSRCH
     CHAT --> GRQ
-    UPL --> GRQ
+    RSCH --> GRQ
+    PUB -->|"Reviewed category counts & submissions"| SB
+    PHOTO --> GMAP
+    RSCH --> GSRCH
     SVC -->|"Client-side geolocation"| GEO
     UI -->|"Optional nav handoff"| GMAP
 
@@ -174,7 +177,7 @@ flowchart LR
 
 | Technology | Version | Purpose |
 | --- | --- | --- |
-| Node.js | 18+ recommended | JavaScript runtime |
+| Node.js | 20.19+ or 22.12+ | JavaScript runtime (Vite 7 requirement) |
 | npm | Bundled with Node.js | Package management and scripts |
 | Vite | `^7.2.4` | Frontend dev server and production bundling |
 | ESLint | `^9.39.5` | Static analysis and code-quality checks |
@@ -212,9 +215,9 @@ flowchart LR
 | **Supabase** | Authentication and hosted data | ✅ Core |
 | **Geoapify** | Nearby healthcare and geolocation search | ✅ Core |
 | **Groq** | Chatbot and speech model access | ✅ Core |
-| **Tavily** | Web research integration | ⚙️ Optional |
-| **Google Maps** | Maps / navigation | ⚙️ Optional |
-| **Google Custom Search** | Hospital research | ⚙️ Optional |
+| **Tavily** | Hospital recommendations and source-backed research | ⚙️ Optional |
+| **Google Maps** | Place photo proxy and navigation handoff | ⚙️ Optional |
+| **Google Custom Search** | Optional facility image discovery | ⚙️ Optional |
 
 > Exact dependency declarations live in [`package.json`](./package.json). Install lockfile-resolved versions with `npm install` rather than adding packages manually.
 
@@ -251,7 +254,7 @@ flowchart LR
 
 ### Prerequisites
 
-- ✅ Node.js 18 or newer
+- ✅ Node.js 20.19+ or 22.12+
 - ✅ npm
 - ✅ A Supabase project for authentication features
 - ✅ API credentials for any external features you intend to enable
@@ -299,8 +302,7 @@ cp .env.example .env.local
 | `CORS_ORIGINS` | Backend | Comma-separated allowed frontend origins |
 | `FRONTEND_URL` | Backend | Public frontend URL used by the backend |
 | `GROQ_API_KEY` | Backend | Groq API credential |
-| `GROQ_CHAT_MODEL` | Backend | Chat model identifier |
-| `GROQ_STT_MODEL` | Backend | Speech-to-text model identifier |
+| `GROQ_STT_MODEL` | Backend | Optional speech-to-text model override |
 | `TAVILY_API_KEY` | Backend | Optional research credential |
 | `GOOGLE_MAPS_API_KEY` | Backend | Optional Google Maps credential |
 | `GOOGLE_SEARCH_API_KEY` | Backend | Optional Google Search credential |
@@ -308,11 +310,12 @@ cp .env.example .env.local
 
 > The complete variable template is in [`.env.example`](./.env.example). **Never commit** `.env.local`, API keys, service-role keys, or other credentials.
 
-All AI-backed API endpoints require a signed-in Supabase session. The frontend
-automatically sends the current session access token, and the backend validates
-it with Supabase before using Groq or Tavily. Configure `SUPABASE_URL` and a
-Supabase public key (`SUPABASE_ANON_KEY` or `VITE_SUPABASE_PUBLISHABLE_KEY`) on
-the backend; missing auth configuration fails closed.
+Authenticated AI and hospital research endpoints require a signed-in Supabase
+session. The frontend sends the current session access token, and the backend
+validates it with Supabase. Configure `SUPABASE_URL` and a Supabase public key
+(`SUPABASE_ANON_KEY` or `VITE_SUPABASE_PUBLISHABLE_KEY`) on the backend;
+missing auth configuration fails closed. The chat model is selected in the
+server implementation; `GROQ_STT_MODEL` is the available speech model override.
 
 ### Public healthcare reports setup and review
 
@@ -417,7 +420,7 @@ Configure the backend environment variables:
 - `PORT` (use the port supplied by the hosting provider when required)
 - `CORS_ORIGINS` containing the deployed frontend origin
 - `FRONTEND_URL` containing the deployed frontend URL
-- `GROQ_API_KEY` and model variables
+- `GROQ_API_KEY` and, optionally, `GROQ_STT_MODEL` for speech transcription
 - Optional research, maps, and search credentials
 
 ### Post-deployment checklist
@@ -497,4 +500,5 @@ flowchart LR
 
 ## 📄 License
 
-This project is maintained as part of the **BuiltTechies** project. Add the final license terms here before distributing the software.
+The package metadata declares the **ISC** license. Add a `LICENSE` file with
+the complete license text before distributing the software.
