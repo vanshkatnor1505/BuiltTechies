@@ -38,22 +38,27 @@ flowchart TB
 
     subgraph EXT["☁️ External Services"]
         direction LR
-        E1[("Geoapify")]
-        E2[("Supabase")]
-        E3[("Groq")]
-        E4[("Tavily /\nGoogle research")]
-        E5[("Map & route\nproviders")]
+        E1[("Geoapify\nNearby search")]
+        E2[("Supabase\nAuth, profiles, reports")]
+        E3[("Groq\nChat, speech, analysis")]
+        E4[("Tavily\nRecommendations & research")]
+        E5[("Google Maps /\nCustom Search\nPlaces & images")]
     end
 
-    FE -->|"HTTP requests"| API
-    API -->|"Provider calls\nwith server credentials"| EXT
+    FE -->|"Authenticated API requests"| API
+    FE -->|"Client-side search"| E1
+    FE -->|"Auth & profile"| E2
+    API -->|"Provider calls\nwith server credentials"| E3
+    API --> E4
+    API -->|"Optional image / photo lookup"| E5
+    API -->|"Public report counts & submissions"| E2
 
     style FE fill:#e8f4fd,stroke:#2196F3,color:#111111
     style API fill:#fef3e0,stroke:#FB8C00,color:#111111
     style EXT fill:#eafaf1,stroke:#2E7D32,color:#111111
 ```
 
-> **Layer principle:** the frontend never talks to a credentialed provider directly — every such call is routed through the Express layer, which orchestrates the provider and returns a normalized response.
+> **Layer principle:** credentialed AI, research, report-storage, and photo-proxy operations run through the Express layer. The browser calls Supabase for authentication and profiles, and Geoapify directly for nearby search using client-side keys.
 
 ---
 
@@ -105,10 +110,10 @@ flowchart LR
     APP --> FIND["/find-hospitals\nSearch, filter, map"]
     APP --> COMPARE["/compare\nFacility comparison"]
     APP --> BOT["/chatbot\nAI assistant"]
-    APP --> TEAM["/team"]
+    APP --> ABOUT["/about, /team\nAbout & team"]
     APP --> FAQ["/faq"]
     APP --> CONTACT["/contact\nContact form"]
-    APP --> ANALYTICS["/analytics"]
+    APP --> PUBLIC["/public-healthcare\nPublic issue reports"]
 
     FIND -.->|"Selected facility IDs"| COMPARE
 ```
@@ -119,10 +124,10 @@ flowchart LR
 | `/find-hospitals` | Search, filter, map, and facility selection |
 | `/compare` | Compare selected facilities |
 | `/chatbot` | AI healthcare assistant |
-| `/team` | Team information |
+| `/about`, `/team` | About and team information; both paths render the same page |
 | `/faq` | Common questions |
 | `/contact` | Contact form |
-| `/analytics` | Analytics view |
+| `/public-healthcare` | Anonymous public-hospital reports and approved issue trends |
 
 ---
 
@@ -156,7 +161,7 @@ flowchart TB
 
 - **`AuthContext`** manages authentication and profile state.
 - **`ThemeContext`** manages the active visual theme and display mode.
-- **`HospitalSearchContext`** shares facility results, comparison IDs, and research results between the finder and comparison pages.
+- **`HospitalSearchContext`** shares facility results, comparison IDs, and research results between the finder and comparison pages; it persists this search state in browser `localStorage`.
 - **`LanguageProvider`** applies the bundled English, Hindi, and Punjabi interface translations and persists the selected language in browser `localStorage`; translation does not call an external service.
 - **Page-local state** controls filters, selected facilities, loading indicators, errors, map view, routes, and form status.
 
