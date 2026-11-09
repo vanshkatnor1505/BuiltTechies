@@ -500,5 +500,5 @@ flowchart LR
 
 ## 📄 License
 
-The package metadata declares the **ISC** license. Add a `LICENSE` file with
-the complete license text before distributing the software.
+This project is built and maintained by **Team BuiltTechies**. Formal license
+terms have not been specified yet.
