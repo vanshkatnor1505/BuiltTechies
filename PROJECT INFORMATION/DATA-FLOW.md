@@ -9,6 +9,7 @@
 - [Punjab state-level flow](#-punjab-state-level-flow)
 - [Hospital research flow](#-hospital-research-flow)
 - [Chatbot and upload flow](#-chatbot-and-upload-flow)
+- [Public healthcare reports flow](#-public-healthcare-reports-flow)
 - [Error and fallback principles](#-error-and-fallback-principles)
 
 ---
@@ -24,19 +25,23 @@ flowchart TB
     NEARBY["Nearby facility data"]
 
     SB[("Supabase")]
-    AUTHF["Authentication /\nprofile flows"]
+    AUTHF["Authentication &\nprofile flows"]
+    REPORTDB["Private reports /\napproved category counts"]
 
     subgraph API["🔧 Express API (/api/*)"]
         direction TB
-        GRQ[("Groq")] --> CHATR["Chat & speech responses"]
-        RSCH[("Research providers")] --> RSCHR["Hospital research"]
+        GRQ[("Groq")] --> CHATR["Chat, speech, report analysis,\nestimates & extraction"]
+        TVLY[("Tavily")] --> RSCHR["Recommendations &\nhospital research"]
         FALL[("Application fallbacks")] --> FALLR["Curated recommendations"]
-        FILE[("File parsers")] --> FILER["PDF / audio processing"]
+        FILE[("PDF parser")] --> FILER["Report text extraction"]
+        PUB["Public report endpoints"]
     end
 
     BR --> GEO --> NEARBY
-    BR --> API
+    BR -->|"Authenticated features"| API
     BR --> SB --> AUTHF
+    BR -->|"Anonymous report calls"| PUB
+    PUB --> SB --> REPORTDB
 
     style API fill:#fef3e0,stroke:#FB8C00,color:#111111
 ```
@@ -83,7 +88,7 @@ flowchart TB
 | --- | --- |
 | **`AuthContext`** | Authentication and profile-related state. Shared navigation controls use this to render the correct signed-in / signed-out experience. |
 | **`ThemeContext`** | The active visual theme and mode. Applied via `data-theme` and `data-mode` attributes consumed by the CSS token system. |
-| **`HospitalSearchContext`** | Search state that needs to survive between the finder and comparison experiences — query, facility results, comparison IDs, research results by facility ID, and last-update metadata. |
+| **`HospitalSearchContext`** | Search state that needs to survive between the finder and comparison experiences — query, facility results, comparison IDs, research results by facility ID, and last-update metadata. This state is persisted in browser `localStorage`. |
 | **`LanguageProvider`** | The selected English, Hindi, or Punjabi interface language. Uses the bundled translation catalog and stores the selection in browser `localStorage`; switching languages does not call a translation API. |
 | **Local page state** | Transient concerns: loading/error state, filters/sorting, selected facility, current view, route geometry, form status. |
 
@@ -134,26 +139,27 @@ absent, specialty fit starts at 50% and is an estimate, not a verified match.
 ```mermaid
 flowchart TD
     %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#111111','primaryBorderColor':'#555555','lineColor':'#555555','secondaryColor':'#f5f5f5','tertiaryColor':'#ffffff','fontSize':'15px','darkMode':false,'background':'#ffffff'}}}%%
-    A["User enters healthcare search"] --> B["Mark recommendations as loading"]
-    B --> C["Request /api/state-hospital-recommendations"]
-    C --> D{"Response valid?"}
-    D -->|"Yes"| E["Normalize into facility cards"]
-    D -->|"No / unavailable"| F["Display curated fallback hospitals"]
-    E --> G["Loading ends"]
-    F --> G
+    A["Signed-in user enters healthcare search"] --> B["Mark recommendations as loading"]
+    B --> C["POST /api/state-hospital-recommendations\nwith Supabase session"]
+    C --> D{"Tavily configured\nand request succeeds?"}
+    D -->|"Yes"| E["Use source-backed results"]
+    D -->|"No key"| F["Backend returns curated fallback data"]
+    D -->|"Provider / request error"| G["Frontend shows curated hospitals\nand an error message"]
+    E --> H["Normalize into facility cards"]
+    F --> H
+    G --> H
+    H --> I["Save facilities in search context"]
 
     style D fill:#fff3cd,stroke:#c9a300,color:#111111
     style F fill:#fdecea,stroke:#c62828,color:#111111
-    style G fill:#eafaf1,stroke:#2E7D32,color:#111111
+    style I fill:#eafaf1,stroke:#2E7D32,color:#111111
 ```
 
-1. The user enters a healthcare search.
-2. The frontend marks recommendations as loading.
-3. The frontend requests `/api/state-hospital-recommendations`.
-4. The response is validated before its recommendation data is used.
-5. The results are normalized into facility cards.
-6. If research is unavailable, curated fallback hospitals are displayed.
-7. Loading ends only after facilities are available or an error/fallback is established.
+1. A signed-in user enters a healthcare search; the frontend requests a Supabase session token.
+2. The frontend posts the disease/treatment and optional state to `/api/state-hospital-recommendations`.
+3. If Tavily is configured, the backend searches and returns source-backed results. Without Tavily, it returns curated India-wide hospitals and resources.
+4. If the provider request fails, the frontend shows curated hospitals with an error message rather than treating the failure as an empty result.
+5. Valid results are normalized into facility objects and saved in `HospitalSearchContext`.
 
 ---
 
@@ -217,26 +223,62 @@ sequenceDiagram
     actor U as User
     participant FE as Chatbot Page
     participant BE as Express API
-    participant Prov as Configured Provider
+    participant Groq as Groq
+    participant PDF as PDF parser
 
-    U->>FE: Enter message or select report/audio file
-    FE->>BE: Send request
-    BE->>BE: Validate request
-    BE->>Prov: Invoke provider
-    alt Upload present
-        Prov-->>BE: Parsed / transcribed content
+    U->>FE: Send healthcare messages
+    FE->>BE: POST /api/chat (messages, language, session)
+    BE->>Groq: Generate healthcare-focused reply
+    Groq-->>BE: Reply
+    BE-->>FE: { success, message, language }
+    U->>FE: Upload PDF or record audio
+    alt PDF medical report
+        FE->>BE: POST /api/analyze-report (report, language, session)
+        BE->>PDF: Extract report text
+        BE->>Groq: Explain report without diagnosing
+        Groq-->>BE: Analysis
+        BE-->>FE: { success, analysis, filename, pages, language }
+    else Voice input
+        FE->>BE: POST /api/transcribe (audio, language, session)
+        BE->>Groq: Transcribe supported audio
+        Groq-->>BE: Transcript
+        BE-->>FE: { success, text, language }
     end
-    Prov-->>BE: Response
-    BE-->>FE: Response or clear failure message
-    FE->>FE: Render result & preserve conversation state
 ```
 
-1. The user enters a message or selects a report/audio file.
-2. The frontend sends the request to the Express API.
-3. The backend validates the request and invokes the configured provider.
-4. Uploaded content is parsed or transcribed when the relevant service is configured.
-5. The backend returns a response or a clear failure message.
-6. The frontend renders the assistant result and preserves the conversation state required by the page.
+Chat, PDF analysis, and transcription require a valid Supabase session. PDF
+uploads are limited to 10 MB and must contain extractable text; scanned
+image-only PDFs are not OCR-processed. Audio is sent separately from chat and
+supports English, Hindi, and Punjabi. Speech playback uses browser speech
+synthesis rather than a backend audio-generation endpoint.
+
+---
+
+## 🏥 Public healthcare reports flow
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant FE as Public Healthcare Page
+    participant API as Express API
+    participant SB as Supabase
+    participant Reviewer as Report reviewer
+
+    U->>FE: Submit hospital, location, category and optional details
+    FE->>API: POST /api/public-healthcare/reports (no account required)
+    API->>SB: Store report with pending status
+    API-->>FE: Acknowledge receipt
+    Reviewer->>SB: Approve or reject report
+    FE->>API: GET /api/public-healthcare/issue-trends
+    API->>SB: Count approved reports by category
+    SB-->>API: Category totals only
+    API-->>FE: Approved category totals
+```
+
+Reports are submitted anonymously and remain private while pending review.
+Only counts for approved categories are returned publicly; hospital names and
+report details are not included in the trends response. This is a community
+reporting feature, not an official grievance channel.
 
 ---
 
