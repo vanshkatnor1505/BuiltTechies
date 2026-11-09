@@ -12,10 +12,11 @@ The product combines:
 - Curated India-wide and Punjab state-level recommendations.
 - Facility comparison and hospital research with source links.
 - Interactive maps and route support.
+- Anonymous public-hospital service reports with reviewed category trends.
 - English, Hindi, and Punjabi interface translations from a bundled catalog.
 - Specialty-based compatibility scoring that does not use distance.
 - An AI-assisted healthcare chatbot.
-- Authentication, profile, FAQ, contact, team, and analytics experiences.
+- Authentication, profile, FAQ, contact, and About/team experiences.
 
 ## Product journey
 
@@ -75,6 +76,7 @@ flowchart TB
     ASSIST --> G1[AI healthcare chatbot]
     ASSIST --> G2[PDF/report assistance]
     ASSIST --> G3[FAQ and support]
+    TRUST --> H4[Reviewed public-hospital issue trends]
     TRUST --> H1[Loading and error states]
     TRUST --> H2[Medical safety boundaries]
     TRUST --> H3[Authentication]
@@ -101,6 +103,7 @@ flowchart TB
 | Punjab state search | Shows a focused list of top Punjab hospitals |
 | Comparison | Helps users compare selected facilities |
 | Research | Enriches hospital cards and comparison views with information and source links |
+| Public healthcare reports | Accepts anonymous reports about public-hospital services; publishes only approved category totals |
 | Compatibility | Specialty fit has weight 70; emergency evidence has weight 10 for emergency searches, with included dimensions normalized; distance is separate |
 | Language | Provides bundled English, Hindi, and Punjabi UI translations and remembers the selection locally |
 | Maps | Shows facilities and supports route discovery |
@@ -145,10 +148,10 @@ research flow.
 | `/find-hospitals` | Healthcare facility search and map |
 | `/compare` | Compare selected hospitals |
 | `/chatbot` | AI healthcare assistant |
-| `/team` | Project/team information |
+| `/about`, `/team` | About and team information (both routes render the same page) |
 | `/faq` | Frequently asked questions |
 | `/contact` | Contact form and support information |
-| `/analytics` | Analytics view |
+| `/public-healthcare` | Anonymous public-hospital reports and approved issue trends |
 
 Unknown routes fall back to the home page.
 
