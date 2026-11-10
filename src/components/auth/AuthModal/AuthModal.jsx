@@ -9,17 +9,10 @@ import { useAuth } from "../../../context/AuthContext";
 
 import styles from "./AuthModal.module.css";
 
-function AuthModal({
-  open,
-  onClose,
-}) {
-  const {
-    signIn,
-    signUp,
-  } = useAuth();
+function AuthModal({ open, onClose }) {
+  const { signIn, signUp } = useAuth();
 
-  const [mode, setMode] =
-    useState("signin");
+  const [mode, setMode] = useState("signin");
 
   const [form, setForm] = useState({
     displayName: "",
@@ -28,14 +21,11 @@ function AuthModal({
     password: "",
   });
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
-  const [message, setMessage] =
-    useState("");
+  const [message, setMessage] = useState("");
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -46,25 +36,16 @@ function AuthModal({
       }
     };
 
-    document.addEventListener(
-      "keydown",
-      handleEscape
-    );
+    document.addEventListener("keydown", handleEscape);
 
-    const previousOverflow =
-      document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
 
-    document.body.style.overflow =
-      "hidden";
+    document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleEscape
-      );
+      document.removeEventListener("keydown", handleEscape);
 
-      document.body.style.overflow =
-        previousOverflow;
+      document.body.style.overflow = previousOverflow;
     };
   }, [open, onClose]);
 
@@ -80,8 +61,7 @@ function AuthModal({
   }
 
   const handleChange = (event) => {
-    const { name, value } =
-      event.target;
+    const { name, value } = event.target;
 
     setForm((previous) => ({
       ...previous,
@@ -89,9 +69,7 @@ function AuthModal({
     }));
   };
 
-  const handleSubmit = async (
-    event
-  ) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     setError("");
@@ -100,9 +78,7 @@ function AuthModal({
 
     try {
       if (mode === "signin") {
-        const {
-          error: signInError,
-        } = await signIn({
+        const { error: signInError } = await signIn({
           email: form.email,
           password: form.password,
         });
@@ -113,16 +89,11 @@ function AuthModal({
 
         onClose();
       } else {
-        const {
-          data,
-          error: signUpError,
-        } = await signUp({
+        const { data, error: signUpError } = await signUp({
           email: form.email,
           password: form.password,
-          displayName:
-            form.displayName,
-          username:
-            form.username,
+          displayName: form.displayName,
+          username: form.username,
         });
 
         if (signUpError) {
@@ -133,15 +104,12 @@ function AuthModal({
           onClose();
         } else {
           setMessage(
-            "Account created. Check your email to confirm your account."
+            "Account created. Check your email to confirm your account.",
           );
         }
       }
     } catch (submitError) {
-      setError(
-        submitError?.message ||
-          "Something went wrong."
-      );
+      setError(submitError?.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -151,10 +119,7 @@ function AuthModal({
     <div
       className={styles.overlay}
       onMouseDown={(event) => {
-        if (
-          event.target ===
-          event.currentTarget
-        ) {
+        if (event.target === event.currentTarget) {
           onClose();
         }
       }}
@@ -167,16 +132,10 @@ function AuthModal({
       >
         <div className={styles.header}>
           <div>
-            <span
-              className={styles.eyebrow}
-            >
-              ACCOUNT
-            </span>
+            <span className={styles.eyebrow}>ACCOUNT</span>
 
             <h2 id="auth-title">
-              {mode === "signin"
-                ? "Welcome back."
-                : "Create your account."}
+              {mode === "signin" ? "Welcome back." : "Create your account."}
             </h2>
 
             <p>
@@ -194,18 +153,13 @@ function AuthModal({
           />
         </div>
 
-        <form
-          className={styles.form}
-          onSubmit={handleSubmit}
-        >
+        <form className={styles.form} onSubmit={handleSubmit}>
           {mode === "signup" && (
             <>
               <Input
                 label="Display name"
                 name="displayName"
-                value={
-                  form.displayName
-                }
+                value={form.displayName}
                 onChange={handleChange}
                 placeholder="Your name"
                 required
@@ -242,43 +196,20 @@ function AuthModal({
             value={form.password}
             onChange={handleChange}
             placeholder="••••••••"
-            leftIcon={
-              <LockKeyhole />
-            }
+            leftIcon={<LockKeyhole />}
             required
             minLength={6}
             autoComplete={
-              mode === "signin"
-                ? "current-password"
-                : "new-password"
+              mode === "signin" ? "current-password" : "new-password"
             }
           />
 
-          {error && (
-            <p className={styles.error}>
-              {error}
-            </p>
-          )}
+          {error && <p className={styles.error}>{error}</p>}
 
-          {message && (
-            <p
-              className={
-                styles.message
-              }
-            >
-              {message}
-            </p>
-          )}
+          {message && <p className={styles.message}>{message}</p>}
 
-          <Button
-            type="submit"
-            size="large"
-            fullWidth
-            loading={loading}
-          >
-            {mode === "signin"
-              ? "Sign In"
-              : "Create Account"}
+          <Button type="submit" size="large" fullWidth loading={loading}>
+            {mode === "signin" ? "Sign In" : "Create Account"}
           </Button>
         </form>
 
@@ -291,27 +222,16 @@ function AuthModal({
 
           <button
             type="button"
-            onClick={() =>
-              setMode(
-                mode === "signin"
-                  ? "signup"
-                  : "signin"
-              )
-            }
+            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           >
-            {mode === "signin"
-              ? "Create one"
-              : "Sign in"}
+            {mode === "signin" ? "Create one" : "Sign in"}
           </button>
         </div>
       </div>
     </div>
   );
 
-  return createPortal(
-    modal,
-    document.body
-  );
+  return createPortal(modal, document.body);
 }
 
 export default AuthModal;
