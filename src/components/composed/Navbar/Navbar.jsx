@@ -251,8 +251,6 @@ function Navbar({
               </select>
             </label>
 
-            <AuthControls />
-
             <AppearanceMenu />
 
             {cta && (
@@ -269,13 +267,7 @@ function Navbar({
                 {cta.label}
               </Button>
             )}
-          </div>
 
-          {/* =================================
-              MOBILE AUTH
-          ================================= */}
-
-          <div className={styles.mobileAuth}>
             <AuthControls />
           </div>
 
@@ -307,6 +299,14 @@ function Navbar({
                 )
               }
             />
+          </div>
+
+          {/* =================================
+              MOBILE AUTH
+          ================================= */}
+
+          <div className={styles.mobileAuth}>
+            <AuthControls />
           </div>
         </div>
 

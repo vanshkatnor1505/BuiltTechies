@@ -13,14 +13,12 @@
 }
 
 .profileTrigger {
-  display: flex;
-  align-items: center;
+  display: grid;
+  place-items: center;
 
-  gap: 9px;
-
-  min-height: 40px;
-
-  padding: 4px 9px 4px 5px;
+  width: 40px;
+  height: 40px;
+  padding: 3px;
 
   background:
     var(--surface-1);
@@ -79,53 +77,11 @@
 }
 
 .profileInfo {
-  display: flex;
-  flex-direction: column;
-
-  align-items: flex-start;
-}
-
-.profileInfo strong {
-  max-width: 120px;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-
-  font-size: 11px;
-}
-
-.profileInfo small {
-  max-width: 120px;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-
-  margin-top: 2px;
-
-  color:
-    var(--text-muted);
-
-  font-size: 9px;
+  display: none;
 }
 
 .chevron {
-  color:
-    var(--text-muted);
-
-  transition:
-    transform var(--transition-fast);
-}
-
-.profileTrigger[aria-expanded="true"]
-.chevron {
-  transform:
-    rotate(180deg);
+  display: none;
 }
 
 .dropdown {
@@ -273,18 +229,9 @@
     display: block;
   }
 
-  .profileInfo,
-  .chevron {
-    display: none;
-  }
-
   .profileTrigger {
     width: 38px;
     height: 38px;
-
-    padding: 3px;
-
-    justify-content: center;
 
     border-color:
       var(--border-subtle);

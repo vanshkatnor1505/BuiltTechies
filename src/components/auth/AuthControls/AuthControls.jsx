@@ -107,6 +107,8 @@ function AuthControls() {
           onClick={() => setMenuOpen((previous) => !previous)}
           aria-expanded={menuOpen}
           aria-haspopup="menu"
+          aria-label={`Open ${displayName} profile menu`}
+          title={displayName}
         >
           <span className={styles.avatar}>
             {avatarUrl ? (
