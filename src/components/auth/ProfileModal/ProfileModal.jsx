@@ -9,15 +9,8 @@ import { useAuth } from "../../../context/AuthContext";
 
 import styles from "./ProfileModal.module.css";
 
-function ProfileModal({
-  open,
-  onClose,
-}) {
-  const {
-    profile,
-    user,
-    updateProfile,
-  } = useAuth();
+function ProfileModal({ open, onClose }) {
+  const { profile, user, updateProfile } = useAuth();
 
   const [form, setForm] = useState({
     display_name: "",
@@ -37,20 +30,13 @@ function ProfileModal({
 
     setForm({
       display_name:
-        profile?.display_name ||
-        user?.user_metadata?.display_name ||
-        "",
+        profile?.display_name || user?.user_metadata?.display_name || "",
 
-      username:
-        profile?.username ||
-        user?.user_metadata?.username ||
-        "",
+      username: profile?.username || user?.user_metadata?.username || "",
 
-      avatar_url:
-        profile?.avatar_url || "",
+      avatar_url: profile?.avatar_url || "",
 
-      bio:
-        profile?.bio || "",
+      bio: profile?.bio || "",
     });
 
     setError("");
@@ -62,24 +48,16 @@ function ProfileModal({
       }
     };
 
-    document.addEventListener(
-      "keydown",
-      handleEscape
-    );
+    document.addEventListener("keydown", handleEscape);
 
-    const previousOverflow =
-      document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
 
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleEscape
-      );
+      document.removeEventListener("keydown", handleEscape);
 
-      document.body.style.overflow =
-        previousOverflow;
+      document.body.style.overflow = previousOverflow;
     };
   }, [open, profile, user, onClose]);
 
@@ -103,14 +81,10 @@ function ProfileModal({
     setError("");
     setSaved(false);
 
-    const { error: updateError } =
-      await updateProfile(form);
+    const { error: updateError } = await updateProfile(form);
 
     if (updateError) {
-      setError(
-        updateError.message ||
-          "Failed to update profile."
-      );
+      setError(updateError.message || "Failed to update profile.");
     } else {
       setSaved(true);
     }
@@ -122,9 +96,7 @@ function ProfileModal({
     <div
       className={styles.overlay}
       onMouseDown={(event) => {
-        if (
-          event.target === event.currentTarget
-        ) {
+        if (event.target === event.currentTarget) {
           onClose();
         }
       }}
@@ -137,18 +109,11 @@ function ProfileModal({
       >
         <div className={styles.header}>
           <div>
-            <span className={styles.eyebrow}>
-              PROFILE
-            </span>
+            <span className={styles.eyebrow}>PROFILE</span>
 
-            <h2 id="profile-title">
-              Your profile.
-            </h2>
+            <h2 id="profile-title">Your profile.</h2>
 
-            <p>
-              Update the information shown on
-              your account.
-            </p>
+            <p>Update the information shown on your account.</p>
           </div>
 
           <IconButton
@@ -162,33 +127,22 @@ function ProfileModal({
         <div className={styles.preview}>
           <div className={styles.avatar}>
             {form.avatar_url ? (
-              <img
-                src={form.avatar_url}
-                alt=""
-              />
+              <img src={form.avatar_url} alt="" />
             ) : (
               <UserRound size={24} />
             )}
           </div>
 
           <div>
-            <strong>
-              {form.display_name ||
-                "Your Name"}
-            </strong>
+            <strong>{form.display_name || "Your Name"}</strong>
 
             <span>
-              {form.username
-                ? `@${form.username}`
-                : user?.email || ""}
+              {form.username ? `@${form.username}` : user?.email || ""}
             </span>
           </div>
         </div>
 
-        <form
-          className={styles.form}
-          onSubmit={handleSubmit}
-        >
+        <form className={styles.form} onSubmit={handleSubmit}>
           <Input
             label="Display name"
             name="display_name"
@@ -217,9 +171,7 @@ function ProfileModal({
           />
 
           <div className={styles.textareaField}>
-            <label htmlFor="profile-bio">
-              Bio
-            </label>
+            <label htmlFor="profile-bio">Bio</label>
 
             <textarea
               id="profile-bio"
@@ -231,16 +183,10 @@ function ProfileModal({
             />
           </div>
 
-          {error && (
-            <p className={styles.error}>
-              {error}
-            </p>
-          )}
+          {error && <p className={styles.error}>{error}</p>}
 
           {saved && (
-            <p className={styles.success}>
-              Profile updated successfully.
-            </p>
+            <p className={styles.success}>Profile updated successfully.</p>
           )}
 
           <div className={styles.actions}>
@@ -253,11 +199,7 @@ function ProfileModal({
               Cancel
             </Button>
 
-            <Button
-              type="submit"
-              size="medium"
-              loading={loading}
-            >
+            <Button type="submit" size="medium" loading={loading}>
               Save Profile
             </Button>
           </div>
@@ -266,10 +208,7 @@ function ProfileModal({
     </div>
   );
 
-  return createPortal(
-    modal,
-    document.body
-  );
+  return createPortal(modal, document.body);
 }
 
 export default ProfileModal;
