@@ -441,6 +441,200 @@ function ReportSectionContent({ content }) {
   });
 }
 
+function renderMarkdownInline(text) {
+  return String(text)
+    .split(/(\*\*.+?\*\*|__.+?__|\*[^*]+\*|`[^`]+`|<br\s*\/?>)/gi)
+    .map((part, index) => {
+      if (/^(?:\*\*|__).+(?:\*\*|__)$/s.test(part)) {
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
+      }
+
+      if (/^\*[^*]+\*$/.test(part)) {
+        return <em key={index}>{part.slice(1, -1)}</em>;
+      }
+
+      if (/^`[^`]+`$/.test(part)) {
+        return <code key={index}>{part.slice(1, -1)}</code>;
+      }
+
+      if (/^<br\s*\/?>$/i.test(part)) {
+        return <br key={index} />;
+      }
+
+      return part;
+    });
+}
+
+function AssistantMessageContent({ content }) {
+  const normalizedContent = String(content || "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/\s+---\s+(?=#{1,6}\s)/g, "\n\n---\n\n")
+    .replace(/\s+(#{1,6}\s+)/g, "\n\n$1")
+    .replace(/\s+-\s+(?=\*\*[^*]+\*\*)/g, "\n- ")
+    .replace(/\|\s+\|/g, "|\n|");
+  const lines = normalizedContent.split("\n");
+  const blocks = [];
+  let paragraphLines = [];
+  let listItems = [];
+  let listType = null;
+
+  const flushParagraph = () => {
+    if (paragraphLines.length) {
+      blocks.push({
+        type: "paragraph",
+        content: paragraphLines.join(" "),
+      });
+      paragraphLines = [];
+    }
+  };
+
+  const flushList = () => {
+    if (listItems.length) {
+      blocks.push({ type: listType, items: listItems });
+      listItems = [];
+      listType = null;
+    }
+  };
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+
+    if (!line) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      flushParagraph();
+      flushList();
+      blocks.push({
+        type: "heading",
+        level: Math.min(headingMatch[1].length + 1, 6),
+        content: headingMatch[2].replace(/\s+#+$/, ""),
+      });
+      continue;
+    }
+
+    if (/^(?:---+|\*\*\*+|___+)$/.test(line)) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    if (line.includes("|") && index + 1 < lines.length) {
+      const separatorCells = lines[index + 1]
+        .trim()
+        .replace(/^\||\|$/g, "")
+        .split("|")
+        .map((cell) => cell.trim());
+      const isTableSeparator =
+        separatorCells.length > 1 &&
+        separatorCells.every((cell) => /^:?-{3,}:?$/.test(cell));
+
+      if (isTableSeparator) {
+        flushParagraph();
+        flushList();
+        const headerCells = line
+          .replace(/^\||\|$/g, "")
+          .split("|")
+          .map((cell) => cell.trim());
+        const rows = [];
+        index += 2;
+
+        while (index < lines.length && lines[index].trim().includes("|")) {
+          rows.push(
+            lines[index]
+              .trim()
+              .replace(/^\||\|$/g, "")
+              .split("|")
+              .map((cell) => cell.trim()),
+          );
+          index += 1;
+        }
+
+        index -= 1;
+        blocks.push({ type: "table", headerCells, rows });
+        continue;
+      }
+    }
+
+    const listMatch = line.match(/^([-*+]|\d+[.)])\s+(.+)$/);
+    if (listMatch) {
+      flushParagraph();
+      const nextListType = /^\d/.test(listMatch[1]) ? "ordered" : "unordered";
+      if (listType && listType !== nextListType) {
+        flushList();
+      }
+      listType = nextListType;
+      listItems.push(listMatch[2]);
+      continue;
+    }
+
+    flushList();
+    paragraphLines.push(line);
+  }
+
+  flushParagraph();
+  flushList();
+
+  return (
+    <div className={styles.markdownContent}>
+      {blocks.map((block, index) => {
+        if (block.type === "paragraph") {
+          return <p key={index}>{renderMarkdownInline(block.content)}</p>;
+        }
+
+        if (block.type === "heading") {
+          const Heading = `h${block.level}`;
+          return (
+            <Heading key={index}>
+              {renderMarkdownInline(block.content)}
+            </Heading>
+          );
+        }
+
+        if (block.type === "table") {
+          return (
+            <div className={styles.markdownTableWrapper} key={index}>
+              <table className={styles.markdownTable}>
+                <thead>
+                  <tr>
+                    {block.headerCells.map((cell, cellIndex) => (
+                      <th key={cellIndex}>{renderMarkdownInline(cell)}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {block.headerCells.map((_, cellIndex) => (
+                        <td key={cellIndex}>
+                          {renderMarkdownInline(row[cellIndex] || "")}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        const List = block.type === "ordered" ? "ol" : "ul";
+        return (
+          <List key={index}>
+            {block.items.map((item, itemIndex) => (
+              <li key={itemIndex}>{renderMarkdownInline(item)}</li>
+            ))}
+          </List>
+        );
+      })}
+    </div>
+  );
+}
+
 /* =========================================================
    CHATBOT
 ========================================================= */
@@ -1510,7 +1704,7 @@ function Chatbot() {
                           </div>
                         </div>
                       ) : (
-                        <p>{message.content}</p>
+                        <AssistantMessageContent content={message.content} />
                       )}
 
                       {message.isEmergency && (
