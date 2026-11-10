@@ -27,10 +27,6 @@ function SiteNavbar() {
           label: "Assistant",
           href: "/chatbot",
         },
-        {
-          label: "About Us",
-          href: "/about",
-        },
       ]}
       cta={{
         label: "Open Assistant",
