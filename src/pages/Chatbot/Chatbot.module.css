@@ -1097,6 +1097,68 @@
   font-weight: 700;
 }
 
+.markdownContent {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.markdownContent > :first-child {
+  margin-top: 0;
+}
+
+.markdownContent > :last-child {
+  margin-bottom: 0;
+}
+
+.markdownContent p,
+.markdownContent h2,
+.markdownContent h3,
+.markdownContent h4 {
+  margin: 0;
+}
+
+.markdownContent h2,
+.markdownContent h3,
+.markdownContent h4 {
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.markdownContent em {
+  font-style: italic;
+}
+
+.markdownContent ul,
+.markdownContent ol {
+  margin: 0;
+}
+
+.markdownTableWrapper {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdownTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.markdownTable th,
+.markdownTable td {
+  padding: 6px 8px;
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdownTable th {
+  color: var(--text-primary);
+  background: var(--surface-3);
+}
+
 .assistantBubble ul,
 .assistantBubble ol {
   margin: 9px 0;
