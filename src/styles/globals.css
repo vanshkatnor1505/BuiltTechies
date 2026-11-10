@@ -29,8 +29,8 @@ body {
     color var(--transition-normal);
 }
 
-html[data-text-size="large"] {
-  font-size: 112.5%;
+html[data-text-size="large"] body {
+  zoom: 1.125;
 }
 
 button,
