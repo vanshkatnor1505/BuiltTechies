@@ -132,14 +132,15 @@ async function requireSupabaseSession(req, res, next) {
     }
 
     const userData = await userResponse.json();
-    if (!userData?.user?.id) {
+    const authenticatedUser = userData?.user ?? userData;
+    if (!authenticatedUser?.id) {
       return res.status(401).json({
         success: false,
         message: "Invalid or expired Supabase session.",
       });
     }
 
-    req.user = userData.user;
+    req.user = authenticatedUser;
     return next();
   } catch (error) {
     console.error("SUPABASE SESSION CHECK ERROR:", error);
