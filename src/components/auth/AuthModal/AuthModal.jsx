@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { LockKeyhole, Mail, X } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, Mail, X } from "lucide-react";
 
 import Button from "../../common/Button/Button";
 import Input from "../../common/Input/Input";
@@ -26,6 +26,8 @@ function AuthModal({ open, onClose }) {
   const [message, setMessage] = useState("");
 
   const [loading, setLoading] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -109,7 +111,12 @@ function AuthModal({ open, onClose }) {
         }
       }
     } catch (submitError) {
-      setError(submitError?.message || "Something went wrong.");
+      const errorMessage = submitError?.message || "";
+      setError(
+        /failed to fetch|networkerror/i.test(errorMessage)
+          ? "Unable to reach the authentication service. Check your connection and verify that VITE_SUPABASE_URL points to an active Supabase project."
+          : errorMessage || "Something went wrong.",
+      );
     } finally {
       setLoading(false);
     }
@@ -192,11 +199,22 @@ function AuthModal({ open, onClose }) {
           <Input
             label="Password"
             name="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             value={form.password}
             onChange={handleChange}
             placeholder="••••••••"
             leftIcon={<LockKeyhole />}
+            rightElement={
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            }
             required
             minLength={6}
             autoComplete={
