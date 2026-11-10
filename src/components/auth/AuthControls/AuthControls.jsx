@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  LogOut,
-  User,
-  UserPen,
-} from "lucide-react";
+import { ChevronDown, LogOut, User, UserPen } from "lucide-react";
 
 import Button from "../../common/Button/Button";
 import IconButton from "../../common/IconButton/IconButton";
@@ -29,35 +24,19 @@ function getInitials(name = "") {
 }
 
 function AuthControls() {
-  const {
-    user,
-    profile,
-    loading,
-    signOut,
-  } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
 
-  const [authOpen, setAuthOpen] =
-    useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
-  const [profileOpen, setProfileOpen] =
-    useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const [menuOpen, setMenuOpen] =
-    useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const wrapperRef =
-    useRef(null);
+  const wrapperRef = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (
-      event
-    ) => {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(
-          event.target
-        )
-      ) {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setMenuOpen(false);
       }
     };
@@ -68,170 +47,95 @@ function AuthControls() {
       }
     };
 
-    document.addEventListener(
-      "mousedown",
-      handleClickOutside
-    );
+    document.addEventListener("mousedown", handleClickOutside);
 
-    document.addEventListener(
-      "keydown",
-      handleEscape
-    );
+    document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside
-      );
+      document.removeEventListener("mousedown", handleClickOutside);
 
-      document.removeEventListener(
-        "keydown",
-        handleEscape
-      );
+      document.removeEventListener("keydown", handleEscape);
     };
   }, []);
 
   if (loading) {
-    return (
-      <div
-        className={
-          styles.loadingPlaceholder
-        }
-      />
-    );
+    return <div className={styles.loadingPlaceholder} />;
   }
 
   if (!user) {
     return (
       <>
-        <div
-          className={
-            styles.desktopSignIn
-          }
-        >
+        <div className={styles.desktopSignIn}>
           <Button
             variant="outline"
             size="small"
-            onClick={() =>
-              setAuthOpen(true)
-            }
+            onClick={() => setAuthOpen(true)}
           >
             Sign In
           </Button>
         </div>
 
-        <div
-          className={
-            styles.mobileSignIn
-          }
-        >
+        <div className={styles.mobileSignIn}>
           <IconButton
             icon={<User />}
             label="Sign in"
             variant="ghost"
             size="small"
-            onClick={() =>
-              setAuthOpen(true)
-            }
+            onClick={() => setAuthOpen(true)}
           />
         </div>
 
-        <AuthModal
-          open={authOpen}
-          onClose={() =>
-            setAuthOpen(false)
-          }
-        />
+        <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       </>
     );
   }
 
   const displayName =
     profile?.display_name ||
-    user.user_metadata
-      ?.display_name ||
+    user.user_metadata?.display_name ||
     user.email?.split("@")[0] ||
     "User";
 
-  const avatarUrl =
-    profile?.avatar_url ||
-    user.user_metadata
-      ?.avatar_url;
+  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url;
 
   return (
     <>
-      <div
-        ref={wrapperRef}
-        className={styles.account}
-      >
+      <div ref={wrapperRef} className={styles.account}>
         <button
           type="button"
-          className={
-            styles.profileTrigger
-          }
-          onClick={() =>
-            setMenuOpen(
-              (previous) => !previous
-            )
-          }
+          className={styles.profileTrigger}
+          onClick={() => setMenuOpen((previous) => !previous)}
           aria-expanded={menuOpen}
           aria-haspopup="menu"
         >
           <span className={styles.avatar}>
             {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt=""
-              />
+              <img src={avatarUrl} alt="" />
             ) : (
               getInitials(displayName)
             )}
           </span>
 
-          <span
-            className={styles.profileInfo}
-          >
-            <strong>
-              {displayName}
-            </strong>
+          <span className={styles.profileInfo}>
+            <strong>{displayName}</strong>
 
-            <small>
-              {user.email}
-            </small>
+            <small>{user.email}</small>
           </span>
 
-          <ChevronDown
-            className={
-              styles.chevron
-            }
-            size={15}
-          />
+          <ChevronDown className={styles.chevron} size={15} />
         </button>
 
         {menuOpen && (
-          <div
-            className={styles.dropdown}
-            role="menu"
-          >
-            <div
-              className={
-                styles.dropdownHeader
-              }
-            >
-              <span>
-                Signed in as
-              </span>
+          <div className={styles.dropdown} role="menu">
+            <div className={styles.dropdownHeader}>
+              <span>Signed in as</span>
 
-              <strong>
-                {user.email}
-              </strong>
+              <strong>{user.email}</strong>
             </div>
 
             <button
               type="button"
-              className={
-                styles.dropdownItem
-              }
+              className={styles.dropdownItem}
               onClick={() => {
                 setMenuOpen(false);
                 setProfileOpen(true);
@@ -258,12 +162,7 @@ function AuthControls() {
         )}
       </div>
 
-      <ProfileModal
-        open={profileOpen}
-        onClose={() =>
-          setProfileOpen(false)
-        }
-      />
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </>
   );
 }
