@@ -21,7 +21,7 @@ export const teamMembers = [
 
   {
     id: "member-2",
-    name: "Bupinderjit Singh",
+    name: "Bhupinderjit Singh",
     role: "Data Base / AI Engineer",
     shortBio:
       "Designs intelligent data systems and AI-powered solutions that turn raw information into smart actions.",
