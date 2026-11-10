@@ -9,6 +9,7 @@ const Input = forwardRef(function Input(
     success,
     leftIcon,
     rightIcon,
+    rightElement,
     id,
     name,
     type = "text",
@@ -67,7 +68,7 @@ const Input = forwardRef(function Input(
   const inputClasses = [
     styles.input,
     leftIcon ? styles.hasLeftIcon : "",
-    rightIcon ? styles.hasRightIcon : "",
+    rightIcon || rightElement ? styles.hasRightIcon : "",
     inputClassName,
   ]
     .filter(Boolean)
@@ -127,6 +128,12 @@ const Input = forwardRef(function Input(
             aria-hidden="true"
           >
             {rightIcon}
+          </span>
+        )}
+
+        {rightElement && (
+          <span className={styles.rightElement}>
+            {rightElement}
           </span>
         )}
       </div>
