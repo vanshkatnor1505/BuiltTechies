@@ -149,6 +149,18 @@
   right: 14px;
 }
 
+.rightElement {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transform: translateY(-50%);
+}
+
 
 /* =================================
    ERROR
