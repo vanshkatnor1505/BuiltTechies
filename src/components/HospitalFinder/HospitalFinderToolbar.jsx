@@ -79,8 +79,8 @@
             onChange={(event) => setSchemeFilter(event.target.value)}
           >
             <option value="all">Any scheme status</option>
-            <option value="pmjay-candidates">PM-JAY candidates</option>
-            <option value="scheme-info">PM-JAY status available</option>
+            <option value="pmjay-verified">PM-JAY registry verified</option>
+            <option value="abdm-verified">ABDM registry verified</option>
           </select>
         </div>
 
