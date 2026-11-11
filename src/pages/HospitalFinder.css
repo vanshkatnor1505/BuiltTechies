@@ -12,7 +12,9 @@
   .manual-location-form input:focus-visible,
   .manual-location-form button:focus-visible,
   .facility-actions button:focus-visible,
-  .facility-actions a:focus-visible {
+  .facility-actions a:focus-visible,
+  .facility-registry-checks a:focus-visible,
+  .facility-registry-checks summary:focus-visible {
     outline: 3px solid var(--hf-primary-soft);
     outline-offset: 2px;
   }
@@ -1125,6 +1127,46 @@
   margin: 0;
   color: var(--hf-text);
   font-size: 12px;
+}
+
+.facility-registry-checks {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--hf-border);
+  border-radius: 10px;
+  background: var(--hf-surface-2);
+  color: var(--hf-text-2);
+  font-size: 12px;
+}
+
+.facility-registry-checks summary {
+  color: var(--hf-text);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.facility-registry-checks ul {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+  padding-left: 18px;
+}
+
+.facility-registry-checks li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.facility-registry-checks a {
+  color: var(--hf-primary);
+  font-weight: 700;
+}
+
+.facility-registry-checks p {
+  margin: 8px 0 0;
+  line-height: 1.5;
 }
 
 .research-source-list {
