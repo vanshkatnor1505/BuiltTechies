@@ -273,13 +273,54 @@ const QUICK_ACTIONS = [
    INITIAL CHAT
 ========================================================= */
 
-const INITIAL_MESSAGES = [
+const CHATBOT_COPY = {
+  en: {
+    greeting:
+      "Hello! I'm your healthcare navigation assistant. I can help you find suitable hospitals, understand healthcare information and navigate your options.",
+    nonMedical:
+      "I’m Vital, a healthcare assistant. I can only help with health, medical reports, treatments, symptoms, hospitals, doctors, and healthcare navigation. Please ask a healthcare-related question.",
+    comparison: "Opening the comparison workspace so you can select and compare hospitals.",
+    finder: "I’m opening the hospital finder and using your current location to find nearby options.",
+    connectionError:
+      "I'm having trouble connecting to the healthcare assistant right now. Please check that the Vital backend is running and try again.",
+    emergencyRequest: "I need emergency medical help.",
+    compareRequest: "I want to compare hospitals.",
+    hospitalPrompt: "Help me find a suitable hospital for ",
+  },
+  hi: {
+    greeting:
+      "नमस्ते! मैं आपका स्वास्थ्य सेवा सहायक हूँ। मैं उपयुक्त अस्पताल खोजने, स्वास्थ्य संबंधी जानकारी समझने और उपलब्ध विकल्पों के बारे में मार्गदर्शन देने में मदद कर सकता हूँ।",
+    nonMedical:
+      "मैं Vital, एक स्वास्थ्य सहायक हूँ। मैं स्वास्थ्य, मेडिकल रिपोर्ट, उपचार, लक्षणों, अस्पतालों, डॉक्टरों और स्वास्थ्य सेवाओं से जुड़े सवालों में मदद कर सकता हूँ। कृपया स्वास्थ्य संबंधी प्रश्न पूछें।",
+    comparison: "अस्पतालों के विकल्प चुनने और उनकी तुलना करने के लिए तुलना पृष्ठ खोला जा रहा है।",
+    finder: "आस-पास के विकल्प खोजने के लिए अस्पताल खोज पृष्ठ खोला जा रहा है और आपके वर्तमान स्थान का उपयोग किया जा रहा है।",
+    connectionError:
+      "अभी स्वास्थ्य सहायक से जुड़ने में समस्या हो रही है। कृपया जाँचें कि Vital बैकएंड चल रहा है और फिर से कोशिश करें।",
+    emergencyRequest: "मुझे आपातकालीन चिकित्सा सहायता चाहिए।",
+    compareRequest: "मैं अस्पतालों की तुलना करना चाहता/चाहती हूँ।",
+    hospitalPrompt: "मेरी स्वास्थ्य समस्या के लिए उपयुक्त अस्पताल खोजें: ",
+  },
+  pa: {
+    greeting:
+      "ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਤੁਹਾਡਾ ਸਿਹਤ ਸੇਵਾ ਸਹਾਇਕ ਹਾਂ। ਮੈਂ ਢੁਕਵੇਂ ਹਸਪਤਾਲ ਲੱਭਣ, ਸਿਹਤ ਜਾਣਕਾਰੀ ਸਮਝਣ ਅਤੇ ਉਪਲਬਧ ਵਿਕਲਪਾਂ ਬਾਰੇ ਰਾਹਨੁਮਾਈ ਕਰਨ ਵਿੱਚ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ।",
+    nonMedical:
+      "ਮੈਂ Vital, ਇੱਕ ਸਿਹਤ ਸਹਾਇਕ ਹਾਂ। ਮੈਂ ਸਿਹਤ, ਮੈਡੀਕਲ ਰਿਪੋਰਟਾਂ, ਇਲਾਜ, ਲੱਛਣਾਂ, ਹਸਪਤਾਲਾਂ, ਡਾਕਟਰਾਂ ਅਤੇ ਸਿਹਤ ਸੇਵਾਵਾਂ ਨਾਲ ਜੁੜੇ ਸਵਾਲਾਂ ਵਿੱਚ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ। ਕਿਰਪਾ ਕਰਕੇ ਸਿਹਤ ਨਾਲ ਸਬੰਧਤ ਸਵਾਲ ਪੁੱਛੋ।",
+    comparison: "ਹਸਪਤਾਲਾਂ ਦੇ ਵਿਕਲਪ ਚੁਣਨ ਅਤੇ ਉਨ੍ਹਾਂ ਦੀ ਤੁਲਨਾ ਕਰਨ ਲਈ ਤੁਲਨਾ ਪੰਨਾ ਖੋਲ੍ਹਿਆ ਜਾ ਰਿਹਾ ਹੈ।",
+    finder: "ਨੇੜਲੇ ਵਿਕਲਪ ਲੱਭਣ ਲਈ ਹਸਪਤਾਲ ਖੋਜ ਪੰਨਾ ਖੋਲ੍ਹਿਆ ਜਾ ਰਿਹਾ ਹੈ ਅਤੇ ਤੁਹਾਡੀ ਮੌਜੂਦਾ ਥਾਂ ਵਰਤੀ ਜਾ ਰਹੀ ਹੈ।",
+    connectionError:
+      "ਇਸ ਵੇਲੇ ਸਿਹਤ ਸਹਾਇਕ ਨਾਲ ਜੁੜਨ ਵਿੱਚ ਸਮੱਸਿਆ ਆ ਰਹੀ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਜਾਂਚੋ ਕਿ Vital ਬੈਕਐਂਡ ਚੱਲ ਰਿਹਾ ਹੈ ਅਤੇ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    emergencyRequest: "ਮੈਨੂੰ ਐਮਰਜੈਂਸੀ ਡਾਕਟਰੀ ਮਦਦ ਦੀ ਲੋੜ ਹੈ।",
+    compareRequest: "ਮੈਂ ਹਸਪਤਾਲਾਂ ਦੀ ਤੁਲਨਾ ਕਰਨਾ ਚਾਹੁੰਦਾ/ਚਾਹੁੰਦੀ ਹਾਂ।",
+    hospitalPrompt: "ਮੇਰੀ ਸਿਹਤ ਸਮੱਸਿਆ ਲਈ ਢੁਕਵਾਂ ਹਸਪਤਾਲ ਲੱਭੋ: ",
+  },
+};
+
+const getInitialMessages = (language) => [
   {
     id: 1,
     type: "assistant",
     time: "Now",
-    content:
-      "Hello! I'm your healthcare navigation assistant. I can help you find suitable hospitals, understand healthcare information and navigate your options.",
+    content: (CHATBOT_COPY[language] || CHATBOT_COPY.en).greeting,
   },
 ];
 
@@ -643,7 +684,8 @@ function Chatbot() {
   const navigate = useNavigate();
   const { searchState } = useHospitalSearch();
   const { language, setLanguage } = useLanguage();
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const chatbotCopy = CHATBOT_COPY[language] || CHATBOT_COPY.en;
+  const [messages, setMessages] = useState(() => getInitialMessages(language));
 
   const [input, setInput] = useState("");
 
@@ -790,9 +832,6 @@ function Chatbot() {
     return asksToFindCare && mentionsCare;
   };
 
-  const NON_MEDICAL_MESSAGE =
-    "I’m Vital, a healthcare assistant. I can only help with health, medical reports, treatments, symptoms, hospitals, doctors, and healthcare navigation. Please ask a healthcare-related question.";
-
   const openHospitalFinder = (query, location) => {
     const params = new URLSearchParams();
     params.set("query", query);
@@ -919,7 +958,7 @@ function Chatbot() {
           id: Date.now() + 1,
           type: "assistant",
           time: "Now",
-          content: NON_MEDICAL_MESSAGE,
+          content: chatbotCopy.nonMedical,
         },
       ]);
       return;
@@ -932,7 +971,7 @@ function Chatbot() {
           id: Date.now() + 1,
           type: "assistant",
           time: "Now",
-          content: "Opening the comparison workspace so you can select and compare hospitals.",
+          content: chatbotCopy.comparison,
         },
       ]);
       navigate("/compare");
@@ -946,7 +985,7 @@ function Chatbot() {
           id: Date.now() + 1,
           type: "assistant",
           time: "Now",
-          content: "I’m opening the hospital finder and using your current location to find nearby options.",
+          content: chatbotCopy.finder,
         },
       ]);
       getLocationForFinder(trimmedInput);
@@ -975,8 +1014,7 @@ function Chatbot() {
           id: Date.now() + 1,
           type: "assistant",
           time: "Now",
-          content:
-            "I'm having trouble connecting to the healthcare assistant right now. Please check that the Vital backend is running and try again.",
+          content: chatbotCopy.connectionError,
         },
       ]);
     } finally {
@@ -1273,7 +1311,7 @@ function Chatbot() {
           id: Date.now(),
           type: "user",
           time: "Now",
-          content: "I need emergency medical help.",
+          content: chatbotCopy.emergencyRequest,
         },
         {
           id: Date.now() + 1,
@@ -1289,7 +1327,7 @@ function Chatbot() {
     }
 
     if (action.id === "hospital") {
-      setInput("Help me find a suitable hospital for ");
+      setInput(chatbotCopy.hospitalPrompt);
 
       return;
     }
@@ -1301,14 +1339,13 @@ function Chatbot() {
           id: Date.now(),
           type: "user",
           time: "Now",
-          content: "I want to compare hospitals.",
+          content: chatbotCopy.compareRequest,
         },
         {
           id: Date.now() + 1,
           type: "assistant",
           time: "Now",
-          content:
-            "Opening the comparison workspace so you can select and compare hospitals.",
+          content: chatbotCopy.comparison,
         },
       ]);
       navigate("/compare");
@@ -1327,7 +1364,7 @@ function Chatbot() {
   const handleNewChat = () => {
     stopSpeaking();
 
-    setMessages(INITIAL_MESSAGES);
+    setMessages(getInitialMessages(language));
 
     setInput("");
 
@@ -1414,7 +1451,7 @@ function Chatbot() {
 
             <button
               className={styles.sidebarItem}
-              onClick={() => setInput("Help me find a suitable hospital for ")}
+              onClick={() => setInput(chatbotCopy.hospitalPrompt)}
             >
               <Hospital size={17} />
               <span>Find hospitals</span>
