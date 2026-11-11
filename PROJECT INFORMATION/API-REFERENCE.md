@@ -229,6 +229,14 @@ indicates that live web research was not run.
 The research result is stored by facility ID in the shared hospital-search
 context so the facility card and comparison page can use it.
 
+PM-JAY and ABDM listing status is not inferred from the research `insurance`
+text or other keyword matches. The hospital finder displays a verified status
+only when it receives a dated `registryVerification.pmjay` or
+`registryVerification.abdm` result with an HTTPS source URL on that registry's
+official domain. The current hospital-research endpoint does not query those
+registries, so facilities without such data remain **Not verified**; facility
+cards link to the official registry portals for manual checks.
+
 ### 5. Public healthcare reports
 
 - `POST /api/public-healthcare/reports` accepts JSON fields `hospitalName`,
