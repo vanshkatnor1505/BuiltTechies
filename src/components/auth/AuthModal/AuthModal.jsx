@@ -54,9 +54,22 @@ function AuthModal({ open, onClose }) {
   useEffect(() => {
     if (!open) return;
 
+    setForm({
+      displayName: "",
+      username: "",
+      email: "",
+      password: "",
+    });
+    setMode("signin");
+    setShowPassword(false);
     setError("");
     setMessage("");
-  }, [mode, open]);
+  }, [open]);
+
+  useEffect(() => {
+    setError("");
+    setMessage("");
+  }, [mode]);
 
   if (!open) {
     return null;
@@ -160,7 +173,11 @@ function AuthModal({ open, onClose }) {
           />
         </div>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form
+          className={styles.form}
+          onSubmit={handleSubmit}
+          autoComplete="off"
+        >
           {mode === "signup" && (
             <>
               <Input
@@ -193,7 +210,7 @@ function AuthModal({ open, onClose }) {
             placeholder="you@example.com"
             leftIcon={<Mail />}
             required
-            autoComplete="email"
+            autoComplete="off"
           />
 
           <Input
@@ -217,9 +234,7 @@ function AuthModal({ open, onClose }) {
             }
             required
             minLength={6}
-            autoComplete={
-              mode === "signin" ? "current-password" : "new-password"
-            }
+            autoComplete="new-password"
           />
 
           {error && <p className={styles.error}>{error}</p>}
