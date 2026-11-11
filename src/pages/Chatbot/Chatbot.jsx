@@ -776,10 +776,19 @@ function Chatbot() {
   const isComparisonRequest = (value) =>
     /\b(compare|comparison|compare hospitals|side[- ]by[- ]side|versus|vs\.?)\b/i.test(value);
 
-  const isHospitalSearchRequest = (value) =>
-    /\b(find|locate|nearby|nearest|hospital|clinic|kidney|dialysis|cardiac|cancer|doctor|treatment|emergency|healthcare|budget|₹|rs\.?)\b/i.test(
-      normalizeMedicalQuery(value),
-    );
+  const isHospitalSearchRequest = (value) => {
+    const normalized = normalizeMedicalQuery(value);
+    const asksToFindCare =
+      /\b(find|search|locate|show|recommend|suggest|nearby|nearest|closest)\b/i.test(
+        normalized,
+      );
+    const mentionsCare =
+      /\b(hospital|clinic|doctor|specialist|healthcare|treatment|dialysis|emergency)\b/i.test(
+        normalized,
+      );
+
+    return asksToFindCare && mentionsCare;
+  };
 
   const NON_MEDICAL_MESSAGE =
     "I’m Vital, a healthcare assistant. I can only help with health, medical reports, treatments, symptoms, hospitals, doctors, and healthcare navigation. Please ask a healthcare-related question.";
