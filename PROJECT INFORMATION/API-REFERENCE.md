@@ -165,7 +165,8 @@ sequenceDiagram
 `language` accepts `en`, `hi`, or `pa`. The endpoint accepts a conversation
 array and only sends healthcare-related user conversations to the model.
 Non-healthcare messages receive a healthcare-scope response without a model
-call.
+call. The selected language takes precedence over the language used in the
+message; Hindi responses use Devanagari and Punjabi responses use Gurmukhi.
 
 ---
 
