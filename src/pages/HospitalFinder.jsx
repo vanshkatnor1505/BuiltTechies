@@ -405,30 +405,97 @@ function getValidCoordinate(value, minimum, maximum) {
     : null;
 }
 
-function getPmjayListingStatus(facility) {
-  const insurance = normalize(facility.research?.metrics?.insurance || "");
+const OFFICIAL_REGISTRIES = {
+  pmjay: {
+    label: "PM-JAY hospital registry",
+    url: "https://hospitals.pmjay.gov.in/Search/empnlWorkFlow.htm?actionFlag=ViewRegisteredHosptlsNew",
+    hosts: new Set(["hospitals.pmjay.gov.in"]),
+  },
+  abdm: {
+    label: "ABDM registry",
+    url: "https://facility.abdm.gov.in/",
+    hosts: new Set(["facility.abdm.gov.in", "nhpr.abdm.gov.in"]),
+  },
+};
 
-  if (!/(pm[\s-]?jay|ayushman bharat|pradhan mantri jan aarogya)/.test(insurance)) {
-    return "unknown";
-  }
+function getRegistryVerification(facility, registryKey) {
+  const registry = OFFICIAL_REGISTRIES[registryKey];
+  const verification =
+    facility.registryVerification?.[registryKey] ||
+    facility.research?.registryVerification?.[registryKey];
 
   if (
-    /\b(not accepted|not covered|not empanel(?:led|ed)?|not participating|not supported|not part of|does not accept|does not cover|does not support|does not participate|doesn t accept|doesn t cover|cannot accept|cannot cover)\b/.test(
-      insurance,
-    )
+    !registry ||
+    !verification ||
+    !["listed", "not-listed"].includes(verification.status) ||
+    typeof verification.checkedAt !== "string" ||
+    !Number.isFinite(Date.parse(verification.checkedAt)) ||
+    typeof verification.sourceUrl !== "string"
   ) {
-    return "not-listed";
+    return null;
   }
 
-  if (
-    /\b(accept|accepted|accepts|cover|covered|empanel|empanelled|empaneled|participate|participates|participating|available)\b/.test(
-      insurance,
-    )
-  ) {
-    return "listed";
-  }
+  try {
+    const sourceUrl = new URL(verification.sourceUrl);
+    if (
+      sourceUrl.protocol !== "https:" ||
+      !registry.hosts.has(sourceUrl.hostname)
+    ) {
+      return null;
+    }
 
-  return "unknown";
+    return {
+      status: verification.status,
+      checkedAt: verification.checkedAt,
+      sourceUrl: sourceUrl.href,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function FacilityRegistryChecks({ facility }) {
+  return (
+    <details
+      className="facility-registry-checks"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <summary>Official registry checks</summary>
+      <ul>
+        {Object.entries(OFFICIAL_REGISTRIES).map(([key, registry]) => {
+          const verification = getRegistryVerification(facility, key);
+          const statusLabel = verification
+            ? verification.status === "listed"
+              ? "Listed"
+              : "Not listed"
+            : "Not verified";
+
+          return (
+            <li key={key}>
+              <span>
+                {registry.label}: {statusLabel}
+                {verification &&
+                  ` (checked ${new Date(verification.checkedAt).toLocaleDateString()})`}
+              </span>
+              <a
+                href={verification?.sourceUrl || registry.url}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {verification ? "View registry result" : "Check registry"}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+      <p>
+        Status is verified only when a dated result from the corresponding
+        official registry is available. Search by the facility name and
+        location; other directory or website text does not establish status.
+      </p>
+    </details>
+  );
 }
 
 function getIndiaHospitalFacilities(
@@ -1165,7 +1232,6 @@ function HospitalFinderResultsPanel({
   routeLoading,
   search,
   searchScope,
-  schemeFilter,
   selectedFacility,
   selectFacility,
   setResultsPage,
@@ -1223,10 +1289,10 @@ function HospitalFinderResultsPanel({
             visibleFacilities.map((facility) => {
               const isSelected = selectedFacility?.id === facility.id;
               const isCompared = compareIds.includes(facility.id);
-              const pmjayStatus = getPmjayListingStatus({
+              const facilityWithResearch = {
                 ...facility,
                 research: researchById[facility.id],
-              });
+              };
 
               return (
                 <article
@@ -1403,13 +1469,7 @@ function HospitalFinderResultsPanel({
                       />
                     </section>
                   )}
-                  {schemeFilter === "pmjay-candidates" && (
-                    <p className="scheme-research-status">
-                      {pmjayStatus === "listed"
-                        ? "PM-JAY: Acceptance reported"
-                        : "PM-JAY: Not verified"}
-                    </p>
-                  )}
+                  <FacilityRegistryChecks facility={facilityWithResearch} />
                 </article>
               );
             })
@@ -2212,21 +2272,14 @@ export default function HospitalFinder() {
   const filteredFacilities = useMemo(() => {
     let result = [...facilities];
 
-    if (schemeFilter === "pmjay-candidates") {
+    if (schemeFilter === "pmjay-verified" || schemeFilter === "abdm-verified") {
+      const registryKey = schemeFilter === "pmjay-verified" ? "pmjay" : "abdm";
       result = result.filter(
         (facility) =>
-          getPmjayListingStatus({
-            ...facility,
-            research: researchById[facility.id],
-          }) !== "not-listed",
-      );
-    } else if (schemeFilter === "scheme-info") {
-      result = result.filter(
-        (facility) =>
-          getPmjayListingStatus({
-            ...facility,
-            research: researchById[facility.id],
-          }) !== "unknown",
+          getRegistryVerification(
+            { ...facility, research: researchById[facility.id] },
+            registryKey,
+          )?.status === "listed",
       );
     }
 
@@ -2721,10 +2774,10 @@ export default function HospitalFinder() {
                   const isSelected = selectedFacility?.id === facility.id;
 
                   const isCompared = compareIds.includes(facility.id);
-                  const pmjayStatus = getPmjayListingStatus({
+                  const facilityWithResearch = {
                     ...facility,
                     research: researchById[facility.id],
-                  });
+                  };
 
                   return (
                     <article
@@ -2910,13 +2963,7 @@ export default function HospitalFinder() {
                           )}
                         </div>
                       )}
-                      {schemeFilter === "pmjay-candidates" && (
-                        <p className="scheme-research-status">
-                          {pmjayStatus === "listed"
-                            ? "PM-JAY: Acceptance reported"
-                            : "PM-JAY: Not verified"}
-                        </p>
-                      )}
+                      <FacilityRegistryChecks facility={facilityWithResearch} />
                     </article>
                   );
                 })
