@@ -531,6 +531,10 @@ IMPORTANT SAFETY RULES:
     details. Avoid Markdown tables and horizontal rules; they are difficult to
     read on small screens. Keep simple answers brief and do not add sections
     that are not useful to the question.
+14. The selected language is mandatory for every part of your response,
+    including greetings, headings, cautions, and follow-up questions. The
+    user's message language never overrides this preference unless they
+    explicitly ask for a translation.
 
 When discussing hospitals, distinguish between:
 - user requirements
@@ -547,8 +551,13 @@ Instead use language such as:
 Selected language:
 {{LANGUAGE}}
 
-Always reply in the selected language. If the user writes in another language,
-follow that language unless they explicitly ask for a translation.
+Language-specific writing requirements:
+{{LANGUAGE_INSTRUCTIONS}}
+
+Do not answer in English when Hindi or Punjabi is selected. Keep the whole
+response in the selected language; retain English only for proper names,
+standard abbreviations, or medical terms that are clearer when followed by a
+short explanation in the selected language.
 `;
 
 /* =========================================================
@@ -559,6 +568,23 @@ const LANGUAGE_NAMES = {
   en: "English",
   hi: "Hindi",
   pa: "Punjabi",
+};
+
+function normalizeSupportedLanguage(value) {
+  const requestedLanguage = String(value || "en")
+    .trim()
+    .toLowerCase()
+    .split("-")[0];
+
+  return Object.hasOwn(LANGUAGE_NAMES, requestedLanguage)
+    ? requestedLanguage
+    : "en";
+}
+
+const CHAT_LANGUAGE_INSTRUCTIONS = {
+  en: "Write in clear, natural English.",
+  hi: "Write natural, simple Hindi using Devanagari script (हिन्दी). Do not use Romanized Hindi or switch to English because the user's question is in English.",
+  pa: "Write natural, simple Punjabi using Gurmukhi script (ਪੰਜਾਬੀ). Do not use Romanized Punjabi or switch to English because the user's question is in English.",
 };
 
 const STT_LANGUAGES = {
@@ -588,10 +614,8 @@ app.get("/api/health", (req, res) => {
 
 app.post("/api/chat", requireSupabaseSession, aiRateLimiter, async (req, res) => {
   try {
-    const {
-      messages,
-      language = "en",
-    } = req.body;
+    const { messages } = req.body;
+    const language = normalizeSupportedLanguage(req.body.language);
 
     if (!Array.isArray(messages)) {
       return res.status(400).json({
@@ -631,7 +655,10 @@ app.post("/api/chat", requireSupabaseSession, aiRateLimiter, async (req, res) =>
     const systemPrompt =
       HEALTHCARE_SYSTEM_PROMPT.replace(
         "{{LANGUAGE}}",
-        selectedLanguage,
+        `${selectedLanguage} (${language === "hi" ? "हिन्दी" : language === "pa" ? "ਪੰਜਾਬੀ" : "English"})`,
+      ).replace(
+        "{{LANGUAGE_INSTRUCTIONS}}",
+        CHAT_LANGUAGE_INSTRUCTIONS[language],
       );
 
     const conversation = [
@@ -803,12 +830,10 @@ app.post(
         });
       }
 
-      const language =
-        req.body.language || "en";
+      const language = normalizeSupportedLanguage(req.body.language);
 
       const selectedLanguage =
-        LANGUAGE_NAMES[language] ||
-        "English";
+        `${LANGUAGE_NAMES[language]} (${language === "hi" ? "हिन्दी" : language === "pa" ? "ਪੰਜਾਬੀ" : "English"})`;
 
       /* -----------------------------------------------
          Extract PDF text
@@ -849,6 +874,9 @@ Selected language:
 ${selectedLanguage}
 
 Analyze the following report and explain it in simple language.
+Use the selected language throughout the explanation, regardless of the
+language used in the report. For Hindi, write in Devanagari; for Punjabi, write
+in Gurmukhi. Do not switch to English or Romanized Hindi/Punjabi.
 
 IMPORTANT:
 - Do not diagnose the patient.
