@@ -3,6 +3,7 @@
   handleSearchScopeChange,
   isSearching,
   loadStateRecommendations,
+  radius,
   search,
   searchQuery,
   searchScope,
@@ -76,7 +77,11 @@
                 setSearchQuery(keyword);
 
                 if (searchScope === "nearby" && userLocation) {
-                  fetchNearbyFacilities(keyword);
+                  if (radius === 100) {
+                    loadStateRecommendations(keyword, "state");
+                  } else {
+                    fetchNearbyFacilities(keyword);
+                  }
                 } else if (searchScope === "india") {
                   setFacilities([]);
                   loadStateRecommendations(keyword);
