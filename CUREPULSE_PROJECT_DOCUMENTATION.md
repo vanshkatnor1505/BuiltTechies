@@ -31,8 +31,9 @@ contain a trained machine-learning recommendation model or a continuously
 maintained healthcare data warehouse.
 
 Current functions include location-aware hospital/clinic/dentist discovery,
-India-wide and Punjab curated recommendations, facility comparison, map and
-route assistance, English/Hindi/Punjabi interface translations, an
+India-wide curated starting points, Geoapify state-boundary facility search,
+facility comparison, map and route assistance,
+English/Hindi/Punjabi interface translations, an
 AI-assisted healthcare chatbot, audio transcription, text-based PDF report
 explanation, hospital research, and anonymous public-hospital service reports.
 The scope and operational status of optional integrations depend on deployment
@@ -93,7 +94,7 @@ flowchart LR
     B --> C{Discovery path}
     C -->|Nearby| D[Geolocation and Geoapify places]
     C -->|India-wide| E[Curated list and optional Tavily research]
-    C -->|Punjab| F[Curated Punjab facility list]
+    C -->|State-level| F[Geoapify within detected Indian state boundary]
     D --> G[Normalize, filter and show facility options]
     E --> G
     F --> G
@@ -112,7 +113,7 @@ flowchart LR
 | Facility map | Implemented, provider/configuration dependent | MapLibre GL renders Geoapify raster tiles and facility markers. |
 | Search, filters, and sorting | Implemented | Includes facility type, distance/radius, ownership, emergency, scheme-verification filter, and match/name/distance sorting. |
 | India-wide specialist options | Implemented as curated starting points | Static facility lists are selected by specialty group; they are not a national registry or comprehensive catalogue. |
-| Punjab facility options | Implemented as a curated list | A fixed list is transformed into the shared facility shape. |
+| State-level facility search | Implemented, provider/configuration dependent | Resolves the detected Indian state boundary with Geoapify and retrieves up to 500 facility listings within it; provider coverage may be incomplete. |
 | Specialty compatibility | Implemented heuristic | Keyword evidence is scored in client code. It is not clinical triage or a model trained on patient outcomes. |
 | Facility comparison | Implemented | Search state and up to three comparison IDs can be stored in browser `localStorage`. |
 | Hospital research and source links | Implemented, optional services | Tavily search and Groq extraction are used when configured; results may be unavailable or incomplete. |
@@ -142,9 +143,10 @@ message through a backend endpoint. A direct `mailto:` link is provided.
 - Radius, facility type, emergency status, and ownership filters and match,
   distance, and name sorting are available. Distance is calculated from
   coordinates and is separate from compatibility.
-- The India and Punjab lists in the finder are code-maintained starting points.
-  Their presence does not establish a current facility service, specialty,
-  appointment, price, or official status.
+- India-wide recommendations are code-maintained starting points. State-level
+  results are Geoapify listings constrained to the detected state's
+  administrative boundary. Neither source establishes a current facility
+  service, specialty, appointment, price, or official status.
 - MapLibre GL displays a Geoapify raster map and results. The application
   requests driving routes from the public OSRM routing endpoint and provides a
   Google Maps directions handoff. These services are external dependencies.
@@ -196,9 +198,10 @@ one unified collection pipeline:
 | Data need | Current acquisition method | Processing / limitation |
 | --- | --- | --- |
 | Nearby hospitals and care facilities | Client request to Geoapify Places with coordinates, radius, and healthcare categories | Geoapify response features are validated and mapped into a shared facility object. Underlying listings can be incomplete or stale. |
+| State-level facilities | Geoapify forward-geocodes the detected Indian state to a state place ID, then requests Places using `filter=place:<place_id>` | Returns up to 500 provider listings within that administrative boundary. It is not guaranteed to be a complete state directory. Lookup errors are shown; the app does not substitute unrelated Punjab or India-wide curated data. |
 | Geocoding | Client requests to Geoapify reverse-geocoding and search endpoints | Uses the first returned location result; user confirmation remains important. |
 | Map background | Geoapify OSM Bright raster tile endpoint | Visual map tiles are separate from the facility result query. |
-| India-wide / Punjab starting lists | Static arrays and specialty-group mappings in the application code | Manually curated code data; no scheduled import or update workflow is present. |
+| India-wide starting lists | Static arrays and specialty-group mappings in the application code | Manually curated code data; no scheduled import or update workflow is present. State-level listings come from Geoapify, not a static Punjab list. |
 | Dynamic recommendation/research results | Optional Tavily web search initiated for a user query | Results are provider search excerpts, not a curated or officially endorsed national dataset. |
 | Hospital facts from web excerpts | Groq extraction from supplied Tavily result text | The prompt requires explicit facts and source references for selected metrics; extraction can still be wrong and needs human/source review. |
 | Cost and wait planning values | Groq-generated broad estimates | Clearly distinct from reported facility facts and must not be used as quotes or availability guarantees. |
@@ -216,7 +219,11 @@ For nearby results, the frontend checks the GeoJSON feature and coordinates,
 uses provider categories and raw tags to identify facility type and available
 specialty/emergency evidence, and maps names, addresses, contact fields, and
 coordinates into the common facility model. It discards malformed
-coordinates. The medical query helper normalizes user text and maps known
+coordinates. Name normalization checks Geoapify's top-level and raw OSM name
+fields; when no source name exists, the interface shows a locality-based
+descriptor and explicitly marks the name as unavailable rather than inventing
+a facility identity. Hospital verification research is disabled for such
+unnamed listings. The medical query helper normalizes user text and maps known
 synonyms to groups such as kidney, heart, cancer, neurology, orthopedic, eye,
 dental, skin, children, women's health, emergency, and general care.
 
@@ -763,9 +770,10 @@ contract, or institutional endorsement is established by the repository.
 
 - Geoapify and other provider listings may be incomplete, duplicated, stale,
   or miscategorized; current normalization does not create ground truth.
-- Static India/Punjab lists are examples/starting points, not comprehensive
-  hospital directories. Web search results are not an independently reviewed
-  ranking.
+- Static India-wide lists are examples/starting points, not comprehensive
+  hospital directories. State-level Geoapify results are provider listings
+  capped at 500, not a guaranteed exhaustive directory. Web search results are
+  not an independently reviewed ranking.
 - Keyword scoring is transparent but limited by provider tags, synonym
   coverage, ambiguity, and language. It does not establish clinical fit or
   quality.
