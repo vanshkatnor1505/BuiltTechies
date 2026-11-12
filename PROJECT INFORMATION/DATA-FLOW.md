@@ -61,19 +61,16 @@ flowchart TB
     end
 
     subgraph HSCDetail["HospitalSearchContext holds"]
-        Q["Current search query"]
+        Q["Current query and draft"]
         FR["Facility results"]
         CID["Selected comparison IDs"]
         RR["Research results by facility ID"]
         META["Last update metadata"]
+        FINDER["Search scope, location, filters, sorting,\nview, selected facility and route"]
     end
 
     subgraph Local["📍 Local page state (transient)"]
         LOAD["Loading & error state"]
-        FILT["Active filters & sorting"]
-        SEL["Selected facility"]
-        VIEW["Map / list / split view"]
-        ROUTE["Route loading & geometry"]
         FORM["Form submission state"]
     end
 
@@ -88,9 +85,9 @@ flowchart TB
 | --- | --- |
 | **`AuthContext`** | Authentication and profile-related state. Shared navigation controls use this to render the correct signed-in / signed-out experience. |
 | **`ThemeContext`** | The active visual theme and mode. Applied via `data-theme` and `data-mode` attributes consumed by the CSS token system. |
-| **`HospitalSearchContext`** | Search state that needs to survive between the finder and comparison experiences — query, facility results, comparison IDs, research results by facility ID, and last-update metadata. This state is persisted in browser `localStorage`. |
+| **`HospitalSearchContext`** | In-memory search state shared between routes: query, facility results, comparison IDs, research results, location, filters, sorting, view, selected facility, route, and update metadata. It survives client-side navigation and is cleared by a full reload or when the site is closed. |
 | **`LanguageProvider`** | The selected English, Hindi, or Punjabi interface language. Uses the bundled translation catalog and stores the selection in browser `localStorage`; switching languages does not call a translation API. |
-| **Local page state** | Transient concerns: loading/error state, filters/sorting, selected facility, current view, route geometry, form status. |
+| **Local page state** | Transient concerns such as loading/error state and form status. |
 
 ---
 
