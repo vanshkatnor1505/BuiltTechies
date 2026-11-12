@@ -1,4 +1,5 @@
 import { Mail } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import Container from "../../layout/Container/Container";
 import Divider from "../../common/Divider/Divider";
@@ -95,6 +96,14 @@ const standardLegalLinks = [
   { label: "Contact", href: "/contact" },
 ];
 
+function AppLink({ href, ...props }) {
+  if (href.startsWith("/") && !href.endsWith(".docx")) {
+    return <Link to={href} {...props} />;
+  }
+
+  return <a href={href} {...props} />;
+}
+
 function Footer({
   variant = "default",
   className = "",
@@ -125,9 +134,9 @@ function Footer({
           {/* Brand */}
 
           <div className={styles.brand}>
-            <a href="#" className={styles.logo} aria-label="Home">
+            <Link to="/" className={styles.logo} aria-label="Home">
               {logo}
-            </a>
+            </Link>
 
             <p className={styles.description}>{description}</p>
 
@@ -151,7 +160,7 @@ function Footer({
                   aria-label={`${column.title} links`}
                 >
                   {column.links.map((link) => (
-                    <a
+                    <AppLink
                       key={link.label}
                       href={
                         link.label === "Documentation"
@@ -171,7 +180,7 @@ function Footer({
                       }
                     >
                       {link.label}
-                    </a>
+                    </AppLink>
                   ))}
                 </nav>
               </div>
@@ -229,9 +238,13 @@ function Footer({
 
           <nav className={styles.legal} aria-label="Legal navigation">
             {legalLinks.map((link) => (
-              <a key={link.label} href={link.href} className={styles.legalLink}>
+              <AppLink
+                key={link.label}
+                href={link.href}
+                className={styles.legalLink}
+              >
                 {link.label}
-              </a>
+              </AppLink>
             ))}
           </nav>
         </div>
