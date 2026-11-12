@@ -37,7 +37,7 @@
               <option value={10}>10 km</option>
               <option value={20}>20 km</option>
               <option value={50}>50 km</option>
-              <option value={100}>State level (100 km)</option>
+              <option value={100}>Detected state boundary</option>
             </select>
           </div>
         )}
@@ -106,7 +106,11 @@
               setEmergencyOnly(nextEmergencyMode);
 
               if (searchScope === "nearby" && userLocation) {
-                fetchNearbyFacilities(searchQuery);
+                if (radius === 100) {
+                  loadStateRecommendations(searchQuery, "state");
+                } else {
+                  fetchNearbyFacilities(searchQuery);
+                }
               } else if (searchScope === "india" && isHealthcareSearch(searchQuery)) {
                 loadStateRecommendations(searchQuery, "india");
               }
