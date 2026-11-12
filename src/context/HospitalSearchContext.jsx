@@ -10,46 +10,46 @@ import {
 const HospitalSearchContext = createContext(null);
 const STORAGE_KEY = "curepulse-hospital-search";
 
-function getInitialSearchState() {
-  const emptyState = {
+function createInitialSearchState() {
+  return {
     query: "",
+    draftQuery: "",
     facilities: [],
     compareIds: [],
     researchById: {},
     updatedAt: null,
+    finder: {
+      searchScope: "india",
+      radius: 5,
+      userLocation: null,
+      userState: "",
+      locationLabel: "",
+      facilityType: "all",
+      ownershipFilter: "all",
+      schemeFilter: "all",
+      emergencyOnly: false,
+      sortBy: "match",
+      viewMode: "split",
+      selectedFacilityId: null,
+      route: null,
+      resultsPage: 0,
+      stateSearchCompleted: false,
+      stateCenter: null,
+      stateLimitReached: false,
+    },
   };
-
-  try {
-    const storedState = window.localStorage.getItem(STORAGE_KEY);
-    if (!storedState) {
-      return emptyState;
-    }
-
-    const parsedState = JSON.parse(storedState);
-
-    return {
-      ...emptyState,
-      ...parsedState,
-      facilities: Array.isArray(parsedState.facilities)
-        ? parsedState.facilities
-        : [],
-      compareIds: Array.isArray(parsedState.compareIds)
-        ? parsedState.compareIds
-        : [],
-      researchById:
-        parsedState.researchById &&
-        typeof parsedState.researchById === "object"
-          ? parsedState.researchById
-          : {},
-    };
-  } catch (error) {
-    console.warn("Unable to restore saved hospital comparison data.", error);
-    return emptyState;
-  }
 }
 
 export function HospitalSearchProvider({ children }) {
-  const [searchState, setSearchState] = useState(getInitialSearchState);
+  const [searchState, setSearchState] = useState(createInitialSearchState);
+
+  useEffect(() => {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.warn("Unable to clear legacy hospital search data.", error);
+    }
+  }, []);
 
   const toggleCompare = useCallback((facility) => {
     const facilityId = facility?.id;
@@ -79,14 +79,6 @@ export function HospitalSearchProvider({ children }) {
       compareIds: [],
     }));
   }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(searchState));
-    } catch (error) {
-      console.warn("Unable to save hospital comparison data.", error);
-    }
-  }, [searchState]);
 
   const value = useMemo(
     () => ({
