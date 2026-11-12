@@ -9,7 +9,8 @@ and access guided assistance from one web application.
 The product combines:
 
 - Location-aware nearby healthcare discovery.
-- Curated India-wide and Punjab state-level recommendations.
+- Curated India-wide starting points and state-boundary facility search using
+  Geoapify listings for the detected Indian state.
 - Facility comparison and hospital research with source links.
 - Interactive maps and route support.
 - Anonymous public-hospital service reports with reviewed category trends.
@@ -26,7 +27,7 @@ flowchart LR
     A[User describes healthcare need] --> B{Search mode}
     B -->|Nearby| C[Location-aware facility search]
     B -->|India-wide| D[Curated specialist recommendations]
-    B -->|Punjab state level| E[Top Punjab hospital list]
+    B -->|State level| E[Geoapify facilities within detected state boundary]
     C --> F[Filter and sort facilities]
     D --> F
     E --> F
@@ -65,7 +66,7 @@ flowchart TB
     DISCOVER --> D1[Condition search]
     DISCOVER --> D2[Nearby hospitals]
     DISCOVER --> D3[India-wide recommendations]
-    DISCOVER --> D4[Punjab state hospitals]
+    DISCOVER --> D4[State-boundary facility results]
     DECIDE --> E1[Facility details]
     DECIDE --> E2[Filters and sorting]
     DECIDE --> E3[Hospital comparison]
@@ -100,7 +101,7 @@ flowchart TB
 | Healthcare finder | Finds facilities by condition, treatment, or specialty |
 | Nearby search | Uses the user's location to show nearby options |
 | India research | Provides curated specialist starting points |
-| Punjab state search | Shows a focused list of top Punjab hospitals |
+| State-level search | Uses Geoapify's Indian state boundary to retrieve facility listings (up to 500 provider results; coverage may be incomplete) |
 | Comparison | Helps users compare selected facilities |
 | Research | Enriches hospital cards and comparison views with information and source links |
 | Public healthcare reports | Accepts anonymous reports about public-hospital services; publishes only approved category totals |
