@@ -6,7 +6,7 @@
 - [Frontend state ownership](#-frontend-state-ownership)
 - [Nearby search flow](#-nearby-search-flow)
 - [India-wide recommendation flow](#-india-wide-recommendation-flow)
-- [Punjab state-level flow](#-punjab-state-level-flow)
+- [State-level facility flow](#-state-level-facility-flow)
 - [Hospital research flow](#-hospital-research-flow)
 - [Chatbot and upload flow](#-chatbot-and-upload-flow)
 - [Public healthcare reports flow](#-public-healthcare-reports-flow)
@@ -163,21 +163,29 @@ flowchart TD
 
 ---
 
-## 📌 Punjab state-level flow
+## 📌 State-level facility flow
 
 ```mermaid
 flowchart LR
     %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#111111','primaryBorderColor':'#555555','lineColor':'#555555','secondaryColor':'#f5f5f5','tertiaryColor':'#ffffff','fontSize':'15px','darkMode':false,'background':'#ffffff'}}}%%
-    CUR["Curated Punjab\nhospital list"] -->|"Normalize"| FM["Same facility shape\nas nearby / India-wide"]
+    LOC["Selected / detected Indian state"] -->|"Geoapify Geocoding\n(type=state, country=India)"| BOUNDARY["State place ID"]
+    BOUNDARY -->|"Geoapify Places\nfilter=place:<place ID>"| LIVE["Live provider facility listings\n(up to 500 results)"]
+    LIVE -->|"Validate coordinates and normalize"| FM["Same facility shape\nas nearby / India-wide"]
     FM --> CARD["Facility cards"]
     FM --> MAP["Maps"]
     FM --> COMPARE["Comparison"]
     FM --> NAV["Navigation"]
 ```
 
-The state-level UI currently uses a curated list of top Punjab hospitals. This provides a predictable state-level experience and avoids presenting empty or unrelated results when a user selects the state-level option.
-
-The curated entries are normalized into the same facility shape used by nearby and India-wide results, so cards, maps, comparison, and navigation can reuse the same presentation logic.
+State-level search resolves the user's detected Indian state to a Geoapify
+administrative place boundary, then queries Geoapify Places within that
+boundary. It no longer substitutes a fixed Punjab list. Results use the same
+normalization as nearby listings, so cards, maps, comparison, and navigation
+can reuse the same presentation logic. The query returns at most 500 provider
+results; this is not a guarantee of complete statewide coverage. The search
+requires a detected state and a configured Geoapify key. If either the
+boundary lookup or facility request fails, the application reports the error
+instead of showing unrelated curated facilities.
 
 ---
 
