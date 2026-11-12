@@ -5,6 +5,12 @@ the CurePulse product.
 
 ## Documentation map
 
+For the complete implementation-aware project dossier—including research and
+algorithmic methodology, data reliability, privacy, performance evaluation,
+social impact, financial feasibility, commercialization, and future
+scalability—start with the repository-level
+[CUREPULSE_PROJECT_DOCUMENTATION.md](../CUREPULSE_PROJECT_DOCUMENTATION.md).
+
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#111111','primaryBorderColor':'#555555','lineColor':'#555555','secondaryColor':'#f5f5f5','tertiaryColor':'#ffffff','fontSize':'15px','darkMode':false,'background':'#ffffff'}}}%%
 flowchart TD
@@ -23,14 +29,15 @@ flowchart TD
 
 ## Recommended reading order
 
-1. [PROJECT-OVERVIEW.md](./PROJECT-OVERVIEW.md) - Product purpose, users,
+1. [CUREPULSE_PROJECT_DOCUMENTATION.md](../CUREPULSE_PROJECT_DOCUMENTATION.md) - Full project, feasibility, and roadmap dossier.
+2. [PROJECT-OVERVIEW.md](./PROJECT-OVERVIEW.md) - Product purpose, users,
    features, routes, and scope.
-2. [artitecture.md](./artitecture.md) - Code organization and maintainability.
-3. [DATA-FLOW.md](./DATA-FLOW.md) - How the frontend, backend, and integrations
+3. [artitecture.md](./artitecture.md) - Code organization and maintainability.
+4. [DATA-FLOW.md](./DATA-FLOW.md) - How the frontend, backend, and integrations
    work together.
-4. [DESIGN.md](./DESIGN.md) - Theme, styling, responsive behavior, and
+5. [DESIGN.md](./DESIGN.md) - Theme, styling, responsive behavior, and
    accessibility.
-5. [API-REFERENCE.md](./API-REFERENCE.md) - Important backend capabilities.
+6. [API-REFERENCE.md](./API-REFERENCE.md) - Important backend capabilities.
 
 For installation and deployment commands, use the root
 [README.md](../README.md).
