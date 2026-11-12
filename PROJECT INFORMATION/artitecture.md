@@ -139,7 +139,7 @@ flowchart TB
     subgraph Global["🌐 Global context — crosses page boundaries"]
         AUTH["AuthContext\nAuthentication & profile"]
         THEME["ThemeContext\nActive theme & display mode"]
-        HSC["HospitalSearchContext\nFacility results, comparison IDs, research"]
+        HSC["HospitalSearchContext\nSearch results, comparison and finder state"]
         LANG["LanguageProvider\nBundled EN / HI / PA catalog"]
     end
 
@@ -161,9 +161,9 @@ flowchart TB
 
 - **`AuthContext`** manages authentication and profile state.
 - **`ThemeContext`** manages the active visual theme and display mode.
-- **`HospitalSearchContext`** shares facility results, comparison IDs, and research results between the finder and comparison pages; it persists this search state in browser `localStorage`.
+- **`HospitalSearchContext`** shares facility results, comparison IDs, research results, and finder state between routes in memory. Client-side navigation preserves it; a full reload or closing the site clears it.
 - **`LanguageProvider`** applies the bundled English, Hindi, and Punjabi interface translations and persists the selected language in browser `localStorage`; translation does not call an external service.
-- **Page-local state** controls filters, selected facilities, loading indicators, errors, map view, routes, and form status.
+- **Page-local state** controls loading indicators, errors, and form status. Finder state that should survive route changes is kept in `HospitalSearchContext`.
 
 > This keeps global state limited to information that genuinely crosses page boundaries.
 
