@@ -115,7 +115,7 @@ flowchart LR
 | India-wide specialist options | Implemented as curated starting points | Static facility lists are selected by specialty group; they are not a national registry or comprehensive catalogue. |
 | State-level facility search | Implemented, provider/configuration dependent | Resolves the detected Indian state boundary with Geoapify and retrieves up to 500 facility listings within it; provider coverage may be incomplete. |
 | Specialty compatibility | Implemented heuristic | Keyword evidence is scored in client code. It is not clinical triage or a model trained on patient outcomes. |
-| Facility comparison | Implemented | Search state and up to three comparison IDs can be stored in browser `localStorage`. |
+| Facility comparison | Implemented | Search results, comparison IDs, research, and finder state are shared in memory between routes and cleared on full page reload. |
 | Hospital research and source links | Implemented, optional services | Tavily search and Groq extraction are used when configured; results may be unavailable or incomplete. |
 | Hospital cost / wait-time estimates | Implemented as generated estimates | Groq can return broad approximate estimates; they are not facility-confirmed facts. |
 | Healthcare chatbot | Implemented, authenticated and provider-dependent | Groq-generated informational answers with healthcare-focused safety instructions. |
@@ -140,6 +140,13 @@ message through a backend endpoint. A direct `mailto:` link is provided.
 - Nearby search requests Geoapify categories for hospitals, clinics/praxes,
   and dentists. Returned records are converted into a common facility object;
   malformed features and invalid coordinates are rejected.
+- A reported conflicting OSM record named “DMC Hospital” at Attowal is
+  suppressed using its source node ID and matching locality/postcode. The
+  separate Ludhiana Dayanand Medical College and Hospital record is not
+  filtered. This is a targeted data-quality exception, not a general provider
+  verification system; the underlying listing should still be confirmed.
+  Sources: [Attowal OSM node](https://www.openstreetmap.org/node/7860277357)
+  and [Ludhiana OSM hospital feature](https://www.openstreetmap.org/way/15788776).
 - Radius, facility type, emergency status, and ownership filters and match,
   distance, and name sorting are available. Distance is calculated from
   coordinates and is separate from compatibility.
@@ -149,13 +156,18 @@ message through a backend endpoint. A direct `mailto:` link is provided.
   service, specialty, appointment, price, or official status.
 - MapLibre GL displays a Geoapify raster map and results. The application
   requests driving routes from the public OSRM routing endpoint and provides a
-  Google Maps directions handoff. These services are external dependencies.
+  Google Maps directions handoff using the facility name and listing address
+  so Maps can resolve a named place rather than navigate to a coordinate-only
+  pin. Unnamed listings cannot use this handoff. Provider locations still need
+  confirmation with the facility; the handoff does not verify the listing.
+  These services are external dependencies.
 
 ### Comparison, research, and information support
 
 - Users can select up to three facilities for comparison. Facility results,
-  comparison selections, and research objects are persisted in browser
-  `localStorage`.
+  comparison selections, research objects, and finder controls are shared in
+  the app's in-memory context while navigating; they are cleared on full page
+  reload or when the site is closed.
 - Hospital research can retrieve web results through Tavily and ask Groq to
   extract explicit facility-specific data from the returned excerpts. For
   treatment cost and wait time, extraction requires a source index and a
@@ -391,7 +403,7 @@ flowchart TB
         Components[Reusable UI and MapLibre GL]
         State[Auth / theme / search contexts]
         Services[Geoapify client and API client]
-        Storage[Browser localStorage]
+        SessionState[In-memory app state\nCleared on full reload]
     end
     subgraph Backend[Node.js + Express 5 API]
         Auth[Supabase session validation]
@@ -415,7 +427,7 @@ flowchart TB
     Backend --> Tavily
     Backend --> Google
     Browser -->|Directions route request| OSRM
-    State <--> Storage
+    State --> SessionState
 ```
 
 ### 8.2 Technology and integration inventory
@@ -528,9 +540,10 @@ relevant official service.
   validation paths. Third-party API credentials are configured as backend
   environment variables where appropriate; the Geoapify and Supabase
   publishable keys are used in the client.
-- Search results, comparison selections, language, and appearance settings
-  may be saved in browser `localStorage`. Search state can contain facility
-  research and user-entered healthcare search terms.
+- Search results, comparison selections, finder location, and search terms
+  exist in the app's in-memory context to support navigation and are cleared
+  on full page reload or when the site is closed. Language and appearance
+  preferences may use browser `localStorage`.
 
 ### 10.2 Important privacy boundaries
 
