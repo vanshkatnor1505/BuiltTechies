@@ -38,6 +38,17 @@ function getPublicHealthcareReportPath(facility) {
   return `/public-healthcare?${params.toString()}`;
 }
 
+function getGoogleMapsDestination(facility) {
+  const destinationParts = [
+    facility.nameIsAvailable === false ? "" : facility.name,
+    facility.address === "Address not available" ? "" : facility.address,
+  ]
+    .map((value) => value?.trim())
+    .filter(Boolean);
+
+  return [...new Set(destinationParts)].join(", ");
+}
+
 const INDIA_SPECIALIST_HOSPITALS = {
   kidney: [
     [
@@ -840,7 +851,58 @@ function calculateRequirementMatch(
   return Math.round(weightedScore / totalWeight);
 }
 
+function isKnownMislocatedDmcListing(feature) {
+  const properties = feature?.properties || {};
+  const rawProperties = properties.datasource?.raw || {};
+  const rawTags = rawProperties.tags || {};
+  const hasDmcName = [
+    properties.name,
+    properties["name:en"],
+    rawProperties.name,
+    rawTags.name,
+  ].some(
+    (name) =>
+      typeof name === "string" && normalize(name) === "dmc hospital",
+  );
+
+  if (!hasDmcName) {
+    return false;
+  }
+
+  const osmId = String(rawProperties.osm_id || "").replace(/\D/g, "");
+  const isKnownOsmNode =
+    String(rawProperties.osm_type || "").toLowerCase() === "node" &&
+    osmId === "7860277357";
+  const listingAddress = [
+    properties.formatted,
+    properties.address_line1,
+    properties.city,
+    properties.town,
+    properties.postcode,
+    rawProperties["addr:street"],
+    rawProperties["addr:postcode"],
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    isKnownOsmNode ||
+    (listingAddress.includes("attowal") &&
+      (listingAddress.includes("146001") ||
+        (Math.abs(Number(feature?.geometry?.coordinates?.[0]) - 75.8889665) <
+          0.001 &&
+          Math.abs(Number(feature?.geometry?.coordinates?.[1]) - 31.4896592) <
+            0.001)))
+  );
+}
+
 function transformGeoapifyFacility(feature, userLocation, searchQuery) {
+  // This OSM node identifies a DMC listing in Attowal, not the Ludhiana hospital.
+  if (isKnownMislocatedDmcListing(feature)) {
+    return null;
+  }
+
   const properties = feature?.properties || {};
   const rawProperties = properties.datasource?.raw || {};
   const rawTags =
@@ -1386,8 +1448,13 @@ function HospitalFinderResultsPanel({
                       onClick={() => openGoogleMaps(facility)}
                       disabled={
                         !userLocation ||
-                        !Number.isFinite(facility.lat) ||
-                        !Number.isFinite(facility.lon)
+                        facility.nameIsAvailable === false ||
+                        !getGoogleMapsDestination(facility)
+                      }
+                      title={
+                        facility.nameIsAvailable === false
+                          ? "The facility name is unavailable; confirm its location before navigating."
+                          : undefined
                       }
                     >
                       Navigate
@@ -1733,20 +1800,40 @@ export default function HospitalFinder() {
     };
   }, [searchParams]);
 
+  const savedFinderState = searchState.finder || {};
+  const requestedScope = searchParams.get("scope");
+  const requestedQuery = searchParams.get("query");
+  const savedLocation = savedFinderState.userLocation;
+  const locationMatchesSaved =
+    !locationFromRequest ||
+    (savedLocation &&
+      locationFromRequest.lat === savedLocation.lat &&
+      locationFromRequest.lon === savedLocation.lon);
+  const canRestoreSearchState =
+    (!requestedScope || requestedScope === savedFinderState.searchScope) &&
+    (!requestedQuery ||
+      requestedQuery === (searchState.query || "")) &&
+    locationMatchesSaved;
+
   const [searchQuery, setSearchQuery] = useState(
-    searchParams.get("query") || searchState.query || "",
+    requestedQuery || searchState.draftQuery || searchState.query || "",
   );
 
-  const [userLocation, setUserLocation] = useState(locationFromRequest);
+  const [userLocation, setUserLocation] = useState(
+    locationFromRequest || (canRestoreSearchState ? savedLocation : null),
+  );
 
-  const [locationStatus, setLocationStatus] = useState("idle");
+  const [locationStatus, setLocationStatus] = useState(
+    canRestoreSearchState && savedLocation ? "success" : "idle",
+  );
 
   const [facilities, setFacilities] = useState(() => {
-    if (searchParams.get("scope") !== "nearby") {
+    if (!canRestoreSearchState) {
       return [];
     }
 
-    const savedQuery = searchParams.get("query") || searchState.query || "";
+    const savedQuery =
+      requestedQuery || searchState.draftQuery || searchState.query || "";
     return (searchState.facilities || []).map((facility) => ({
       ...facility,
       match: calculateRequirementMatch(
@@ -1757,42 +1844,106 @@ export default function HospitalFinder() {
     }));
   });
 
-  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [selectedFacility, setSelectedFacility] = useState(() => {
+    if (!canRestoreSearchState || !savedFinderState.selectedFacilityId) {
+      return null;
+    }
 
-  const [radius, setRadius] = useState(5);
+    return (
+      searchState.facilities?.find(
+        (facility) => facility.id === savedFinderState.selectedFacilityId,
+      ) || null
+    );
+  });
+
+  const [radius, setRadius] = useState(
+    canRestoreSearchState ? savedFinderState.radius ?? 5 : 5,
+  );
 
   const [searchScope, setSearchScope] = useState(
-    searchParams.get("scope") === "nearby" ? "nearby" : "india",
+    requestedScope === "nearby"
+      ? "nearby"
+      : requestedScope === "india"
+        ? "india"
+        : canRestoreSearchState
+          ? savedFinderState.searchScope || "india"
+          : "india",
   );
-  const [userState, setUserState] = useState("");
-  const [locationLabel, setLocationLabel] = useState("");
+  const [userState, setUserState] = useState(
+    canRestoreSearchState ? savedFinderState.userState || "" : "",
+  );
+  const [locationLabel, setLocationLabel] = useState(
+    canRestoreSearchState ? savedFinderState.locationLabel || "" : "",
+  );
 
-  const [facilityType, setFacilityType] = useState("all");
-  const [ownershipFilter, setOwnershipFilter] = useState("all");
-  const [schemeFilter, setSchemeFilter] = useState("all");
+  const [facilityType, setFacilityType] = useState(
+    canRestoreSearchState ? savedFinderState.facilityType || "all" : "all",
+  );
+  const [ownershipFilter, setOwnershipFilter] = useState(
+    canRestoreSearchState ? savedFinderState.ownershipFilter || "all" : "all",
+  );
+  const [schemeFilter, setSchemeFilter] = useState(
+    canRestoreSearchState ? savedFinderState.schemeFilter || "all" : "all",
+  );
 
   const [emergencyOnly, setEmergencyOnly] = useState(
-    searchParams.get("emergency") === "true",
+    searchParams.has("emergency")
+      ? searchParams.get("emergency") === "true"
+      : canRestoreSearchState
+        ? savedFinderState.emergencyOnly || false
+        : false,
   );
 
-  const [sortBy, setSortBy] = useState("match");
+  const [sortBy, setSortBy] = useState(
+    canRestoreSearchState ? savedFinderState.sortBy || "match" : "match",
+  );
 
-  const [viewMode, setViewMode] = useState("split");
+  const [viewMode, setViewMode] = useState(
+    canRestoreSearchState ? savedFinderState.viewMode || "split" : "split",
+  );
 
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState("");
 
-  const [stateRecommendations, setStateRecommendations] = useState(null);
+  const [stateRecommendations, setStateRecommendations] = useState(() => {
+    if (
+      !canRestoreSearchState ||
+      !savedFinderState.stateSearchCompleted ||
+      savedFinderState.searchScope !== "nearby" ||
+      (savedFinderState.radius ?? 5) !== 100
+    ) {
+      return null;
+    }
+
+    return {
+      scope: "state",
+      disease: searchState.query,
+      state: savedFinderState.userState || "",
+      center: savedFinderState.stateCenter,
+      hospitals: searchState.facilities || [],
+      resources: [],
+      limitReached: savedFinderState.stateLimitReached,
+    };
+  });
 
   const [stateRecommendationsLoading, setStateRecommendationsLoading] =
     useState(false);
 
-  const [route, setRoute] = useState(null);
+  const [route, setRoute] = useState(
+    canRestoreSearchState ? savedFinderState.route || null : null,
+  );
 
   const [routeLoading, setRouteLoading] = useState(false);
 
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(() => {
+    if (!canRestoreSearchState || !searchState.updatedAt) {
+      return null;
+    }
+
+    const timestamp = new Date(searchState.updatedAt);
+    return Number.isNaN(timestamp.getTime()) ? null : timestamp;
+  });
 
   const [researchLoadingId, setResearchLoadingId] = useState("");
 
@@ -2007,7 +2158,21 @@ export default function HospitalFinder() {
 
   const locationRequestStarted = useRef(false);
 
-  const [resultsPage, setResultsPage] = useState(0);
+  const [resultsPage, setResultsPage] = useState(
+    canRestoreSearchState ? savedFinderState.resultsPage || 0 : 0,
+  );
+
+  const updateSearchQuery = useCallback(
+    (query) => {
+      setSearchQuery(query);
+      setSearchState((current) =>
+        current.draftQuery === query
+          ? current
+          : { ...current, draftQuery: query },
+      );
+    },
+    [setSearchState],
+  );
 
   const compareIds = useMemo(
     () => searchState.compareIds || [],
@@ -2018,6 +2183,79 @@ export default function HospitalFinder() {
     () => searchState.researchById || {},
     [searchState.researchById],
   );
+
+  useEffect(() => {
+    const finderState = {
+      searchScope,
+      radius,
+      userLocation,
+      userState,
+      locationLabel,
+      facilityType,
+      ownershipFilter,
+      schemeFilter,
+      emergencyOnly,
+      sortBy,
+      viewMode,
+      selectedFacilityId: selectedFacility?.id || null,
+      route,
+      resultsPage,
+      stateSearchCompleted:
+        stateRecommendations?.scope === "state" &&
+        !stateRecommendationsLoading,
+      stateCenter: stateRecommendations?.center || null,
+      stateLimitReached: Boolean(stateRecommendations?.limitReached),
+    };
+
+    setSearchState((current) => {
+      const currentFinder = current.finder || {};
+      const finderStateUnchanged = Object.entries(finderState).every(
+        ([key, value]) => Object.is(currentFinder[key], value),
+      );
+      const compareIds = (current.compareIds || []).filter((id) =>
+        facilities.some((facility) => facility.id === id),
+      );
+      const compareIdsUnchanged =
+        compareIds.length === (current.compareIds || []).length;
+
+      if (
+        current.draftQuery === searchQuery &&
+        current.facilities === facilities &&
+        finderStateUnchanged &&
+        compareIdsUnchanged
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        draftQuery: searchQuery,
+        facilities,
+        compareIds,
+        finder: { ...currentFinder, ...finderState },
+      };
+    });
+  }, [
+    emergencyOnly,
+    facilities,
+    facilityType,
+    locationLabel,
+    ownershipFilter,
+    radius,
+    resultsPage,
+    route,
+    schemeFilter,
+    searchQuery,
+    searchScope,
+    selectedFacility,
+    setSearchState,
+    sortBy,
+    stateRecommendations,
+    stateRecommendationsLoading,
+    userLocation,
+    userState,
+    viewMode,
+  ]);
 
   /*
    * LOCATION
@@ -2083,7 +2321,11 @@ export default function HospitalFinder() {
 
       setLocationStatus("success");
       setLoading(false);
-      if (searchScope === "india" && isHealthcareSearch(searchQuery)) {
+      if (
+        facilities.length === 0 &&
+        searchScope === "india" &&
+        isHealthcareSearch(searchQuery)
+      ) {
         loadStateRecommendations(searchQuery);
       }
     };
@@ -2115,7 +2357,7 @@ export default function HospitalFinder() {
       timeout: 15000,
       maximumAge: 0,
     });
-  }, [loadStateRecommendations, searchScope, searchQuery]);
+  }, [facilities.length, loadStateRecommendations, searchScope, searchQuery]);
 
   const setManualLocation = useCallback(async (query) => {
     manualLocationSelected.current = true;
@@ -2314,8 +2556,12 @@ export default function HospitalFinder() {
     }
 
     locationRequestStarted.current = true;
+    if (userLocation) {
+      return;
+    }
+
     getUserLocation();
-  }, [getUserLocation]);
+  }, [getUserLocation, userLocation]);
 
   /*
    * AUTOMATIC FIRST SEARCH
@@ -2671,15 +2917,10 @@ export default function HospitalFinder() {
    */
 
   const openGoogleMaps = (facility) => {
-    if (
-      !userLocation ||
-      !Number.isFinite(facility.lat) ||
-      !Number.isFinite(facility.lon)
-    ) {
+    const destination = getGoogleMapsDestination(facility);
+    if (!userLocation || !destination) {
       return;
     }
-
-    const destination = `${facility.lat},${facility.lon}`;
 
     const origin = `${userLocation.lat},${userLocation.lon}`;
 
@@ -2753,7 +2994,7 @@ export default function HospitalFinder() {
           searchQuery={searchQuery}
           searchScope={searchScope}
           setFacilities={setFacilities}
-          setSearchQuery={setSearchQuery}
+          setSearchQuery={updateSearchQuery}
           userLocation={userLocation}
         />
 
@@ -3000,8 +3241,13 @@ export default function HospitalFinder() {
                           onClick={() => openGoogleMaps(facility)}
                           disabled={
                             !userLocation ||
-                            !Number.isFinite(facility.lat) ||
-                            !Number.isFinite(facility.lon)
+                            facility.nameIsAvailable === false ||
+                            !getGoogleMapsDestination(facility)
+                          }
+                          title={
+                            facility.nameIsAvailable === false
+                              ? "The facility name is unavailable; confirm its location before navigating."
+                              : undefined
                           }
                         >
                           Navigate
