@@ -7,6 +7,7 @@ import Footer from "../components/composed/Footer/Footer";
 import {
   geocodeLocation,
   reverseGeocodeLocation,
+  searchHealthcareInState,
   searchNearbyHealthcare,
 } from "../services/geoapify";
 import { useHospitalSearch } from "../context/HospitalSearchContext";
@@ -310,58 +311,6 @@ const INDIA_SPECIALIST_HOSPITALS = {
   ],
 };
 
-const PUNJAB_TOP_HOSPITALS = [
-  [
-    "Post Graduate Institute of Medical Education and Research (PGIMER)",
-    "Chandigarh",
-    "Multi-specialty care, emergency medicine, surgery",
-    30.7646,
-    76.7756,
-  ],
-  [
-    "Fortis Hospital",
-    "Mohali",
-    "Multi-specialty care, cardiology, oncology, emergency medicine",
-    30.7046,
-    76.7179,
-  ],
-  [
-    "Max Super Speciality Hospital",
-    "Mohali",
-    "Multi-specialty care, cardiac sciences, oncology, neurology",
-    30.7046,
-    76.7179,
-  ],
-  [
-    "Christian Medical College and Hospital",
-    "Ludhiana",
-    "Multi-specialty care, cardiology, oncology, critical care",
-    30.9009,
-    75.8573,
-  ],
-  [
-    "Dayanand Medical College and Hospital",
-    "Ludhiana",
-    "Multi-specialty care, trauma, cardiology, neurology",
-    30.912,
-    75.8402,
-  ],
-  [
-    "Government Medical College and Hospital",
-    "Amritsar",
-    "Multi-specialty care, emergency medicine, surgery",
-    31.634,
-    74.8723,
-  ],
-  [
-    "Rajindra Hospital",
-    "Patiala",
-    "Multi-specialty care, emergency medicine, surgery",
-    30.3398,
-    76.3869,
-  ],
-];
-
 function getHospitalFallbacks(disease) {
   const group = getSearchGroups(disease)[0]?.key || "general";
   const hospitals =
@@ -376,19 +325,6 @@ function getHospitalFallbacks(disease) {
     summary: `Explore ${specialties} services at ${name}, ${city}.`,
     sourceUrl: `https://www.google.com/search?q=${encodeURIComponent(`${name} ${city} ${disease} treatment`)}`,
     sourceLabel: "Research hospital",
-  }));
-}
-
-function getPunjabHospitalFallbacks(disease) {
-  return PUNJAB_TOP_HOSPITALS.map(([name, city, specialties, lat, lon]) => ({
-    name: `${name}, ${city}`,
-    city,
-    specialties,
-    lat,
-    lon,
-    summary: `Explore ${specialties} services at ${name}, ${city}.`,
-    sourceUrl: `https://www.google.com/search?q=${encodeURIComponent(`${name} ${city} ${disease} treatment`)}`,
-    sourceLabel: "Punjab hospital",
   }));
 }
 
@@ -907,6 +843,10 @@ function calculateRequirementMatch(
 function transformGeoapifyFacility(feature, userLocation, searchQuery) {
   const properties = feature?.properties || {};
   const rawProperties = properties.datasource?.raw || {};
+  const rawTags =
+    rawProperties.tags && typeof rawProperties.tags === "object"
+      ? rawProperties.tags
+      : {};
   const coordinates = feature?.geometry?.coordinates;
 
   if (
@@ -927,7 +867,6 @@ function transformGeoapifyFacility(feature, userLocation, searchQuery) {
 
   const categoryText = categories.join(", ");
   const normalizedCategories = normalize(categoryText);
-  const normalizedName = normalize(properties.name || "");
 
   const hospitalCategory = categories.some(
     (category) => category === "healthcare.hospital",
@@ -954,6 +893,50 @@ function transformGeoapifyFacility(feature, userLocation, searchQuery) {
   } else if (clinicCategory) {
     type = "Clinic";
   }
+
+  const getLocalizedNames = (source) =>
+    Object.entries(source)
+      .filter(
+        ([key, value]) =>
+          /^name:[a-z]{2}(?:-[a-z0-9]{2,8})?$/i.test(key) &&
+          typeof value === "string" &&
+          value.trim(),
+      )
+      .sort(([left], [right]) =>
+        left.toLowerCase() === "name:en"
+          ? -1
+          : right.toLowerCase() === "name:en"
+            ? 1
+            : 0,
+      )
+      .map(([, value]) => value);
+  const facilityName = [
+    properties.name,
+    properties["name:en"],
+    ...getLocalizedNames(properties),
+    rawProperties.name,
+    rawProperties["name:en"],
+    ...getLocalizedNames(rawProperties),
+    rawTags.name,
+    rawTags["name:en"],
+    ...getLocalizedNames(rawTags),
+    rawProperties.official_name,
+    rawProperties.short_name,
+    rawProperties.alt_name,
+    rawProperties.brand,
+  ].find((candidate) => typeof candidate === "string" && candidate.trim())?.trim();
+  const locationHint = [
+    properties.address_line1,
+    properties.city || properties.town || properties.village || properties.suburb,
+  ]
+    .filter((value) => typeof value === "string" && value.trim())
+    .map((value) => value.trim())
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .join(", ");
+  const displayName =
+    facilityName ||
+    (locationHint ? `${type} near ${locationHint}` : `${type} name not listed`);
+  const normalizedName = normalize(facilityName || "");
 
   const specialties = categories
     .filter((category) => category.startsWith("healthcare."))
@@ -987,8 +970,12 @@ function transformGeoapifyFacility(feature, userLocation, searchQuery) {
   );
 
   const tags = {
-    name: properties.name || "",
-    "name:en": properties.name || "",
+    name: facilityName || "",
+    "name:en":
+      properties["name:en"] ||
+      rawProperties["name:en"] ||
+      rawTags["name:en"] ||
+      "",
     healthcare: hospitalCategory
       ? "hospital"
       : clinicCategory
@@ -999,7 +986,7 @@ function transformGeoapifyFacility(feature, userLocation, searchQuery) {
     specialties,
     speciality: specialties,
     description: categoryText,
-    operator: properties.operator || "",
+    operator: properties.operator || rawProperties.operator || "",
   };
 
   return {
@@ -1007,7 +994,8 @@ function transformGeoapifyFacility(feature, userLocation, searchQuery) {
 
     geoapifyPlaceId: properties.place_id || "",
 
-    name: properties.name || "Unnamed healthcare facility",
+    name: displayName,
+    nameIsAvailable: Boolean(facilityName),
 
     type,
 
@@ -1822,31 +1810,114 @@ export default function HospitalFinder() {
 
       const searchTerm = normalizeMedicalQuery(disease) || disease;
       const requestId = ++recommendationRequestId.current;
+      setLoading(false);
       setStateRecommendationsLoading(true);
 
       if (scope === "state") {
-        const hospitals = getPunjabHospitalFallbacks(disease);
-        const stateFacilities = getIndiaHospitalFacilities(
-          hospitals,
-          disease,
-          userLocation,
-        );
-
-        setStateRecommendations({
-          disease,
-          state: "Punjab",
-          hospitals,
-          resources: hospitals,
-        });
-        setFacilities(stateFacilities);
+        setError("");
+        setStateRecommendations(null);
+        setFacilities([]);
+        setSelectedFacility(null);
+        setRoute(null);
+        setLastUpdated(null);
         setSearchState((current) => ({
           ...current,
           query: disease,
-          facilities: stateFacilities,
+          facilities: [],
           compareIds: [],
-          updatedAt: new Date().toISOString(),
+          updatedAt: null,
         }));
-        setStateRecommendationsLoading(false);
+
+        if (!userState || !userLocation) {
+          const message =
+            "Set a location within a state before searching state-wide facilities.";
+          setFacilities([]);
+          setLastUpdated(null);
+          setError(message);
+          setStateRecommendations({
+            scope: "state",
+            disease,
+            state: userState || "",
+            hospitals: [],
+            resources: [],
+            error: message,
+          });
+          setStateRecommendationsLoading(false);
+          return;
+        }
+
+        try {
+          const data = await searchHealthcareInState({
+            state: userState,
+            latitude: userLocation.lat,
+            longitude: userLocation.lon,
+          });
+          if (requestId !== recommendationRequestId.current) {
+            return;
+          }
+
+          const stateFacilities = data.features
+            .map((feature) =>
+              transformGeoapifyFacility(feature, userLocation, disease),
+            )
+            .filter(Boolean);
+
+          setFacilities(stateFacilities);
+          setLastUpdated(new Date());
+          setSearchState((current) => ({
+            ...current,
+            query: disease,
+            facilities: stateFacilities,
+            compareIds: [],
+            updatedAt: new Date().toISOString(),
+          }));
+          setStateRecommendations({
+            scope: "state",
+            disease,
+            state: data.state,
+            center: data.center,
+            hospitals: stateFacilities,
+            resources: [],
+            limitReached: data.limitReached,
+            error:
+              stateFacilities.length === 0
+                ? `No Geoapify healthcare listings were found within ${data.state}.`
+                : "",
+          });
+
+          if (stateFacilities.length === 0) {
+            setError(
+              `No Geoapify healthcare listings were found within ${data.state}.`,
+            );
+          }
+        } catch (stateSearchError) {
+          if (requestId !== recommendationRequestId.current) {
+            return;
+          }
+
+          console.error("STATE FACILITY SEARCH ERROR:", stateSearchError);
+          const message =
+            stateSearchError?.name === "TimeoutError" ||
+            stateSearchError?.name === "AbortError"
+              ? "State-wide facility search timed out. Please try again."
+              : stateSearchError.message ||
+                "State-wide facility search is unavailable. Please try again.";
+          setFacilities([]);
+          setLastUpdated(null);
+          setError(message);
+          setStateRecommendations({
+            scope: "state",
+            disease,
+            state: userState,
+            hospitals: [],
+            resources: [],
+            error: message,
+          });
+        } finally {
+          if (requestId === recommendationRequestId.current) {
+            setStateRecommendationsLoading(false);
+          }
+        }
         return;
       }
 
@@ -1858,7 +1929,6 @@ export default function HospitalFinder() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               disease: searchTerm,
-              state: scope === "state" ? userState : undefined,
             }),
           },
         );
@@ -1876,19 +1946,15 @@ export default function HospitalFinder() {
         if (requestId !== recommendationRequestId.current) {
           return;
         }
-        const hospitals =
-          scope === "state" && data.recommendations?.length
-            ? data.recommendations
-            : getHospitalFallbacks(disease);
+        const hospitals = getHospitalFallbacks(disease);
         setStateRecommendations({
           ...data,
+          scope: "india",
           hospitals,
           resources:
-            scope === "state" && data.recommendations?.length
-              ? data.resources || []
-              : data.resources?.length
-                ? data.resources
-                : data.recommendations || [],
+            data.resources?.length
+              ? data.resources
+              : data.recommendations || [],
         });
         const nationwideFacilities = getIndiaHospitalFacilities(
           hospitals,
@@ -1914,6 +1980,7 @@ export default function HospitalFinder() {
           userLocation,
         );
         setStateRecommendations({
+          scope: "india",
           disease,
           hospitals: getHospitalFallbacks(disease),
           resources: [],
@@ -1999,7 +2066,7 @@ export default function HospitalFinder() {
 
       reverseGeocodeLocation({ latitude, longitude })
         .then((location) => {
-          setUserState(location.state || location.county || "");
+          setUserState(location.state || "");
           setLocationLabel(
             location.city ||
               location.town ||
@@ -2062,7 +2129,7 @@ export default function HospitalFinder() {
         accuracy: 0,
       };
       setUserLocation(nextLocation);
-      setUserState(location.state || location.county || "");
+      setUserState(location.state || "");
       setLocationLabel(location.formatted || query.trim());
       setSearchScope("nearby");
       setLocationStatus("success");
@@ -2101,7 +2168,9 @@ export default function HospitalFinder() {
       setError("");
       setSelectedFacility(null);
       setRoute(null);
-      recommendationRequestId.current += 1;
+      setStateRecommendations(null);
+      setStateRecommendationsLoading(false);
+      const requestId = ++recommendationRequestId.current;
 
       try {
         const data = await searchNearbyHealthcare({
@@ -2110,6 +2179,9 @@ export default function HospitalFinder() {
           radius,
           limit: 100,
         });
+        if (requestId !== recommendationRequestId.current) {
+          return;
+        }
 
         const features = Array.isArray(data?.features) ? data.features : [];
 
@@ -2144,6 +2216,10 @@ export default function HospitalFinder() {
           );
         }
       } catch (searchError) {
+        if (requestId !== recommendationRequestId.current) {
+          return;
+        }
+
         console.error("Geoapify search error:", searchError);
 
         setError(
@@ -2153,7 +2229,9 @@ export default function HospitalFinder() {
             "The healthcare search service is temporarily unavailable. Please try again.",
         );
       } finally {
-        setLoading(false);
+        if (requestId === recommendationRequestId.current) {
+          setLoading(false);
+        }
       }
     },
     [radius, searchQuery, setSearchState, userLocation],
@@ -2629,15 +2707,26 @@ export default function HospitalFinder() {
     [facilities, compareIds, researchById],
   );
 
-  const mapCenter = useMemo(
-    () =>
-      searchScope === "india"
-        ? [78.9629, 20.5937]
-        : userLocation
-          ? [userLocation.lon, userLocation.lat]
-          : [DEFAULT_CENTER[1], DEFAULT_CENTER[0]],
-    [searchScope, userLocation],
-  );
+  const mapCenter = useMemo(() => {
+    if (searchScope === "india") {
+      return [78.9629, 20.5937];
+    }
+
+    if (
+      radius === 100 &&
+      stateRecommendations?.scope === "state" &&
+      stateRecommendations.center
+    ) {
+      return [
+        stateRecommendations.center.lon,
+        stateRecommendations.center.lat,
+      ];
+    }
+
+    return userLocation
+      ? [userLocation.lon, userLocation.lat]
+      : [DEFAULT_CENTER[1], DEFAULT_CENTER[0]];
+  }, [radius, searchScope, stateRecommendations, userLocation]);
 
   const isSearching = loading || stateRecommendationsLoading;
 
@@ -2659,6 +2748,7 @@ export default function HospitalFinder() {
           handleSearchScopeChange={handleSearchScopeChange}
           isSearching={isSearching}
           loadStateRecommendations={loadStateRecommendations}
+          radius={radius}
           search={search}
           searchQuery={searchQuery}
           searchScope={searchScope}
@@ -2739,15 +2829,19 @@ export default function HospitalFinder() {
                   <div className="loading-spinner" />
 
                   <h3>
-                    {searchScope === "nearby"
-                      ? "Finding nearby healthcare..."
-                      : "Researching hospitals for your search..."}
+                    {searchScope === "nearby" && radius === 100
+                      ? `Searching ${userState || "state"} healthcare facilities...`
+                      : searchScope === "nearby"
+                        ? "Finding nearby healthcare..."
+                        : "Researching hospitals for your search..."}
                   </h3>
 
                   <p>
-                    {searchScope === "nearby"
-                      ? "Searching nearby healthcare facilities..."
-                      : "Loading specialist hospital recommendations and matching facilities..."}
+                    {searchScope === "nearby" && radius === 100
+                      ? "Searching Geoapify listings within the selected state's administrative boundary..."
+                      : searchScope === "nearby"
+                        ? "Searching nearby healthcare facilities..."
+                        : "Loading specialist hospital recommendations and matching facilities..."}
                   </p>
                 </div>
               ) : filteredFacilities.length === 0 ? (
@@ -2757,8 +2851,10 @@ export default function HospitalFinder() {
                   <h3>No matching facilities</h3>
 
                   <p>
-                    Try increasing the search radius or using a broader
-                    healthcare term.
+                    {searchScope === "nearby" && radius === 100
+                      ? error ||
+                        `No matching Geoapify listings were found in ${userState || "the selected state"}.`
+                      : "Try increasing the search radius or using a broader healthcare term."}
                   </p>
 
                   <button
@@ -2804,6 +2900,14 @@ export default function HospitalFinder() {
                       <div className="facility-card-body">
                         <div className="facility-main">
                           <h2>{facility.name}</h2>
+
+                          {facility.nameIsAvailable === false && (
+                            <p className="facility-name-note">
+                              The map listing does not provide a facility name.
+                              Confirm this location directly before relying on
+                              it.
+                            </p>
+                          )}
 
                           <p className="facility-address">{facility.address}</p>
 
@@ -2933,8 +3037,16 @@ export default function HospitalFinder() {
                         <button
                           type="button"
                           onClick={() => researchFacility(facility)}
+                          disabled={facility.nameIsAvailable === false}
+                          title={
+                            facility.nameIsAvailable === false
+                              ? "Hospital research needs a facility name from the source listing."
+                              : undefined
+                          }
                         >
-                          {researchLoadingId === facility.id
+                          {facility.nameIsAvailable === false
+                            ? "Name unavailable"
+                            : researchLoadingId === facility.id
                             ? "Researching..."
                             : researchById[facility.id]?.error
                               ? "Retry verify"
@@ -3009,7 +3121,9 @@ export default function HospitalFinder() {
               <MapLibreMap
                 userLocation={userLocation}
                 mapCenter={mapCenter}
-                mapZoom={searchScope === "india" ? 5 : 13}
+                mapZoom={
+                  searchScope === "india" ? 5 : radius === 100 ? 6 : 13
+                }
                 showUserLocation={searchScope !== "india"}
                 facilities={mapFacilities}
                 selectedFacility={selectedFacility}
@@ -3044,10 +3158,15 @@ export default function HospitalFinder() {
         {stateRecommendationsLoading && (
           <section className="state-recommendations">
             <div className="state-recommendations-heading">
-              <span className="eyebrow">INDIA-WIDE RESEARCH</span>
+              <span className="eyebrow">
+                {searchScope === "nearby" && radius === 100
+                  ? `${userState || "STATE"} FACILITY SEARCH`
+                  : "INDIA-WIDE RESEARCH"}
+              </span>
               <h2>
-                Finding leading options in India for{" "}
-                {searchQuery || "your requirement"}...
+                {searchScope === "nearby" && radius === 100
+                  ? `Finding healthcare facilities in ${userState || "your state"}...`
+                  : `Finding leading options in India for ${searchQuery || "your requirement"}...`}
               </h2>
             </div>
           </section>
@@ -3059,12 +3178,27 @@ export default function HospitalFinder() {
             <section className="state-recommendations">
               <div className="state-recommendations-heading">
                 <div>
-                  <span className="eyebrow">INDIA-WIDE RESEARCH</span>
-                  <h2>Hospitals and resources across India</h2>
+                  <span className="eyebrow">
+                    {stateRecommendations.scope === "state"
+                      ? `${stateRecommendations.state || "STATE"} FACILITY RESULTS`
+                      : "INDIA-WIDE RESEARCH"}
+                  </span>
+                  <h2>
+                    {stateRecommendations.scope === "state"
+                      ? `Healthcare facilities in ${stateRecommendations.state || "your state"}`
+                      : "Hospitals and resources across India"}
+                  </h2>
                   <p>
-                    Explore hospitals and resources for{" "}
-                    {stateRecommendations.disease || searchQuery}.
+                    {stateRecommendations.scope === "state"
+                      ? `Geoapify healthcare listings within the state boundary. Specialty matching uses available listing text for ${stateRecommendations.disease || searchQuery}.`
+                      : `Explore hospitals and resources for ${stateRecommendations.disease || searchQuery}.`}
                   </p>
+                  {stateRecommendations.limitReached && (
+                    <p>
+                      Showing the first 500 provider results; state coverage
+                      may be incomplete.
+                    </p>
+                  )}
                 </div>
               </div>
               {stateRecommendations.resources?.length > 0 && (
