@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import Container from "../../layout/Container/Container";
 import Section from "../../layout/Section/Section";
@@ -18,8 +19,10 @@ function TeamSection({
   buttonLabel = "Meet The Team",
   teamRoute = "/team",
 }) {
+  const navigate = useNavigate();
+
   const handleTeamNavigation = () => {
-    window.location.href = teamRoute;
+    navigate(teamRoute);
   };
 
   return (
