@@ -123,11 +123,15 @@ sequenceDiagram
 }
 ```
 
-`state` is optional. The endpoint requires a signed-in session. Without
+`state` is optional. This endpoint provides optional Tavily-backed
+recommendation research; it is not the state-level facility listing used by
+the finder. State-level facility search uses Geoapify geocoding to resolve the
+detected Indian state boundary, then queries Geoapify Places within that
+boundary (up to 500 results). The endpoint requires a signed-in session. Without
 `TAVILY_API_KEY`, the backend returns curated India-wide hospitals and
 resources with `searched: false`; when a live provider request fails, the
 frontend shows curated hospitals and an error message. The state-level
-recommendation list is derived from live `recommendations` when present.
+facility listing does not fall back to that curated India-wide data.
 
 ---
 
