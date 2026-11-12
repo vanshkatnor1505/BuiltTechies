@@ -1,6 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import Navbar from "../Navbar/Navbar";
 
 function SiteNavbar() {
+  const navigate = useNavigate();
+
   return (
     <Navbar
       logo="CurePulse"
@@ -31,9 +34,7 @@ function SiteNavbar() {
       cta={{
         label: "Open Assistant",
         variant: "primary",
-        onClick: () => {
-          window.location.href = "/chatbot";
-        },
+        onClick: () => navigate("/chatbot"),
       }}
     />
   );
