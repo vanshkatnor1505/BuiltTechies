@@ -9,7 +9,18 @@
 **Thanks** 
 
 
-**A healthcare discovery and navigation platform for India** — helping people find, compare, and understand healthcare options through location-aware search, curated recommendations, maps, and an AI-assisted chatbot.
+**An Intelligent Healthcare Discovery and Navigation Ecosystem** — empowering individuals to make informed healthcare decisions through AI-assisted navigation, hospital intelligence, reliable healthcare information, and accessible digital services.
+
+The current application combines location-aware facility discovery, curated
+recommendations, comparison, maps, source-linked hospital research,
+multilingual guidance, and public healthcare reports. AI and provider-backed
+features depend on configuration; recommendations are discovery aids, not
+clinical advice or a guarantee of facility availability.
+
+For the implementation-aware project dossier, including algorithmic
+methodology, data reliability, privacy, evaluation, social impact, commercial
+feasibility, and proposed roadmap, see
+[CUREPULSE_PROJECT_DOCUMENTATION.md](./CUREPULSE_PROJECT_DOCUMENTATION.md).
 
 ![Node](https://img.shields.io/badge/node-20.19%2B%20or%2022.12%2B-339933?logo=node.js&logoColor=white)
 ![React](https://img.shields.io/badge/react-19.2.0-61DAFB?logo=react&logoColor=black)
