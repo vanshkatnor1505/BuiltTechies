@@ -1,6 +1,7 @@
 const GEOAPIFY_API_URL = "https://api.geoapify.com/v2/places";
 const GEOAPIFY_GEOCODE_URL = "https://api.geoapify.com/v1/geocode/reverse";
 const GEOAPIFY_SEARCH_GEOCODE_URL = "https://api.geoapify.com/v1/geocode/search";
+const STATE_SEARCH_RESULT_LIMIT = 500;
 
 const getApiKey = () => {
   const key = import.meta.env.VITE_GEOAPIFY_API_KEY;
@@ -60,6 +61,89 @@ export async function searchNearbyHealthcare({
   const data = await response.json();
 
   return data;
+}
+
+export async function searchHealthcareInState({
+  state,
+  latitude,
+  longitude,
+  signal,
+}) {
+  const normalizedState = typeof state === "string" ? state.trim() : "";
+  if (!normalizedState) {
+    throw new Error("Choose a location in India before searching by state.");
+  }
+
+  const apiKey = getApiKey();
+  const requestSignal = signal || AbortSignal.timeout(12000);
+  const geocodeParams = new URLSearchParams({
+    text: `${normalizedState}, India`,
+    type: "state",
+    filter: "countrycode:in",
+    limit: "1",
+    format: "geojson",
+    apiKey,
+  });
+  const geocodeResponse = await fetch(
+    `${GEOAPIFY_SEARCH_GEOCODE_URL}?${geocodeParams.toString()}`,
+    {
+      signal: requestSignal,
+      headers: { Accept: "application/json" },
+    },
+  );
+
+  if (!geocodeResponse.ok) {
+    throw new Error(`State boundary lookup failed (${geocodeResponse.status}).`);
+  }
+
+  const geocodeData = await geocodeResponse.json();
+  const stateLocation = geocodeData.features?.[0]?.properties;
+  const placeId = stateLocation?.place_id;
+
+  if (
+    !placeId ||
+    (stateLocation.country_code &&
+      stateLocation.country_code.toLowerCase() !== "in")
+  ) {
+    throw new Error(`Could not resolve ${normalizedState} as an Indian state.`);
+  }
+
+  const params = new URLSearchParams({
+    categories: HEALTHCARE_CATEGORIES.join(","),
+    filter: `place:${placeId}`,
+    limit: String(STATE_SEARCH_RESULT_LIMIT),
+    apiKey,
+  });
+
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    params.set("bias", `proximity:${longitude},${latitude}`);
+  }
+
+  const placesResponse = await fetch(
+    `${GEOAPIFY_API_URL}?${params.toString()}`,
+    {
+      signal: requestSignal,
+      headers: { Accept: "application/json" },
+    },
+  );
+
+  if (!placesResponse.ok) {
+    throw new Error(`State facility search failed (${placesResponse.status}).`);
+  }
+
+  const placesData = await placesResponse.json();
+  return {
+    state: stateLocation.state || stateLocation.name || normalizedState,
+    center:
+      Number.isFinite(stateLocation.lat) &&
+      Number.isFinite(stateLocation.lon)
+        ? { lat: stateLocation.lat, lon: stateLocation.lon }
+        : null,
+    features: Array.isArray(placesData.features) ? placesData.features : [],
+    limitReached:
+      Array.isArray(placesData.features) &&
+      placesData.features.length === STATE_SEARCH_RESULT_LIMIT,
+  };
 }
 
 export async function reverseGeocodeLocation({ latitude, longitude }) {
