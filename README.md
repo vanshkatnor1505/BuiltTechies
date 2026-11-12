@@ -62,7 +62,7 @@ mindmap
       Specialty compatibility score excludes distance
     Curated recommendations
       India-wide hospital picks
-      Punjab state-level picks
+      State-boundary facility search via Geoapify
       Specialty matching
       Fallback when research is offline
     Maps and navigation
@@ -93,7 +93,7 @@ mindmap
 | Area | Highlights |
 | --- | --- |
 | 🔎 **Healthcare discovery** | Search by condition, treatment, specialty, or care type; nearby search via browser geolocation; filter by radius, facility type, emergency availability; sort by match, distance, or name; explicit loading/empty/error/success states |
-| ⭐ **Curated recommendations** | India-wide researched picks, Punjab state-level picks, specialty matching (kidney, cardiology, cancer, neurology, ortho, eye, pediatrics, women's health, general medicine), graceful fallback when live research is unavailable |
+| ⭐ **Recommendations and state search** | Curated India-wide starting points, plus Geoapify facility listings inside the detected Indian state boundary; specialty matching (kidney, cardiology, cancer, neurology, ortho, eye, pediatrics, women's health, general medicine) |
 | 🗺️ **Maps and navigation** | Interactive facility map, select from list or map, route requests, Google Maps turn-by-turn handoff, split/list/map views |
 | 🏥 **Research and comparison** | Backend-driven hospital research, source links shown on facility cards and comparison views, saved research shared across pages, multi-facility comparisons |
 | 🗣️ **Public healthcare reports** | Anonymous reports for service issues at public hospitals; submissions remain private until reviewed, with approved category totals shown as community trends |
