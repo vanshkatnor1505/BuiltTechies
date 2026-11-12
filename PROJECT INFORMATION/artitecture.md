@@ -175,7 +175,7 @@ flowchart TB
 %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#111111','primaryBorderColor':'#555555','lineColor':'#555555','secondaryColor':'#f5f5f5','tertiaryColor':'#ffffff','fontSize':'15px','darkMode':false,'background':'#ffffff'}}}%%
 flowchart LR
     GEO["Geoapify raw data"] -->|"Normalize"| FM["Normalized\nfacility object"]
-    PUNJAB["Curated Punjab data"] -->|"Same model"| FM
+    STATE["Geoapify facilities\nwithin state boundary"] -->|"Same model"| FM
     FM --> RENDER["Rendered in UI"]
 
     BE["Backend response"] -->|"Validate before use"| CONSUME["Consumed by frontend"]
@@ -192,7 +192,7 @@ flowchart LR
 
 - Geoapify data is transformed into a **normalized facility object** before it is rendered.
 - Backend responses are **checked before their data is consumed**.
-- Curated Punjab hospitals use the **same facility model** as live results.
+- State-boundary Geoapify facilities use the **same facility model** as live results.
 - Hospital research and its source titles/links are **stored by facility ID** so cards and comparison can reuse them.
 - Provider credentials **remain on the backend**.
 
