@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
 import Container from "../../layout/Container/Container";
@@ -167,8 +168,8 @@ function Navbar({
               LOGO
           ================================= */}
 
-          <a
-            href="/"
+          <Link
+            to="/"
             className={styles.logo}
             aria-label="Home"
             onClick={() =>
@@ -191,7 +192,7 @@ function Navbar({
             ) : (
               logo
             )}
-          </a>
+          </Link>
 
           {/* =================================
               DESKTOP NAVIGATION
@@ -204,11 +205,16 @@ function Navbar({
             {links.map((link) => {
               const isActive =
                 activeLink === link.href;
+              const LinkComponent = link.href.startsWith("/") ? Link : "a";
+              const linkTarget =
+                LinkComponent === Link
+                  ? { to: link.href }
+                  : { href: link.href };
 
               return (
-                <a
+                <LinkComponent
                   key={link.href}
-                  href={link.href}
+                  {...linkTarget}
                   className={`${styles.navLink} ${
                     isActive
                       ? styles.active
@@ -226,7 +232,7 @@ function Navbar({
                   }
                 >
                   {link.label}
-                </a>
+                </LinkComponent>
               );
             })}
           </nav>
@@ -333,11 +339,16 @@ function Navbar({
             {links.map((link) => {
               const isActive =
                 activeLink === link.href;
+              const LinkComponent = link.href.startsWith("/") ? Link : "a";
+              const linkTarget =
+                LinkComponent === Link
+                  ? { to: link.href }
+                  : { href: link.href };
 
               return (
-                <a
+                <LinkComponent
                   key={link.href}
-                  href={link.href}
+                  {...linkTarget}
                   className={`${styles.mobileNavLink} ${
                     isActive
                       ? styles.active
@@ -359,7 +370,7 @@ function Navbar({
                       styles.mobileIndicator
                     }
                   />
-                </a>
+                </LinkComponent>
               );
             })}
 
